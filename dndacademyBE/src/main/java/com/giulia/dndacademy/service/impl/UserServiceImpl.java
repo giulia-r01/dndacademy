@@ -1,0 +1,53 @@
+package com.giulia.dndacademy.service.impl;
+
+import com.giulia.dndacademy.dto.UserDTO;
+import com.giulia.dndacademy.model.User;
+import com.giulia.dndacademy.repository.UserRepository;
+import com.giulia.dndacademy.service.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    public User register(User user) {
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User getByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+    }
+
+    @Override
+    public UserDTO getUserById(Long id) {
+        return userRepository.findById(id)
+                .map(u -> UserDTO.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .email(u.getEmail())
+                        .role(u.getRole())
+                        .build())
+                .orElse(null);
+    }
+
+    @Override
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream().map(u ->
+                UserDTO.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .email(u.getEmail())
+                        .role(u.getRole())
+                        .build()
+        ).collect(Collectors.toList());
+    }
+}
