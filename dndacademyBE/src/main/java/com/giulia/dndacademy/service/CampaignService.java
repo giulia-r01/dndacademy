@@ -1,0 +1,15 @@
+package com.giulia.dndacademy.service;
+
+import com.giulia.dndacademy.dto.CampaignDTO;
+import java.util.List;
+
+public interface CampaignService {
+
+    CampaignDTO createCampaign(String name, String description, String username);
+
+    List<CampaignDTO> getAllCampaigns();
+
+    CampaignDTO joinCampaign(Long campaignId, String username);
+
+    List<String> getPlayers(Long campaignId);
+}

@@ -16,11 +16,6 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) {
-        User saved = userService.register(user);
-        return ResponseEntity.ok(saved);
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {

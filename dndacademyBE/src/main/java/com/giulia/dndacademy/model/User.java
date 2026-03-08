@@ -66,4 +66,7 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    @OneToMany(mappedBy = "master")
+    private List<Campaign> campaigns;
 }
