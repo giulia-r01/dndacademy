@@ -80,7 +80,7 @@ public class CampaignServiceImpl implements CampaignService {
     public List<String> getPlayers(Long campaignId) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
 
         return campaign.getPlayers()
                 .stream()
