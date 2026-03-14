@@ -1,6 +1,8 @@
 package com.giulia.dndacademy.service;
 
 import com.giulia.dndacademy.dto.CampaignDTO;
+import com.giulia.dndacademy.dto.PartyMemberDTO;
+
 import java.util.List;
 
 public interface CampaignService {
@@ -12,4 +14,6 @@ public interface CampaignService {
     CampaignDTO joinCampaign(Long campaignId, String username);
 
     List<String> getPlayers(Long campaignId);
+
+    List<PartyMemberDTO> getParty(Long campaignId);
 }

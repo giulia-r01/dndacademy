@@ -1,9 +1,11 @@
 package com.giulia.dndacademy.service.impl;
 
 import com.giulia.dndacademy.dto.CampaignDTO;
+import com.giulia.dndacademy.dto.PartyMemberDTO;
 import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.repository.CampaignRepository;
+import com.giulia.dndacademy.repository.CharacterRepository;
 import com.giulia.dndacademy.service.CampaignService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -85,6 +87,25 @@ public class CampaignServiceImpl implements CampaignService {
         return campaign.getPlayers()
                 .stream()
                 .map(User::getUsername)
+                .toList();
+    }
+
+    private final CharacterRepository characterRepository;
+
+    @Override
+    public List<PartyMemberDTO> getParty(Long campaignId) {
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
+
+        return characterRepository.findByCampaignId(campaignId)
+                .stream()
+                .map(c -> PartyMemberDTO.builder()
+                        .playerUsername(c.getPlayer().getUsername())
+                        .characterName(c.getName())
+                        .characterClass(c.getCharacterClass())
+                        .level(c.getLevel())
+                        .build())
                 .toList();
     }
 }

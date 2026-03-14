@@ -2,6 +2,7 @@ package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.CampaignDTO;
 import com.giulia.dndacademy.dto.CreateCampaignRequest;
+import com.giulia.dndacademy.dto.PartyMemberDTO;
 import com.giulia.dndacademy.service.CampaignService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -55,5 +56,10 @@ public class CampaignController {
     @GetMapping("/roles")
     public Object roles(Authentication auth) {
         return auth.getAuthorities();
+    }
+
+    @GetMapping("/{campaignId}/party")
+    public List<PartyMemberDTO> getParty(@PathVariable Long campaignId) {
+        return campaignService.getParty(campaignId);
     }
 }
