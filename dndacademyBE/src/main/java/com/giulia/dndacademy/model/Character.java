@@ -33,4 +33,7 @@ public class Character {
     @ManyToOne
     @JoinColumn(name = "campaign_id")
     private Campaign campaign;
+
+    @OneToOne(mappedBy = "character", cascade = CascadeType.ALL)
+    private CharacterStats stats;
 }

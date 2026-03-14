@@ -17,4 +17,6 @@ public class CreateCharacterRequest {
     private int level;
 
     private Long campaignId;
+
+    private CharacterStatsDTO stats;
 }

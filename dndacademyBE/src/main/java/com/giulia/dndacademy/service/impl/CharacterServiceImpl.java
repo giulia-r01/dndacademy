@@ -1,11 +1,14 @@
 package com.giulia.dndacademy.service.impl;
 
 import com.giulia.dndacademy.dto.CharacterDTO;
+import com.giulia.dndacademy.dto.CharacterStatsDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
 import com.giulia.dndacademy.model.Campaign;
+import com.giulia.dndacademy.model.CharacterStats;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.repository.CharacterRepository;
+import com.giulia.dndacademy.repository.CharacterStatsRepository;
 import com.giulia.dndacademy.service.CharacterService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,7 @@ import com.giulia.dndacademy.model.Character;
 public class CharacterServiceImpl implements CharacterService {
 
     private final CharacterRepository characterRepository;
+    private final CharacterStatsRepository characterStatsRepository;
     private final CampaignRepository campaignRepository;
     private final UserService userService;
 
@@ -46,6 +50,20 @@ public class CharacterServiceImpl implements CharacterService {
                 .build();
 
         Character saved = characterRepository.save(character);
+
+        CharacterStatsDTO statsDTO = request.getStats();
+
+        CharacterStats stats = CharacterStats.builder()
+                .strength(statsDTO.getStrength())
+                .dexterity(statsDTO.getDexterity())
+                .constitution(statsDTO.getConstitution())
+                .intelligence(statsDTO.getIntelligence())
+                .wisdom(statsDTO.getWisdom())
+                .charisma(statsDTO.getCharisma())
+                .character(saved)
+                .build();
+
+        characterStatsRepository.save(stats);
 
         return CharacterDTO.builder()
                 .id(saved.getId())
