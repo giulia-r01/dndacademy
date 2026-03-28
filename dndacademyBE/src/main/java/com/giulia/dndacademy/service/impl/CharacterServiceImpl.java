@@ -51,6 +51,10 @@ public class CharacterServiceImpl implements CharacterService {
 
         Character saved = characterRepository.save(character);
 
+        if (request.getStats() == null) {
+            throw new RuntimeException("Stats obbligatorie");
+        }
+
         CharacterStatsDTO statsDTO = request.getStats();
 
         CharacterStats stats = CharacterStats.builder()
