@@ -20,6 +20,7 @@ public class CampaignServiceImpl implements CampaignService {
 
     private final CampaignRepository campaignRepository;
     private final UserService userService;
+    private final CharacterRepository characterRepository;
 
     @Override
     public CampaignDTO createCampaign(String name, String description, String username) {
@@ -89,8 +90,6 @@ public class CampaignServiceImpl implements CampaignService {
                 .map(User::getUsername)
                 .toList();
     }
-
-    private final CharacterRepository characterRepository;
 
     @Override
     public List<PartyMemberDTO> getParty(Long campaignId) {
