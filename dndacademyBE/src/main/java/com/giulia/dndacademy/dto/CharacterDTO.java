@@ -22,4 +22,10 @@ public class CharacterDTO {
     private String playerUsername;
 
     private Long campaignId;
+
+    private int maxHp;
+
+    private int currentHp;
+
+    private int armorClass;
 }

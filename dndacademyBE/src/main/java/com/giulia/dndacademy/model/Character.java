@@ -26,6 +26,12 @@ public class Character {
     @Column(nullable = false)
     private int level;
 
+    private int maxHp;
+
+    private int currentHp;
+
+    private int armorClass;
+
     @ManyToOne
     @JoinColumn(name = "player_id")
     private User player;

@@ -19,4 +19,8 @@ public class CreateCharacterRequest {
     private Long campaignId;
 
     private CharacterStatsDTO stats;
+
+    private int maxHp;
+
+    private int armorClass;
 }

@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.controllers;
 
+import com.giulia.dndacademy.dto.AttackRequest;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
 import com.giulia.dndacademy.service.CharacterService;
@@ -38,5 +39,26 @@ public class CharacterController {
         String username = authentication.getName();
 
         return characterService.getMyCharacters(username);
+    }
+
+    @PatchMapping("/{id}/damage")
+    public CharacterDTO damage(
+            @PathVariable Long id,
+            @RequestParam int amount
+    ) {
+        return characterService.damageCharacter(id, amount);
+    }
+
+    @PatchMapping("/{id}/heal")
+    public CharacterDTO heal(
+            @PathVariable Long id,
+            @RequestParam int amount
+    ) {
+        return characterService.healCharacter(id, amount);
+    }
+
+    @PostMapping("/attack")
+    public String attack(@RequestBody AttackRequest request) {
+        return characterService.attack(request);
     }
 }

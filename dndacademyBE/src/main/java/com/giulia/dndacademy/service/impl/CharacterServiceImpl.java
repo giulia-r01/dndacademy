@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.dto.AttackRequest;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CharacterStatsDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
@@ -45,6 +46,9 @@ public class CharacterServiceImpl implements CharacterService {
                 .race(request.getRace())
                 .characterClass(request.getCharacterClass())
                 .level(request.getLevel())
+                .maxHp(request.getMaxHp())
+                .currentHp(request.getMaxHp())
+                .armorClass(request.getArmorClass())
                 .player(player)
                 .campaign(campaign)
                 .build();
@@ -75,6 +79,9 @@ public class CharacterServiceImpl implements CharacterService {
                 .race(saved.getRace())
                 .characterClass(saved.getCharacterClass())
                 .level(saved.getLevel())
+                .maxHp(saved.getMaxHp())
+                .currentHp(saved.getCurrentHp())
+                .armorClass(saved.getArmorClass())
                 .playerUsername(player.getUsername())
                 .campaignId(campaign.getId())
                 .build();
@@ -112,5 +119,111 @@ public class CharacterServiceImpl implements CharacterService {
                         .campaignId(c.getCampaign().getId())
                         .build())
                 .toList();
+    }
+
+    @Override
+    public CharacterDTO damageCharacter(Long characterId, int damage) {
+
+        Character character = characterRepository.findById(characterId)
+                .orElseThrow(() -> new RuntimeException("Character not found"));
+
+        int newHp = character.getCurrentHp() - damage;
+
+        if (newHp < 0) newHp = 0;
+
+        character.setCurrentHp(newHp);
+
+        Character saved = characterRepository.save(character);
+
+        return mapToDTO(saved);
+    }
+
+    @Override
+    public CharacterDTO healCharacter(Long characterId, int heal) {
+
+        Character character = characterRepository.findById(characterId)
+                .orElseThrow(() -> new RuntimeException("Character not found"));
+
+        int newHp = character.getCurrentHp() + heal;
+
+        if (newHp > character.getMaxHp()) {
+            newHp = character.getMaxHp();
+        }
+
+        character.setCurrentHp(newHp);
+
+        Character saved = characterRepository.save(character);
+
+        return mapToDTO(saved);
+    }
+
+    private CharacterDTO mapToDTO(Character c) {
+        return CharacterDTO.builder()
+                .id(c.getId())
+                .name(c.getName())
+                .race(c.getRace())
+                .characterClass(c.getCharacterClass())
+                .level(c.getLevel())
+                .maxHp(c.getMaxHp())
+                .currentHp(c.getCurrentHp())
+                .armorClass(c.getArmorClass())
+                .playerUsername(c.getPlayer().getUsername())
+                .campaignId(c.getCampaign().getId())
+                .build();
+    }
+
+    @Override
+    public String attack(AttackRequest request) {
+
+        Character attacker = characterRepository.findById(request.getAttackerId())
+                .orElseThrow(() -> new RuntimeException("Attacker not found"));
+
+        Character target = characterRepository.findById(request.getTargetId())
+                .orElseThrow(() -> new RuntimeException("Target not found"));
+
+        CharacterStats stats = attacker.getStats();
+
+        int strengthMod = getModifier(stats.getStrength());
+
+        // 🎲 tiro d20
+        int roll = (int) (Math.random() * 20) + 1;
+
+        int totalAttack = roll + strengthMod;
+
+        // 💥 critico
+        boolean isCritical = roll == 20;
+
+        if (isCritical || totalAttack >= target.getArmorClass()) {
+
+            int damage = request.getDamage() + strengthMod;
+
+            if (isCritical) {
+                damage *= 2;
+            }
+
+            int newHp = target.getCurrentHp() - damage;
+            if (newHp < 0) newHp = 0;
+
+            target.setCurrentHp(newHp);
+            characterRepository.save(target);
+
+            return "Colpito! 🎯 " +
+                    (isCritical ? "CRITICO 💀 " : "") +
+                    "| Tiro: " + roll +
+                    " + mod(" + strengthMod + ")" +
+                    " = " + totalAttack +
+                    " vs AC " + target.getArmorClass() +
+                    " | Danno: " + damage +
+                    " | HP rimasti: " + newHp;
+        }
+
+        return "Mancato ❌ | Tiro: " + roll +
+                " + mod(" + strengthMod + ")" +
+                " = " + totalAttack +
+                " vs AC " + target.getArmorClass();
+    }
+
+    private int getModifier(int stat) {
+        return (stat - 10) / 2;
     }
 }
