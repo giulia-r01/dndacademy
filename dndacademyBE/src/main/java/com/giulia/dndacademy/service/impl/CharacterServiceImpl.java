@@ -4,18 +4,17 @@ import com.giulia.dndacademy.dto.AttackRequest;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CharacterStatsDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
-import com.giulia.dndacademy.model.Campaign;
-import com.giulia.dndacademy.model.CharacterStats;
-import com.giulia.dndacademy.model.User;
+import com.giulia.dndacademy.model.*;
+import com.giulia.dndacademy.model.Character;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.repository.CharacterRepository;
 import com.giulia.dndacademy.repository.CharacterStatsRepository;
+import com.giulia.dndacademy.repository.CombatRepository;
 import com.giulia.dndacademy.service.CharacterService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import com.giulia.dndacademy.model.Character;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +24,7 @@ public class CharacterServiceImpl implements CharacterService {
     private final CharacterStatsRepository characterStatsRepository;
     private final CampaignRepository campaignRepository;
     private final UserService userService;
+    private final CombatRepository combatRepository;
 
     @Override
     public CharacterDTO createCharacter(CreateCharacterRequest request, String username) {
@@ -181,6 +181,16 @@ public class CharacterServiceImpl implements CharacterService {
         Character target = characterRepository.findById(request.getTargetId())
                 .orElseThrow(() -> new RuntimeException("Target not found"));
 
+        Combat combat = combatRepository.findAll().stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No active combat"));
+
+        Long currentTurn = combat.getTurnOrder().get(combat.getCurrentTurnIndex());
+
+        if (!attacker.getId().equals(currentTurn)) {
+            throw new RuntimeException("Not your turn");
+        }
+
         CharacterStats stats = attacker.getStats();
 
         int strengthMod = getModifier(stats.getStrength());
@@ -221,6 +231,7 @@ public class CharacterServiceImpl implements CharacterService {
                 " + mod(" + strengthMod + ")" +
                 " = " + totalAttack +
                 " vs AC " + target.getArmorClass();
+
     }
 
     private int getModifier(int stat) {

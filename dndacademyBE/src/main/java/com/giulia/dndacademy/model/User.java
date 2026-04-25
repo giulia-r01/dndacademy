@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.giulia.dndacademy.model.enumerations.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -67,6 +68,7 @@ public class User implements UserDetails {
         return true;
     }
 
+    @JsonIgnore
     @OneToMany(mappedBy = "master")
     private List<Campaign> campaigns;
 }
