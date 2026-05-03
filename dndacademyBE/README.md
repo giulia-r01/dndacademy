@@ -8,7 +8,7 @@ L’obiettivo del progetto è simulare in modo semplice ma coerente le principal
 
 ## 🚀 Tecnologie utilizzate
 
-- Java 21
+- Java 17
 - Spring Boot
 - Spring Security (JWT)
 - Spring Data JPA
