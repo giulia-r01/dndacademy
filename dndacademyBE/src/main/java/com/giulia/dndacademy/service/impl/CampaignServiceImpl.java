@@ -61,7 +61,7 @@ public class CampaignServiceImpl implements CampaignService {
     public CampaignDTO joinCampaign(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campaign not found"));
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
 
         User player = userService.getByUsername(username);
 

@@ -14,4 +14,5 @@ public class AttackRequest {
     private Long attackerId;
     private Long targetId;
     private int damage;
+    private Long combatId;
 }

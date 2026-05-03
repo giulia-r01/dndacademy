@@ -125,7 +125,7 @@ public class CharacterServiceImpl implements CharacterService {
     public CharacterDTO damageCharacter(Long characterId, int damage) {
 
         Character character = characterRepository.findById(characterId)
-                .orElseThrow(() -> new RuntimeException("Character not found"));
+                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
 
         int newHp = character.getCurrentHp() - damage;
 
@@ -142,7 +142,7 @@ public class CharacterServiceImpl implements CharacterService {
     public CharacterDTO healCharacter(Long characterId, int heal) {
 
         Character character = characterRepository.findById(characterId)
-                .orElseThrow(() -> new RuntimeException("Character not found"));
+                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
 
         int newHp = character.getCurrentHp() + heal;
 
@@ -176,31 +176,57 @@ public class CharacterServiceImpl implements CharacterService {
     public String attack(AttackRequest request) {
 
         Character attacker = characterRepository.findById(request.getAttackerId())
-                .orElseThrow(() -> new RuntimeException("Attacker not found"));
+                .orElseThrow(() -> new RuntimeException("Attaccante non trovato"));
 
         Character target = characterRepository.findById(request.getTargetId())
-                .orElseThrow(() -> new RuntimeException("Target not found"));
+                .orElseThrow(() -> new RuntimeException("Bersaglio non trovato"));
 
-        Combat combat = combatRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No active combat"));
+        if (!attacker.isAlive()) {
+            throw new RuntimeException("Ops... Sei morto ☠️");
+        }
+
+        if (!target.isAlive()) {
+            throw new RuntimeException("Il bersaglio è già morto ☠️");
+        }
+
+        Combat combat = combatRepository.findById(request.getCombatId())
+                .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+
+        if (!attacker.getCampaign().getId().equals(combat.getCampaign().getId())) {
+            throw new RuntimeException("Non sei in questa campagna");
+        }
+
+        if (!target.getCampaign().getId().equals(combat.getCampaign().getId())) {
+            throw new RuntimeException("Bersaglio non valido per questo combat");
+        }
+
+        List<Long> alive = combat.getTurnOrder().stream()
+                .map(id -> characterRepository.findById(id).orElseThrow())
+                .filter(Character::isAlive)
+                .map(Character::getId)
+                .toList();
+
+        if (alive.size() <= 1) {
+            throw new RuntimeException("Il combattimento è finito!");
+        }
 
         Long currentTurn = combat.getTurnOrder().get(combat.getCurrentTurnIndex());
 
         if (!attacker.getId().equals(currentTurn)) {
-            throw new RuntimeException("Not your turn");
+            throw new RuntimeException("Non è il tuo turno. Tocca a: " + currentTurn);
         }
 
         CharacterStats stats = attacker.getStats();
 
+        if (stats == null) {
+            throw new RuntimeException("Character has no stats");
+        }
+
         int strengthMod = getModifier(stats.getStrength());
 
-        // 🎲 tiro d20
         int roll = (int) (Math.random() * 20) + 1;
-
         int totalAttack = roll + strengthMod;
 
-        // 💥 critico
         boolean isCritical = roll == 20;
 
         if (isCritical || totalAttack >= target.getArmorClass()) {
@@ -211,10 +237,14 @@ public class CharacterServiceImpl implements CharacterService {
                 damage *= 2;
             }
 
-            int newHp = target.getCurrentHp() - damage;
-            if (newHp < 0) newHp = 0;
+            int newHp = Math.max(target.getCurrentHp() - damage, 0);
 
             target.setCurrentHp(newHp);
+
+            if (newHp == 0) {
+                target.setAlive(false);
+            }
+
             characterRepository.save(target);
 
             return "Colpito! 🎯 " +
@@ -231,7 +261,6 @@ public class CharacterServiceImpl implements CharacterService {
                 " + mod(" + strengthMod + ")" +
                 " = " + totalAttack +
                 " vs AC " + target.getArmorClass();
-
     }
 
     private int getModifier(int stat) {

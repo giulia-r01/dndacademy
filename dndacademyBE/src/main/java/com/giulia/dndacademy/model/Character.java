@@ -32,6 +32,10 @@ public class Character {
 
     private int armorClass;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean alive = true;
+
     @ManyToOne
     @JoinColumn(name = "player_id")
     private User player;

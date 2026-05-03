@@ -1,12 +1,15 @@
 package com.giulia.dndacademy.service;
 
-import com.giulia.dndacademy.model.Combat;
+import com.giulia.dndacademy.dto.CombatDTO;
+import com.giulia.dndacademy.dto.CombatStatusDTO;
 
 public interface CombatService {
 
-    Combat startCombat(Long campaignId);
+    CombatDTO startCombat(Long campaignId);
 
     Long getCurrentTurn(Long combatId);
 
     void nextTurn(Long combatId);
+
+    CombatStatusDTO getCombatStatus(Long combatId);
 }

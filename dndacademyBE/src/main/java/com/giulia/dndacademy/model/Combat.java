@@ -21,7 +21,11 @@ public class Combat {
     private Campaign campaign;
 
     @ElementCollection
-    private List<Long> turnOrder; // lista di characterId
+    private List<Long> turnOrder;
+
+    @ElementCollection
+    private List<Integer> initiativeRolls;
 
     private int currentTurnIndex;
+
 }
