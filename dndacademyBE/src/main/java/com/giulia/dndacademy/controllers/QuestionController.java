@@ -3,6 +3,7 @@ package com.giulia.dndacademy.controllers;
 import com.giulia.dndacademy.dto.CreateQuestionRequest;
 import com.giulia.dndacademy.dto.QuestionDTO;
 import com.giulia.dndacademy.service.QuestionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +19,7 @@ public class QuestionController {
 
     @PreAuthorize("hasRole('MASTER')")
     @PostMapping
-    public QuestionDTO createQuestion(@RequestBody CreateQuestionRequest request) {
+    public QuestionDTO createQuestion(@RequestBody @Valid CreateQuestionRequest request) {
         return questionService.createQuestion(request);
     }
 

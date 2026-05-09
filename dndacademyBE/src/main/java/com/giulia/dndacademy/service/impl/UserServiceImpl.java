@@ -86,8 +86,7 @@ public class UserServiceImpl implements UserService {
                 .count();
 
         long passedQuizzes = userQuizResultRepository
-                .findByUserUsernameAndPassedTrue(username)
-                .size();
+                .countDistinctPassedQuizzesByUsername(username);
 
         LearningLevel newLevel = LearningLevel.BEGINNER;
 

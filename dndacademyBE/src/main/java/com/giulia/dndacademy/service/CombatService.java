@@ -5,11 +5,11 @@ import com.giulia.dndacademy.dto.CombatStatusDTO;
 
 public interface CombatService {
 
-    CombatDTO startCombat(Long campaignId);
+    CombatDTO startCombat(Long campaignId, String username);
 
-    Long getCurrentTurn(Long combatId);
+    Long getCurrentTurn(Long combatId, String username);
 
-    void nextTurn(Long combatId);
+    void nextTurn(Long combatId, String username);
 
-    CombatStatusDTO getCombatStatus(Long combatId);
+    CombatStatusDTO getCombatStatus(Long combatId, String username);
 }

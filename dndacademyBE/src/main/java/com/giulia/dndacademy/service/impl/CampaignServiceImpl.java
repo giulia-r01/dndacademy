@@ -80,10 +80,12 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
-    public List<String> getPlayers(Long campaignId) {
+    public List<String> getPlayers(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
+
+        checkCampaignAccess(campaign, username);
 
         return campaign.getPlayers()
                 .stream()
@@ -92,10 +94,12 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
-    public List<PartyMemberDTO> getParty(Long campaignId) {
+    public List<PartyMemberDTO> getParty(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
+
+        checkCampaignAccess(campaign, username);
 
         return characterRepository.findByCampaignId(campaignId)
                 .stream()
@@ -106,5 +110,19 @@ public class CampaignServiceImpl implements CampaignService {
                         .level(c.getLevel())
                         .build())
                 .toList();
+    }
+
+    private void checkCampaignAccess(Campaign campaign, String username) {
+        User user = userService.getByUsername(username);
+
+        boolean isMaster = campaign.getMaster().getId().equals(user.getId());
+
+        boolean isPlayer = campaign.getPlayers()
+                .stream()
+                .anyMatch(player -> player.getId().equals(user.getId()));
+
+        if (!isMaster && !isPlayer) {
+            throw new RuntimeException("Non fai parte di questa campagna");
+        }
     }
 }

@@ -6,10 +6,12 @@ import com.giulia.dndacademy.dto.CombatStatusDTO;
 import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.Combat;
 import com.giulia.dndacademy.model.Character;
+import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.repository.CharacterRepository;
 import com.giulia.dndacademy.repository.CombatRepository;
 import com.giulia.dndacademy.service.CombatService;
+import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,21 +24,28 @@ public class CombatServiceImpl implements CombatService {
     private final CampaignRepository campaignRepository;
     private final CharacterRepository characterRepository;
     private final CombatRepository combatRepository;
-    private int rollD20() {
-        return (int) (Math.random() * 20) + 1;
-    }
-
-    private int getModifier(int stat) {
-        return (stat - 10) / 2;
-    }
+    private final UserService userService;
 
     @Override
-    public CombatDTO startCombat(Long campaignId) {
+    public CombatDTO startCombat(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
 
+        checkCampaignAccess(campaign, username);
+
         List<Character> characters = characterRepository.findByCampaignId(campaignId);
+
+        if (characters.size() < 2) {
+            throw new RuntimeException("Servono almeno 2 personaggi per iniziare un combattimento");
+        }
+
+        boolean hasCharacterWithoutStats = characters.stream()
+                .anyMatch(character -> character.getStats() == null);
+
+        if (hasCharacterWithoutStats) {
+            throw new RuntimeException("Tutti i personaggi devono avere statistiche prima del combattimento");
+        }
 
         List<CharacterInitiative> initiatives = characters.stream()
                 .map(character -> new CharacterInitiative(
@@ -73,19 +82,23 @@ public class CombatServiceImpl implements CombatService {
     }
 
     @Override
-    public Long getCurrentTurn(Long combatId) {
+    public Long getCurrentTurn(Long combatId, String username) {
 
         Combat combat = combatRepository.findById(combatId)
                 .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+
+        checkCampaignAccess(combat.getCampaign(), username);
 
         return combat.getTurnOrder().get(combat.getCurrentTurnIndex());
     }
 
     @Override
-    public void nextTurn(Long combatId) {
+    public void nextTurn(Long combatId, String username) {
 
         Combat combat = combatRepository.findById(combatId)
                 .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+
+        checkCampaignAccess(combat.getCampaign(), username);
 
         List<Long> turnOrder = combat.getTurnOrder();
 
@@ -106,7 +119,7 @@ public class CombatServiceImpl implements CombatService {
             Long characterId = turnOrder.get(nextIndex);
 
             Character character = characterRepository.findById(characterId)
-                    .orElseThrow();
+                    .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
 
             if (character.isAlive()) {
                 break;
@@ -120,10 +133,12 @@ public class CombatServiceImpl implements CombatService {
     }
 
     @Override
-    public CombatStatusDTO getCombatStatus(Long combatId) {
+    public CombatStatusDTO getCombatStatus(Long combatId, String username) {
 
         Combat combat = combatRepository.findById(combatId)
                 .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+
+        checkCampaignAccess(combat.getCampaign(), username);
 
         Long currentTurnCharacterId = combat.getTurnOrder()
                 .get(combat.getCurrentTurnIndex());
@@ -168,6 +183,28 @@ public class CombatServiceImpl implements CombatService {
                 .winnerCharacterId(winnerCharacterId)
                 .fighters(fighters)
                 .build();
+    }
+
+    private int rollD20() {
+        return (int) (Math.random() * 20) + 1;
+    }
+
+    private int getModifier(int stat) {
+        return (stat - 10) / 2;
+    }
+
+    private void checkCampaignAccess(Campaign campaign, String username) {
+        User user = userService.getByUsername(username);
+
+        boolean isMaster = campaign.getMaster().getId().equals(user.getId());
+
+        boolean isPlayer = campaign.getPlayers()
+                .stream()
+                .anyMatch(player -> player.getId().equals(user.getId()));
+
+        if (!isMaster && !isPlayer) {
+            throw new RuntimeException("Non fai parte di questa campagna");
+        }
     }
 
     private record CharacterInitiative(Character character, int initiative) {}

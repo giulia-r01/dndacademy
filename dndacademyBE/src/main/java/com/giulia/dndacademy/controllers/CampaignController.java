@@ -51,13 +51,21 @@ public class CampaignController {
     }
 
     @GetMapping("/{id}/players")
-    public List<String> getPlayers(@PathVariable Long id) {
-        return campaignService.getPlayers(id);
+    public List<String> getPlayers(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return campaignService.getPlayers(id, username);
     }
 
 
     @GetMapping("/{campaignId}/party")
-    public List<PartyMemberDTO> getParty(@PathVariable Long campaignId) {
-        return campaignService.getParty(campaignId);
+    public List<PartyMemberDTO> getParty(
+            @PathVariable Long campaignId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return campaignService.getParty(campaignId, username);
     }
 }

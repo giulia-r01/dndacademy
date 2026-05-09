@@ -10,7 +10,7 @@ public interface CharacterService {
 
     CharacterDTO createCharacter(CreateCharacterRequest request, String username);
 
-    List<CharacterDTO> getCharactersByCampaign(Long campaignId);
+    List<CharacterDTO> getCharactersByCampaign(Long campaignId, String username);
 
     List<CharacterDTO> getMyCharacters(String username);
 
@@ -18,6 +18,6 @@ public interface CharacterService {
 
     CharacterDTO healCharacter(Long characterId, int heal);
 
-    String attack(AttackRequest request);
+    String attack(AttackRequest request, String username);
 
 }

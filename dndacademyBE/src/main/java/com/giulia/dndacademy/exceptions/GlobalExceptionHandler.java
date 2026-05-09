@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.exceptions;
 
+import com.giulia.dndacademy.dto.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -8,7 +9,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(RuntimeException.class)
-  public ResponseEntity<String> handleRuntime(RuntimeException ex) {
-    return ResponseEntity.badRequest().body(ex.getMessage());
+  public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
+    return ResponseEntity.badRequest()
+            .body(ErrorResponse.builder()
+                    .message(ex.getMessage())
+                    .build());
   }
 }

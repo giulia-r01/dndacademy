@@ -88,7 +88,22 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
-    public List<CharacterDTO> getCharactersByCampaign(Long campaignId) {
+    public List<CharacterDTO> getCharactersByCampaign(Long campaignId, String username) {
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        User user = userService.getByUsername(username);
+
+        boolean isMaster = campaign.getMaster().getId().equals(user.getId());
+
+        boolean isPlayer = campaign.getPlayers()
+                .stream()
+                .anyMatch(player -> player.getId().equals(user.getId()));
+
+        if (!isMaster && !isPlayer) {
+            throw new RuntimeException("Non fai parte di questa campagna");
+        }
 
         return characterRepository.findByCampaignId(campaignId)
                 .stream()
@@ -98,6 +113,9 @@ public class CharacterServiceImpl implements CharacterService {
                         .race(c.getRace())
                         .characterClass(c.getCharacterClass())
                         .level(c.getLevel())
+                        .maxHp(c.getMaxHp())
+                        .currentHp(c.getCurrentHp())
+                        .armorClass(c.getArmorClass())
                         .playerUsername(c.getPlayer().getUsername())
                         .campaignId(c.getCampaign().getId())
                         .build())
@@ -173,13 +191,22 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
-    public String attack(AttackRequest request) {
+    public String attack(AttackRequest request, String username) {
 
         Character attacker = characterRepository.findById(request.getAttackerId())
                 .orElseThrow(() -> new RuntimeException("Attaccante non trovato"));
 
         Character target = characterRepository.findById(request.getTargetId())
                 .orElseThrow(() -> new RuntimeException("Bersaglio non trovato"));
+
+        User currentUser = userService.getByUsername(username);
+
+        boolean isOwner = attacker.getPlayer().getId().equals(currentUser.getId());
+        boolean isMaster = attacker.getCampaign().getMaster().getId().equals(currentUser.getId());
+
+        if (!isOwner && !isMaster) {
+            throw new RuntimeException("Non puoi usare un personaggio che non ti appartiene");
+        }
 
         if (!attacker.isAlive()) {
             throw new RuntimeException("Ops... Sei morto ☠️");

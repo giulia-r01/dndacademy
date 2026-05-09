@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.UserDTO;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -16,13 +17,14 @@ public class UserController {
 
     private final UserService userService;
 
-
+    @PreAuthorize("hasRole('MASTER')")
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {
         UserDTO dto = userService.getUserById(id);
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 
+    @PreAuthorize("hasRole('MASTER')")
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());

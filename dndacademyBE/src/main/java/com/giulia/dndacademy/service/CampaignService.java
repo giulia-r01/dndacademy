@@ -13,7 +13,7 @@ public interface CampaignService {
 
     CampaignDTO joinCampaign(Long campaignId, String username);
 
-    List<String> getPlayers(Long campaignId);
+    List<String> getPlayers(Long campaignId, String username);
 
-    List<PartyMemberDTO> getParty(Long campaignId);
+    List<PartyMemberDTO> getParty(Long campaignId, String username);
 }

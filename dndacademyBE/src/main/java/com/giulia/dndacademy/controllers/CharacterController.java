@@ -4,6 +4,7 @@ import com.giulia.dndacademy.dto.AttackRequest;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
 import com.giulia.dndacademy.service.CharacterService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +21,7 @@ public class CharacterController {
 
     @PostMapping
     public CharacterDTO createCharacter(
-            @RequestBody CreateCharacterRequest request,
+            @RequestBody @Valid CreateCharacterRequest request,
             Authentication authentication
     ) {
 
@@ -30,8 +31,12 @@ public class CharacterController {
     }
 
     @GetMapping("/campaign/{campaignId}")
-    public List<CharacterDTO> getCharactersByCampaign(@PathVariable Long campaignId) {
-        return characterService.getCharactersByCampaign(campaignId);
+    public List<CharacterDTO> getCharactersByCampaign(
+            @PathVariable Long campaignId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.getCharactersByCampaign(campaignId, authentication.getName());
     }
 
     @GetMapping("/me")
@@ -61,7 +66,8 @@ public class CharacterController {
     }
 
     @PostMapping("/attack")
-    public String attack(@RequestBody AttackRequest request) {
-        return characterService.attack(request);
+    public String attack(@RequestBody @Valid AttackRequest request, Authentication authentication) {
+        String username = authentication.getName();
+        return characterService.attack(request, username);
     }
 }

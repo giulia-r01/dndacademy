@@ -33,17 +33,27 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            String username = jwtTool.extractUsername(token);
 
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                User user = userService.getByUsername(username);
+            try {
+                String username = jwtTool.extractUsername(token);
 
-                if (jwtTool.validateToken(token, username)) {
-                    Authentication auth =
-                            new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    User user = userService.getByUsername(username);
+
+                    Authentication auth = new UsernamePasswordAuthenticationToken(
+                            user,
+                            null,
+                            user.getAuthorities()
+                    );
 
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
+
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("text/plain");
+                response.getWriter().write("Token non valido o scaduto");
+                return;
             }
         }
 

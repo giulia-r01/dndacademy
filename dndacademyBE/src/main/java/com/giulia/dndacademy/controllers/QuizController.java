@@ -29,7 +29,7 @@ public class QuizController {
 
     @PostMapping("/submit")
     public QuizResultDTO submitQuiz(
-            @RequestBody SubmitQuizRequest request,
+            @RequestBody @Valid SubmitQuizRequest request,
             Authentication authentication
     ) {
         String username = authentication.getName();

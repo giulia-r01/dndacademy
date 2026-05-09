@@ -137,8 +137,7 @@ public class QuizServiceImpl implements QuizService {
                     .count();
 
             long passedQuizzes = userQuizResultRepository
-                    .findByUserUsernameAndPassedTrue(username)
-                    .size();
+                    .countDistinctPassedQuizzesByUsername(username);
 
             if (completedLessons >= 2 && passedQuizzes >= 2) {
                 badgeService.assignBadge(username, "Studente di D&D");

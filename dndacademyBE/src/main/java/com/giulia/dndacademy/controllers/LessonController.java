@@ -41,13 +41,4 @@ public class LessonController {
         return lessonService.getMyLessonProgress(username);
     }
 
-    @PreAuthorize("hasRole('MASTER')")
-    @PostMapping("/{lessonId}/complete")
-    public UserLessonProgressDTO completeLesson(
-            @PathVariable Long lessonId,
-            Authentication authentication
-    ) {
-        String username = authentication.getName();
-        return lessonService.completeLesson(lessonId, username);
-    }
 }
