@@ -89,6 +89,15 @@ public class CombatServiceImpl implements CombatService {
 
         List<Long> turnOrder = combat.getTurnOrder();
 
+        long aliveCount = turnOrder.stream()
+                .map(id -> characterRepository.findById(id).orElseThrow())
+                .filter(Character::isAlive)
+                .count();
+
+        if (aliveCount <= 1) {
+            throw new RuntimeException("Il combattimento è finito");
+        }
+
         int nextIndex = combat.getCurrentTurnIndex();
 
         do {

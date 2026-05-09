@@ -2,6 +2,7 @@ package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.AuthRequest;
 import com.giulia.dndacademy.dto.AuthResponse;
+import com.giulia.dndacademy.dto.RegisterRequest;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.service.UserService;
 import com.giulia.dndacademy.security.JwtTool;
@@ -27,10 +28,14 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody @Valid User user) {
+    public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequest request) {
 
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(Role.PLAYER);
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.PLAYER)
+                .build();
 
         userService.register(user);
 
