@@ -50,4 +50,17 @@ public class UserServiceImpl implements UserService {
                         .build()
         ).collect(Collectors.toList());
     }
+
+    @Override
+    public UserDTO getByUsernameDTO(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+
+        return UserDTO.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .build();
+    }
 }

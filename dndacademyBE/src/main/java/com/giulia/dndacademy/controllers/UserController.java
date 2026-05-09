@@ -1,7 +1,7 @@
 package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.UserDTO;
-import com.giulia.dndacademy.model.User;
+import org.springframework.security.core.Authentication;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,5 +26,14 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserDTO> getMe(Authentication authentication) {
+        String username = authentication.getName();
+
+        UserDTO dto = userService.getByUsernameDTO(username);
+
+        return ResponseEntity.ok(dto);
     }
 }
