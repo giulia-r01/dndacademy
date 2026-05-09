@@ -10,4 +10,6 @@ public interface UserQuizResultRepository extends JpaRepository<UserQuizResult, 
     List<UserQuizResult> findByUserUsername(String username);
 
     List<UserQuizResult> findByUserUsernameAndPassedTrue(String username);
+
+    boolean existsByUserUsernameAndQuizIdAndPassedTrue(String username, Long quizId);
 }

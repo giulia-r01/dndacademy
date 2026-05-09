@@ -55,10 +55,6 @@ public class CampaignController {
         return campaignService.getPlayers(id);
     }
 
-    @GetMapping("/roles")
-    public Object roles(Authentication auth) {
-        return auth.getAuthorities();
-    }
 
     @GetMapping("/{campaignId}/party")
     public List<PartyMemberDTO> getParty(@PathVariable Long campaignId) {

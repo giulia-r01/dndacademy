@@ -76,6 +76,16 @@ public class QuizServiceImpl implements QuizService {
 
         int totalQuestions = questionRepository.findByQuizId(quiz.getId()).size();
 
+        long distinctQuestionsAnswered = request.getAnswers()
+                .stream()
+                .map(SubmitAnswerRequest::getQuestionId)
+                .distinct()
+                .count();
+
+        if (distinctQuestionsAnswered != totalQuestions) {
+            throw new RuntimeException("Devi rispondere a tutte le domande del quiz");
+        }
+
         int correctAnswers = 0;
 
         for (SubmitAnswerRequest submitted : request.getAnswers()) {
@@ -98,6 +108,9 @@ public class QuizServiceImpl implements QuizService {
         int score = totalQuestions == 0 ? 0 : (correctAnswers * 100) / totalQuestions;
         boolean passed = score >= quiz.getPassingScore();
 
+        boolean alreadyPassed = userQuizResultRepository
+                .existsByUserUsernameAndQuizIdAndPassedTrue(username, quiz.getId());
+
         User user = userService.getByUsername(username);
 
         UserQuizResult result = UserQuizResult.builder()
@@ -112,7 +125,7 @@ public class QuizServiceImpl implements QuizService {
 
         userQuizResultRepository.save(result);
 
-        if (passed) {
+        if (passed && !alreadyPassed) {
             lessonService.completeLessonAfterQuiz(quiz.getLesson().getId(), username);
             badgeService.assignBadge(username, "Primo Quiz");
             userService.updateLearningLevel(username);

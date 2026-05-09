@@ -5,6 +5,7 @@ import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
 import com.giulia.dndacademy.service.CharacterService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
@@ -41,6 +42,7 @@ public class CharacterController {
         return characterService.getMyCharacters(username);
     }
 
+    @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{id}/damage")
     public CharacterDTO damage(
             @PathVariable Long id,
@@ -49,6 +51,7 @@ public class CharacterController {
         return characterService.damageCharacter(id, amount);
     }
 
+    @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{id}/heal")
     public CharacterDTO heal(
             @PathVariable Long id,

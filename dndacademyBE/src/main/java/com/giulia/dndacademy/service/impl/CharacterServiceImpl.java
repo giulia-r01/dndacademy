@@ -53,11 +53,11 @@ public class CharacterServiceImpl implements CharacterService {
                 .campaign(campaign)
                 .build();
 
-        Character saved = characterRepository.save(character);
-
         if (request.getStats() == null) {
             throw new RuntimeException("Stats obbligatorie");
         }
+
+        Character saved = characterRepository.save(character);
 
         CharacterStatsDTO statsDTO = request.getStats();
 

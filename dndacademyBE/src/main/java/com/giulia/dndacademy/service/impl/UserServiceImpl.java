@@ -7,7 +7,6 @@ import com.giulia.dndacademy.repository.UserRepository;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.giulia.dndacademy.model.enumerations.LearningLevel;
 import com.giulia.dndacademy.repository.UserLessonProgressRepository;
 import com.giulia.dndacademy.repository.UserQuizResultRepository;
 
@@ -20,7 +19,6 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private LearningLevel learningLevel;
     private final UserLessonProgressRepository userLessonProgressRepository;
     private final UserQuizResultRepository userQuizResultRepository;
 
@@ -43,6 +41,7 @@ public class UserServiceImpl implements UserService {
                         .username(u.getUsername())
                         .email(u.getEmail())
                         .role(u.getRole())
+                        .learningLevel(u.getLearningLevel())
                         .build())
                 .orElse(null);
     }
