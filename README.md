@@ -1,268 +1,289 @@
 # 🐉 DnD Academy – Web App per Imparare Dungeons & Dragons
 
-**DnD Academy** è una web app didattica progettata per insegnare _Dungeons & Dragons_ in modo semplice, guidato e accessibile.  
-Non è un simulatore, non è un VTT, non è un gioco completo.  
-È un **companion interattivo** che accompagna l’utente passo dopo passo nel capire le regole, creare un personaggio e fare pratica in sicurezza.
+**DnD Academy** è una piattaforma didattica progettata per insegnare *Dungeons & Dragons* in modo semplice, guidato e accessibile.
 
-> 🎯 Obiettivo: trasformare “non capisco nulla di D&D” in “ok, posso sedermi a un tavolo”.
+Non è un simulatore completo e non vuole sostituire un VTT.
+L’obiettivo è accompagnare chi non ha mai giocato a D&D nel comprendere:
+
+* regole base
+* combattimento
+* creazione personaggi
+* statistiche
+* tiri di dado
+* logiche di gioco
+
+in modo graduale, pratico e interattivo.
+
+> 🎯 Obiettivo del progetto: trasformare “non capisco nulla di D&D” in “ok, posso iniziare una campagna”.
 
 ---
 
-# 🧠 Visione del Progetto
+# 🧠 Filosofia del Progetto
 
-D&D è un gioco meraviglioso, ma spesso intimidisce chi inizia: manuali enormi, regole complesse, mille eccezioni.  
-DnD Academy nasce per **abbassare la barriera d’ingresso**.
+Dungeons & Dragons è spesso percepito come complesso per chi inizia:
 
-La filosofia è chiara:
+* manuali lunghi
+* tante eccezioni
+* terminologia tecnica
+* meccaniche difficili da visualizzare
 
-### ✔️ Accompagnare l’utente
+DnD Academy nasce per abbassare la barriera d’ingresso attraverso:
 
-- spiegazioni semplici
-- esempi pratici
-- personaggi base
-- tiri di dado guidati
-- campagne tutorial
+* lezioni guidate
+* quiz interattivi
+* campagne tutorial
+* progressione didattica
+* combattimenti semplificati
+* feedback immediati
 
-È una **learning app**, non un gioco completo.
+Fallire non significa perdere.
+
+> Fallire significa imparare.
 
 ---
 
 # 👥 Ruoli
 
-### 🧑‍🎓 USER (Player)
+## 🧑‍🎓 PLAYER
 
-- segue lezioni
-- completa quiz
-- usa personaggi base
-- tira dadi
-- vede il proprio progresso
-- sbaglia senza conseguenze
+Può:
 
-### 🧙‍♂️ ADMIN (Master)
-
-- crea lezioni
-- crea quiz
-- prepara campagne tutorial
-- definisce difficoltà e obiettivi
-- gestisce contenuti didattici
-
-L’admin non “gioca”: **insegna**.
+* seguire lezioni
+* completare quiz
+* monitorare i propri progressi
+* ottenere badge
+* aumentare il proprio livello didattico
+* partecipare a campagne tutorial
+* usare personaggi guidati
+* simulare combattimenti base
 
 ---
 
-# 🧩 Feature MVP (prima versione)
+## 🧙‍♂️ MASTER
 
-## 📘 Modulo “Impara”
+Può:
 
-- lezioni brevi e chiare
-- esempi pratici
-- quiz vero/falso e scelta multipla
-- salvataggio del progresso
+* creare campagne
+* creare lezioni
+* creare quiz
+* creare domande e risposte
+* gestire contenuti didattici
+* supervisionare l’esperienza di apprendimento
 
-## 🗺️ Campagne Tutorial
+Il MASTER non è un semplice admin tecnico.
 
-Struttura guidata:
-Campagna → Scenario → Step → Azione → Spiegazione
-
-Ogni campagna insegna UNA meccanica:
-
-- prove di abilità
-- combattimento base
-- incantesimi
-- CA, tiri per colpire, danni
-
-Fallire ≠ game over  
-Fallire = spiegazione.
-
-## 🎲 Dadi Animati
-
-- d4, d6, d8, d10, d12, d20
-- animazione visuale
-- logica separata dalla UI
-
-## 🧑‍🎓 Personaggi Base
-
-- classe
-- statistiche
-- bonus calcolati
-- equipaggiamento minimo
-
-Solo ciò che serve per imparare.
+> È il “Dungeon Master didattico” della piattaforma.
 
 ---
 
-# 🗺️ Roadmap
+# ✅ Stato Attuale del Backend
 
-### Stack
+Il backend Spring Boot è attualmente completo per la prima integrazione frontend locale.
 
-**Frontend**
+## ✔️ Implementato
 
-- Next.js (App Router)
-- React + TypeScript
-- Redux Toolkit o Zustand
-- Bootstrap o Tailwind
+### 🔐 Autenticazione & Sicurezza
 
-**Backend**
-
-- Spring Boot
-- Spring Security + JWT
-- PostgreSQL
-- REST API
-
-**Ruoli**
-
-- USER
-- ADMIN
+* JWT Authentication
+* Login/Register
+* Spring Security
+* Password hashate con BCrypt
+* RBAC (PLAYER / MASTER)
+* Ownership checks
+* Protezione accessi campagne/combat
 
 ---
 
-## **Fase 1 – Fondamenta**
+### 📘 Sistema Didattico
 
-Backend:
+* Lezioni
+* Quiz
+* Domande
+* Risposte multiple
+* Salvataggio progresso utente
+* Quiz completati
+* Sblocco lezioni
+* Badge automatici
+* Learning Levels:
 
-- User
-- Role
-- Auth (login/register)
-- Lezione
-- Capitolo
-- Progresso utente
-
-Frontend:
-
-- routing base
-- login/register
-- layout
-- dashboard
+  * BEGINNER
+  * INTERMEDIATE
+  * ADVANCED
 
 ---
 
-## **Fase 2 – Imparare D&D**
+### ⚔️ Sistema Combat
 
-Backend:
-
-- lezioni
-- quiz
-- risposte
-- progresso
-
-Frontend:
-
-- UI pulita
-- quiz interattivi
-- percentuali di completamento
+* Combattimento a turni
+* Iniziativa con modificatore DEX
+* Gestione HP
+* Attacco e danni
+* Critici
+* Turn order
+* Combat over
+* Winner detection
+* Protezione anti-spoofing
+* Validazione ownership personaggi
 
 ---
 
-## **Fase 3 – Crea il Personaggio**
+### 🧑‍🎓 Personaggi
 
-Wizard guidato:
-
-- razza
-- classe
-- caratteristiche
-- background
-- equipaggiamento
-
-Backend:
-
-- modello Personaggio
-- statistiche
-- calcoli
-
-Frontend:
-
-- wizard step-by-step
-- anteprima scheda
+* Creazione personaggi
+* Razza
+* Classe
+* Statistiche
+* Armor Class
+* HP
+* Associazione a campagne
+* Associazione al player
 
 ---
 
-## **Fase 4 – Fai Pratica**
+### 🏕️ Campagne
 
-Modulo “Prova”:
-
-- tiri guidati
-- spiegazioni
-- simulazioni didattiche
-
----
-
-## **Fase 5 – Backoffice**
-
-Admin:
-
-- CRUD lezioni
-- CRUD quiz
-- gestione contenuti
+* Creazione campagne
+* Join campaign
+* Party system
+* Gestione player/master
+* Protezione accessi cross-campaign
 
 ---
 
-# 🗄️ Database – Struttura Principale
+# 🧩 Feature MVP
 
-users
-roles
-lessons
-quizzes
-quiz_answers
-user_progress
-campaigns
-scenarios
-scenario_steps
-characters_base
-dice_rolls
+## 📘 Impara D&D
 
-DB relazionale, niente NoSQL.
+* lezioni guidate
+* quiz interattivi
+* progressione
+* livelli apprendimento
+* badge
+
+---
+
+## ⚔️ Combattimento Tutorial
+
+* simulazione turni
+* gestione dadi
+* CA / HP / danni
+* feedback immediato
+
+---
+
+## 🎲 Dadi
+
+Attualmente implementata la logica backend per:
+
+* d20 attack roll
+* modificatori statistiche
+* critici
+
+Frontend 3D dice previsto nelle prossime fasi.
+
+---
+
+# 🗺️ Roadmap Future
+
+## Frontend
+
+* Next.js App Router
+* UI responsive
+* Dashboard player
+* Dashboard master
+* Wizard creazione personaggio
+* Dice animations
+* Progress UI
+* Combat UI
+
+---
+
+## Backend Improvements
+
+* Flyway/Liquibase
+* Error handling semantico (401/403/404)
+* Ottimizzazione query JPA
+* Transaction management avanzato
+* Profili dev/prod
+* Deploy production-ready
 
 ---
 
 # 🧱 Stack Tecnologico
 
-## 🖥️ Backend – Spring Boot
+## 🖥️ Backend
 
-- Java 17+
-- Spring Boot
-- Spring Security + JWT
-- JPA / Hibernate
-- PostgreSQL
-- Maven
+* Java 17
+* Spring Boot
+* Spring Security
+* JWT
+* JPA / Hibernate
+* PostgreSQL
+* Maven
 
-📁 Cartella: `dndacademyBE/`
-
----
-
-## 🌐 Frontend – Next.js
-
-- Next.js 14+
-- React + TypeScript
-- Redux Toolkit o Zustand
-- TailwindCSS o Bootstrap
-- Animazioni CSS / libreria dadi 3D
-
-📁 Cartella: `dndacademyFE/`
+📁 `dndacademyBE/`
 
 ---
 
-# 🗂 Struttura del Repository
+## 🌐 Frontend
 
-dndacademy/
-│
-├── dndacademyBE/ # Backend Spring Boot
-│ ├── src/
-│ ├── pom.xml
-│ └── README.md
-│
-└── dndacademyFE/ # Frontend Next.js
-├── src/
-├── package.json
-└── README.md
+* Next.js
+* React
+* TypeScript
+* Zustand / Redux Toolkit
+* TailwindCSS o Bootstrap
 
-☁️ Deploy
-🚀 Backend → Railway
+📁 `dndacademyFE/`
 
-🌐 Frontend → Vercel
+---
 
-📌 Stato del Progetto
-Il progetto è in sviluppo attivo.
-L’obiettivo è creare la migliore app didattica per imparare D&D in modo semplice, guidato e divertente.
+# 🗄️ Database
 
-📄 Licenza
-Progetto sviluppato per portfolio e scopi educativi.
+Database relazionale PostgreSQL.
+
+Principali entità:
+
+* users
+* campaigns
+* characters
+* character_stats
+* combats
+* lessons
+* quizzes
+* questions
+* answers
+* user_lesson_progress
+* user_quiz_results
+* badges
+
+---
+
+# ☁️ Deploy
+
+## Backend
+
+🚀 Railway
+
+## Frontend
+
+🌐 Vercel
+
+---
+
+# 📌 Stato del Progetto
+
+Il backend è attualmente pronto per l’integrazione frontend locale.
+
+Il progetto è in sviluppo attivo e continuerà ad evolversi con:
+
+* frontend completo
+* UI didattica
+* campagne tutorial avanzate
+* sistema dadi visuale
+* miglioramenti architetturali production-grade
+
+---
+
+# 📄 Licenza
+
+Progetto sviluppato per portfolio personale e scopi educativi.
