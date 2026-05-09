@@ -11,4 +11,5 @@ public interface UserService {
     List<UserDTO> getAllUsers();
     User getByUsername(String username);
     UserDTO getByUsernameDTO(String username);
+    void updateLearningLevel(String username);
 }

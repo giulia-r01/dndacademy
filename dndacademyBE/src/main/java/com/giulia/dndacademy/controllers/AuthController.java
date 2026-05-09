@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.giulia.dndacademy.model.enumerations.Role;
+import com.giulia.dndacademy.model.enumerations.LearningLevel;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -35,6 +37,7 @@ public class AuthController {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.PLAYER)
+                .learningLevel(LearningLevel.BEGINNER)
                 .build();
 
         userService.register(user);
