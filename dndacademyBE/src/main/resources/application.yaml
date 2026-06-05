@@ -4,6 +4,18 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
+    mail:
+      host: ${MAIL_HOST}
+      port: ${MAIL_PORT}
+      username: ${MAIL_USERNAME}
+      password: ${MAIL_PASSWORD}
+      properties:
+        mail:
+          smtp:
+            auth: true
+            starttls:
+              enable: true
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -14,3 +26,6 @@ spring:
 
 server:
   port: 8080
+
+  app:
+    frontend-base-url: ${APP_FRONTEND_BASE_URL}
