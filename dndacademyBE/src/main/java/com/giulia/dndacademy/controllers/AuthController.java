@@ -14,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import com.giulia.dndacademy.model.enumerations.Role;
 import com.giulia.dndacademy.model.enumerations.LearningLevel;
+import com.giulia.dndacademy.dto.ForgotPasswordRequest;
+import com.giulia.dndacademy.dto.ResetPasswordRequest;
+import com.giulia.dndacademy.service.PasswordResetService;
 
 
 @RestController
@@ -28,6 +31,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequest request) {
@@ -57,5 +63,21 @@ public class AuthController {
         String token = jwtTool.generateToken(user.getUsername());
 
         return ResponseEntity.ok(new AuthResponse(token));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(
+            @RequestBody @Valid ForgotPasswordRequest request
+    ) {
+        passwordResetService.forgotPassword(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @RequestBody @Valid ResetPasswordRequest request
+    ) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.ok().build();
     }
 }
