@@ -1,8 +1,12 @@
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-      <section className="mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 text-center">
-        <p className="mb-3 text-sm font-semibold uppercase tracking-[0.3em] text-[var(--color-accent)]">
+    <main className="min-h-screen px-6 py-10 text-[var(--text-main)]">
+      <section className="mx-auto flex min-h-[80vh] max-w-5xl flex-col items-center justify-center text-center">
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] font-bold text-white shadow-[var(--shadow-glow)]">
+          D&D
+        </div>
+
+        <p className="mb-3 text-sm font-bold uppercase tracking-[0.35em] text-[var(--accent-soft)]">
           DnD Academy
         </p>
 
@@ -10,7 +14,7 @@ export default function HomePage() {
           Impara Dungeons & Dragons passo dopo passo.
         </h1>
 
-        <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--color-muted)]">
+        <p className="mt-6 max-w-2xl text-lg leading-8 text-[var(--text-soft)]">
           Lezioni guidate, quiz, personaggi e combattimenti tutorial per
           iniziare a giocare senza perderti tra manuali, eccezioni e panico da
           d20.

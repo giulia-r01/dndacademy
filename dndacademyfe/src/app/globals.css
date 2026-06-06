@@ -1,21 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg: #061b1b;
-  --color-bg-soft: #082522;
-  --color-surface: #102434;
-  --color-surface-soft: #143340;
-  --color-border: #0f766e;
+  --bg-app: #061b1b;
+  --bg-app-deep: #020f14;
+  --bg-sidebar: #0f172a;
+  --bg-topbar: #0f172a;
 
-  --color-text: #ecfdf5;
-  --color-muted: #a7f3d0;
+  --surface: #102434;
+  --surface-soft: #132f3a;
+  --surface-muted: #0b1d2a;
 
-  --color-primary: #10b981;
-  --color-primary-dark: #059669;
-  --color-accent: #f59e0b;
-  --color-danger: #ef4444;
+  --border-teal: #047857;
+  --border-teal-soft: rgba(16, 185, 129, 0.45);
+  --border-gold: #d99a00;
 
-  --radius-card: 1rem;
+  --text-main: #ecfdf5;
+  --text-soft: #a7f3d0;
+  --text-muted: #8fb8aa;
+
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --accent: #f59e0b;
+  --accent-soft: #fde68a;
+
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --magic: #a855f7;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-glow: 0 0 24px rgba(16, 185, 129, 0.35);
 }
 
 * {
@@ -28,8 +45,15 @@ html {
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(16, 185, 129, 0.14),
+      transparent 28rem
+    ),
+    linear-gradient(135deg, var(--bg-app-deep), var(--bg-app));
+  color: var(--text-main);
+  min-height: 100vh;
 }
 
 a {
@@ -49,6 +73,11 @@ button {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--accent);
   outline-offset: 3px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-app-deep);
 }
