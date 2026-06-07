@@ -75,6 +75,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         User user = resetToken.getUser();
 
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new RuntimeException("La nuova password deve essere diversa da quella precedente");
+        }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
 
         userRepository.save(user);

@@ -1,7 +1,9 @@
 package com.giulia.dndacademy.dto;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -10,13 +12,18 @@ import lombok.*;
 @AllArgsConstructor
 public class RegisterRequest {
 
-    @NotEmpty(message = "Username obbligatorio")
+    @NotBlank(message = "Username obbligatorio")
     private String username;
 
     @Email(message = "Email non valida")
-    @NotEmpty(message = "Email obbligatoria")
+    @NotBlank(message = "Email obbligatoria")
     private String email;
 
-    @NotEmpty(message = "Password obbligatoria")
+    @NotBlank(message = "Password obbligatoria")
+    @Size(min = 8, message = "La password deve avere almeno 8 caratteri")
+    @Pattern(
+            regexp = "^(?=.*[A-Z])(?=.*[0-9!@#$%^&*(),.?\":{}|<>]).*$",
+            message = "La password deve contenere almeno una lettera maiuscola e almeno un numero o carattere speciale"
+    )
     private String password;
 }

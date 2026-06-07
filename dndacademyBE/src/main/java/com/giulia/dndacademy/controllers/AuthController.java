@@ -42,6 +42,14 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequest request) {
 
+        if (userService.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username già in uso");
+        }
+
+        if (userService.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email già registrata");
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())

@@ -12,4 +12,6 @@ public interface UserService {
     User getByUsername(String username);
     UserDTO getByUsernameDTO(String username);
     void updateLearningLevel(String username);
+    boolean existsByUsername(String username);
+    boolean existsByEmail(String email);
 }
