@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 
@@ -7,6 +9,7 @@ type ProgressCourseCardProps = {
   completedLessons: number
   totalLessons: number
   progress: number
+  href?: string
 }
 
 const levelLabels = {
@@ -21,7 +24,10 @@ export default function ProgressCourseCard({
   completedLessons,
   totalLessons,
   progress,
+  href = "/lessons",
 }: ProgressCourseCardProps) {
+  const buttonLabel = progress >= 100 ? "Rivedi lezioni" : "Continua"
+
   return (
     <AppCard>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -41,7 +47,9 @@ export default function ProgressCourseCard({
           </div>
         </div>
 
-        <AppButton className="sm:w-auto">Continua</AppButton>
+        <Link href={href}>
+          <AppButton className="sm:w-auto">{buttonLabel}</AppButton>
+        </Link>
       </div>
 
       <div className="mt-6">

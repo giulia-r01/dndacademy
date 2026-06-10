@@ -112,15 +112,28 @@ export default function Sidebar({
 
         <div className="rounded-2xl border border-[var(--border-gold)]/50 bg-[rgba(245,158,11,0.12)] p-4">
           <p className="text-sm font-bold text-[var(--text-main)]">
-            Livello {learningLevel}
+            Livello attuale:
+          </p>
+
+          <p className="mt-1 text-lg font-black text-[var(--accent-soft)]">
+            {learningLevel}
           </p>
 
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
-            <div className="h-full w-[20%] rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]" />
+            <div
+              className={[
+                "h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]",
+                learningLevel === "BEGINNER" && "w-1/3",
+                learningLevel === "INTERMEDIATE" && "w-2/3",
+                learningLevel === "ADVANCED" && "w-full",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            />
           </div>
 
-          <p className="mt-2 text-xs font-bold text-[var(--accent-soft)]">
-            200 / 1000 XP
+          <p className="mt-2 text-xs font-bold text-[var(--text-muted)]">
+            Avanza completando lezioni e quiz.
           </p>
         </div>
 
