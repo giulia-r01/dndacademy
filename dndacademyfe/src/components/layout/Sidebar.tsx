@@ -9,6 +9,7 @@ import {
   FiShield,
   FiUser,
   FiX,
+  FiUserPlus,
 } from "react-icons/fi"
 import type { UserProfile } from "@/types/user"
 import { usePathname } from "next/navigation"
@@ -35,6 +36,11 @@ const navigationItems = [
     label: "Campagne",
     href: "/campaigns",
     icon: FiShield,
+  },
+  {
+    label: "Personaggi",
+    href: "/characters",
+    icon: FiUserPlus,
   },
   {
     label: "Badge",

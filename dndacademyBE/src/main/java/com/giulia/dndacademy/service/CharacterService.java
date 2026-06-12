@@ -20,4 +20,8 @@ public interface CharacterService {
 
     String attack(AttackRequest request, String username);
 
+    CharacterDTO claimCharacter(Long characterId, String username);
+
+    List<CharacterDTO> getAvailableCharactersByCampaign(Long campaignId, String username);
+
 }

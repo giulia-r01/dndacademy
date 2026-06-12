@@ -34,7 +34,7 @@ public class CombatServiceImpl implements CombatService {
 
         checkCampaignAccess(campaign, username);
 
-        List<Character> characters = characterRepository.findByCampaignId(campaignId);
+        List<Character> characters = characterRepository.findByCampaignIdAndPlayerIsNotNull(campaignId);
 
         if (characters.size() < 2) {
             throw new RuntimeException("Servono almeno 2 personaggi per iniziare un combattimento");

@@ -101,7 +101,7 @@ public class CampaignServiceImpl implements CampaignService {
 
         checkCampaignAccess(campaign, username);
 
-        return characterRepository.findByCampaignId(campaignId)
+        return characterRepository.findByCampaignIdAndPlayerIsNotNull(campaignId)
                 .stream()
                 .map(c -> PartyMemberDTO.builder()
                         .playerUsername(c.getPlayer().getUsername())

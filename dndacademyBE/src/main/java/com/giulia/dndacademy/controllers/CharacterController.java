@@ -19,6 +19,7 @@ public class CharacterController {
 
     private final CharacterService characterService;
 
+    @PreAuthorize("hasRole('MASTER')")
     @PostMapping
     public CharacterDTO createCharacter(
             @RequestBody @Valid CreateCharacterRequest request,
@@ -37,6 +38,24 @@ public class CharacterController {
     ) {
         String username = authentication.getName();
         return characterService.getCharactersByCampaign(campaignId, authentication.getName());
+    }
+
+    @PatchMapping("/{id}/claim")
+    public CharacterDTO claimCharacter(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.claimCharacter(id, username);
+    }
+
+    @GetMapping("/campaign/{campaignId}/available")
+    public List<CharacterDTO> getAvailableCharactersByCampaign(
+            @PathVariable Long campaignId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.getAvailableCharactersByCampaign(campaignId, username);
     }
 
     @GetMapping("/me")

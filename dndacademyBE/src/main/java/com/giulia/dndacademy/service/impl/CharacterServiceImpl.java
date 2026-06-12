@@ -29,16 +29,19 @@ public class CharacterServiceImpl implements CharacterService {
     @Override
     public CharacterDTO createCharacter(CreateCharacterRequest request, String username) {
 
-        User player = userService.getByUsername(username);
+        User master = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(request.getCampaignId())
                 .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
 
-        boolean isPlayer = campaign.getPlayers().contains(player);
-        boolean isMaster = campaign.getMaster().equals(player);
+        boolean isMaster = campaign.getMaster().getId().equals(master.getId());
 
-        if (!isPlayer && !isMaster) {
-            throw new RuntimeException("Non fai parte di questa campagna");
+        if (!isMaster) {
+            throw new RuntimeException("Solo il master della campagna può creare personaggi");
+        }
+
+        if (request.getStats() == null) {
+            throw new RuntimeException("Stats obbligatorie");
         }
 
         Character character = Character.builder()
@@ -49,13 +52,10 @@ public class CharacterServiceImpl implements CharacterService {
                 .maxHp(request.getMaxHp())
                 .currentHp(request.getMaxHp())
                 .armorClass(request.getArmorClass())
-                .player(player)
+                .alive(true)
+                .player(null)
                 .campaign(campaign)
                 .build();
-
-        if (request.getStats() == null) {
-            throw new RuntimeException("Stats obbligatorie");
-        }
 
         Character saved = characterRepository.save(character);
 
@@ -73,18 +73,7 @@ public class CharacterServiceImpl implements CharacterService {
 
         characterStatsRepository.save(stats);
 
-        return CharacterDTO.builder()
-                .id(saved.getId())
-                .name(saved.getName())
-                .race(saved.getRace())
-                .characterClass(saved.getCharacterClass())
-                .level(saved.getLevel())
-                .maxHp(saved.getMaxHp())
-                .currentHp(saved.getCurrentHp())
-                .armorClass(saved.getArmorClass())
-                .playerUsername(player.getUsername())
-                .campaignId(campaign.getId())
-                .build();
+        return mapToDTO(saved);
     }
 
     @Override
@@ -93,32 +82,11 @@ public class CharacterServiceImpl implements CharacterService {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
 
-        User user = userService.getByUsername(username);
+        checkCampaignAccess(campaign, username);
 
-        boolean isMaster = campaign.getMaster().getId().equals(user.getId());
-
-        boolean isPlayer = campaign.getPlayers()
+        return characterRepository.findByCampaignIdAndPlayerIsNotNull(campaignId)
                 .stream()
-                .anyMatch(player -> player.getId().equals(user.getId()));
-
-        if (!isMaster && !isPlayer) {
-            throw new RuntimeException("Non fai parte di questa campagna");
-        }
-
-        return characterRepository.findByCampaignId(campaignId)
-                .stream()
-                .map(c -> CharacterDTO.builder()
-                        .id(c.getId())
-                        .name(c.getName())
-                        .race(c.getRace())
-                        .characterClass(c.getCharacterClass())
-                        .level(c.getLevel())
-                        .maxHp(c.getMaxHp())
-                        .currentHp(c.getCurrentHp())
-                        .armorClass(c.getArmorClass())
-                        .playerUsername(c.getPlayer().getUsername())
-                        .campaignId(c.getCampaign().getId())
-                        .build())
+                .map(this::mapToDTO)
                 .toList();
     }
 
@@ -127,15 +95,7 @@ public class CharacterServiceImpl implements CharacterService {
 
         return characterRepository.findByPlayerUsername(username)
                 .stream()
-                .map(c -> CharacterDTO.builder()
-                        .id(c.getId())
-                        .name(c.getName())
-                        .race(c.getRace())
-                        .characterClass(c.getCharacterClass())
-                        .level(c.getLevel())
-                        .playerUsername(c.getPlayer().getUsername())
-                        .campaignId(c.getCampaign().getId())
-                        .build())
+                .map(this::mapToDTO)
                 .toList();
     }
 
@@ -185,7 +145,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .maxHp(c.getMaxHp())
                 .currentHp(c.getCurrentHp())
                 .armorClass(c.getArmorClass())
-                .playerUsername(c.getPlayer().getUsername())
+                .playerUsername(c.getPlayer() != null ? c.getPlayer().getUsername() : null)
                 .campaignId(c.getCampaign().getId())
                 .build();
     }
@@ -292,5 +252,64 @@ public class CharacterServiceImpl implements CharacterService {
 
     private int getModifier(int stat) {
         return (stat - 10) / 2;
+    }
+
+    @Override
+    public CharacterDTO claimCharacter(Long characterId, String username) {
+
+        User player = userService.getByUsername(username);
+
+        Character character = characterRepository.findById(characterId)
+                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+
+        Campaign campaign = character.getCampaign();
+
+        boolean isPlayerInCampaign = campaign.getPlayers()
+                .stream()
+                .anyMatch(campaignPlayer -> campaignPlayer.getId().equals(player.getId()));
+
+        if (!isPlayerInCampaign) {
+            throw new RuntimeException("Devi unirti alla campagna prima di scegliere un personaggio");
+        }
+
+        if (character.getPlayer() != null) {
+            throw new RuntimeException("Questo personaggio è già stato scelto");
+        }
+
+        character.setPlayer(player);
+        character.setCurrentHp(character.getMaxHp());
+        character.setAlive(true);
+
+        Character saved = characterRepository.save(character);
+
+        return mapToDTO(saved);
+    }
+
+    @Override
+    public List<CharacterDTO> getAvailableCharactersByCampaign(Long campaignId, String username) {
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        checkCampaignAccess(campaign, username);
+
+        return characterRepository.findByCampaignIdAndPlayerIsNull(campaignId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    private void checkCampaignAccess(Campaign campaign, String username) {
+        User user = userService.getByUsername(username);
+
+        boolean isMaster = campaign.getMaster().getId().equals(user.getId());
+
+        boolean isPlayer = campaign.getPlayers()
+                .stream()
+                .anyMatch(player -> player.getId().equals(user.getId()));
+
+        if (!isMaster && !isPlayer) {
+            throw new RuntimeException("Non fai parte di questa campagna");
+        }
     }
 }
