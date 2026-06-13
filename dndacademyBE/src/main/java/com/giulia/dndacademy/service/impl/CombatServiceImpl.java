@@ -161,6 +161,11 @@ public class CombatServiceImpl implements CombatService {
                             .alive(character.isAlive())
                             .currentTurn(character.getId().equals(currentTurnCharacterId))
                             .initiative(combat.getInitiativeRolls().get(index))
+                            .spellcaster(character.isSpellcaster())
+                            .weaponName(character.getWeaponName())
+                            .damageDie(character.getDamageDie())
+                            .spellName(character.getSpellName())
+                            .spellDamageDie(character.getSpellDamageDie())
                             .build();
                 })
                 .toList();

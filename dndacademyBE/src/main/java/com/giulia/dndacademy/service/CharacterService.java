@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.service;
 
 import com.giulia.dndacademy.dto.AttackRequest;
+import com.giulia.dndacademy.dto.AttackResultDTO;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
 
@@ -10,6 +11,10 @@ public interface CharacterService {
 
     CharacterDTO createCharacter(CreateCharacterRequest request, String username);
 
+    CharacterDTO claimCharacter(Long characterId, String username);
+
+    List<CharacterDTO> getAvailableCharactersByCampaign(Long campaignId, String username);
+
     List<CharacterDTO> getCharactersByCampaign(Long campaignId, String username);
 
     List<CharacterDTO> getMyCharacters(String username);
@@ -18,10 +23,5 @@ public interface CharacterService {
 
     CharacterDTO healCharacter(Long characterId, int heal);
 
-    String attack(AttackRequest request, String username);
-
-    CharacterDTO claimCharacter(Long characterId, String username);
-
-    List<CharacterDTO> getAvailableCharactersByCampaign(Long campaignId, String username);
-
+    AttackResultDTO attack(AttackRequest request, String username);
 }

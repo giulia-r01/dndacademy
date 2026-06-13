@@ -8,7 +8,12 @@ import AppShell from "@/components/layout/AppShell"
 
 import { campaignService } from "@/services/campaign.service"
 import { combatService } from "@/services/combat.service"
-import type { CombatStatus } from "@/types/combat"
+import type {
+  AttackRequest,
+  AttackResult,
+  CombatActionType,
+  CombatStatus,
+} from "@/types/combat"
 import type { Campaign } from "@/types/campaign"
 
 export default function CombatPage() {
@@ -20,9 +25,11 @@ export default function CombatPage() {
   const [combatId, setCombatId] = useState<number | null>(null)
   const [combatStatus, setCombatStatus] = useState<CombatStatus | null>(null)
   const [selectedTargetId, setSelectedTargetId] = useState<number | null>(null)
+  const [selectedActionType, setSelectedActionType] =
+    useState<CombatActionType>("WEAPON")
   const [isChangingTurn, setIsChangingTurn] = useState(false)
   const [isAttacking, setIsAttacking] = useState(false)
-  const [attackMessage, setAttackMessage] = useState("")
+  const [attackResult, setAttackResult] = useState<AttackResult | null>(null)
 
   const [isLoading, setIsLoading] = useState(true)
   const [isStartingCombat, setIsStartingCombat] = useState(false)
@@ -63,8 +70,9 @@ export default function CombatPage() {
     }
 
     setError("")
-    setAttackMessage("")
+    setAttackResult(null)
     setSelectedTargetId(null)
+    setSelectedActionType("WEAPON")
     setIsStartingCombat(true)
 
     try {
@@ -90,8 +98,9 @@ export default function CombatPage() {
     }
 
     setError("")
-    setAttackMessage("")
+    setAttackResult(null)
     setSelectedTargetId(null)
+    setSelectedActionType("WEAPON")
     setIsChangingTurn(true)
 
     try {
@@ -111,6 +120,14 @@ export default function CombatPage() {
     (fighter) => fighter.characterId === combatStatus.currentTurnCharacterId,
   )
 
+  const winnerFighter = combatStatus?.fighters.find(
+    (fighter) => fighter.characterId === combatStatus.winnerCharacterId,
+  )
+
+  const availableActions: CombatActionType[] = currentFighter?.spellcaster
+    ? ["WEAPON", "SPELL"]
+    : ["WEAPON"]
+
   const availableTargets =
     combatStatus?.fighters.filter(
       (fighter) =>
@@ -124,18 +141,24 @@ export default function CombatPage() {
     }
 
     setError("")
-    setAttackMessage("")
+    setAttackResult(null)
     setIsAttacking(true)
 
     try {
-      const message = await combatService.attack({
+      const attackPayload: AttackRequest = {
         combatId,
         attackerId: combatStatus.currentTurnCharacterId,
         targetId: selectedTargetId,
-      })
+        actionType: selectedActionType,
+      }
 
-      setAttackMessage(message)
+      const result = await combatService.attack(attackPayload)
+
+      setAttackResult(result)
       setSelectedTargetId(null)
+      setSelectedActionType("WEAPON")
+
+      await refreshCombatStatus(combatId)
 
       await refreshCombatStatus(combatId)
     } catch (err) {
@@ -263,6 +286,47 @@ export default function CombatPage() {
                           Attacco di {currentFighter.name}
                         </h3>
 
+                        <div className="mt-5">
+                          <p className="block text-sm font-bold text-[var(--text-main)]">
+                            Tipo di azione
+                          </p>
+
+                          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                            {availableActions.map((actionType) => {
+                              const isSelected =
+                                selectedActionType === actionType
+
+                              const label =
+                                actionType === "WEAPON"
+                                  ? `Arma: ${currentFighter.weaponName} · d${currentFighter.damageDie}`
+                                  : `Incantesimo: ${currentFighter.spellName} · d${currentFighter.spellDamageDie}`
+
+                              return (
+                                <button
+                                  key={actionType}
+                                  type="button"
+                                  onClick={() =>
+                                    setSelectedActionType(actionType)
+                                  }
+                                  className={[
+                                    "rounded-xl border px-4 py-3 text-left text-sm font-bold transition",
+                                    isSelected
+                                      ? "border-[var(--accent)] bg-[rgba(245,158,11,0.12)] text-[var(--text-main)]"
+                                      : "border-[var(--border-teal-soft)] bg-[var(--surface-muted)] text-[var(--text-soft)] hover:border-[var(--accent)]",
+                                  ].join(" ")}
+                                >
+                                  {label}
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          <p className="mt-2 text-sm text-[var(--text-muted)]">
+                            Il backend tirerà il d20 per colpire e il dado
+                            dell’azione scelta per il danno.
+                          </p>
+                        </div>
+
                         <label
                           htmlFor="target"
                           className="mt-5 block text-sm font-bold text-[var(--text-main)]"
@@ -305,11 +369,75 @@ export default function CombatPage() {
                   </AppCard>
                 )}
 
-                {attackMessage && (
+                {attackResult && (
                   <AppCard>
-                    <p role="status" className="text-[var(--accent-soft)]">
-                      {attackMessage}
+                    <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--accent-soft)]">
+                      Risultato azione
                     </p>
+
+                    <h3 className="mt-2 text-2xl font-black text-[var(--text-main)]">
+                      {attackResult.critical
+                        ? "Colpo critico!"
+                        : attackResult.hit
+                          ? "Colpito!"
+                          : "Mancato!"}
+                    </h3>
+
+                    <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
+                        <p className="text-sm font-bold text-[var(--text-soft)]">
+                          Azione
+                        </p>
+                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
+                          {attackResult.actionName}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
+                        <p className="text-sm font-bold text-[var(--text-soft)]">
+                          d20
+                        </p>
+                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
+                          {attackResult.attackRoll}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
+                        <p className="text-sm font-bold text-[var(--text-soft)]">
+                          Tiro totale
+                        </p>
+                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
+                          {attackResult.attackRoll} +{" "}
+                          {attackResult.abilityModifier} ={" "}
+                          {attackResult.totalAttack}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
+                        <p className="text-sm font-bold text-[var(--text-soft)]">
+                          CA bersaglio
+                        </p>
+                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
+                          {attackResult.targetArmorClass}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
+                        <p className="text-sm font-bold text-[var(--text-soft)]">
+                          Danno
+                        </p>
+                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
+                          d{attackResult.damageDie}: {attackResult.damageRoll} →{" "}
+                          {attackResult.damage}
+                        </p>
+                      </div>
+                    </div>
+
+                    {attackResult.targetDefeated && (
+                      <p className="mt-4 font-bold text-[var(--danger)]">
+                        Il bersaglio è stato sconfitto.
+                      </p>
+                    )}
                   </AppCard>
                 )}
 
@@ -318,14 +446,13 @@ export default function CombatPage() {
                     <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--accent-soft)]">
                       Combattimento concluso
                     </p>
-
                     <h3 className="mt-2 text-2xl font-black text-[var(--text-main)]">
                       Vincitore
                     </h3>
-
-                    <p className="mt-2 text-[var(--text-soft)]">
-                      Personaggio ID: {combatStatus.winnerCharacterId}
-                    </p>
+                    Vince{" "}
+                    <span className="font-bold text-[var(--accent-soft)]">
+                      {winnerFighter?.name ?? "personaggio sconosciuto"}
+                    </span>
                   </AppCard>
                 )}
 

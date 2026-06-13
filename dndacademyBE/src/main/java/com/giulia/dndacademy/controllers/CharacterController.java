@@ -1,14 +1,15 @@
 package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.AttackRequest;
+import com.giulia.dndacademy.dto.AttackResultDTO;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
 import com.giulia.dndacademy.service.CharacterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -25,19 +26,8 @@ public class CharacterController {
             @RequestBody @Valid CreateCharacterRequest request,
             Authentication authentication
     ) {
-
         String username = authentication.getName();
-
         return characterService.createCharacter(request, username);
-    }
-
-    @GetMapping("/campaign/{campaignId}")
-    public List<CharacterDTO> getCharactersByCampaign(
-            @PathVariable Long campaignId,
-            Authentication authentication
-    ) {
-        String username = authentication.getName();
-        return characterService.getCharactersByCampaign(campaignId, authentication.getName());
     }
 
     @PatchMapping("/{id}/claim")
@@ -58,11 +48,18 @@ public class CharacterController {
         return characterService.getAvailableCharactersByCampaign(campaignId, username);
     }
 
+    @GetMapping("/campaign/{campaignId}")
+    public List<CharacterDTO> getCharactersByCampaign(
+            @PathVariable Long campaignId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.getCharactersByCampaign(campaignId, username);
+    }
+
     @GetMapping("/me")
     public List<CharacterDTO> getMyCharacters(Authentication authentication) {
-
         String username = authentication.getName();
-
         return characterService.getMyCharacters(username);
     }
 
@@ -85,7 +82,10 @@ public class CharacterController {
     }
 
     @PostMapping("/attack")
-    public String attack(@RequestBody @Valid AttackRequest request, Authentication authentication) {
+    public AttackResultDTO attack(
+            @RequestBody @Valid AttackRequest request,
+            Authentication authentication
+    ) {
         String username = authentication.getName();
         return characterService.attack(request, username);
     }

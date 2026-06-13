@@ -1,5 +1,10 @@
 import { apiFetch } from "@/services/api"
-import type { AttackRequest, Combat, CombatStatus } from "@/types/combat"
+import type {
+  AttackRequest,
+  AttackResult,
+  Combat,
+  CombatStatus,
+} from "@/types/combat"
 
 export const combatService = {
   start(campaignId: number) {
@@ -31,7 +36,7 @@ export const combatService = {
   },
 
   attack(payload: AttackRequest) {
-    return apiFetch<string>("/api/characters/attack", {
+    return apiFetch<AttackResult>("/api/characters/attack", {
       method: "POST",
       auth: true,
       body: JSON.stringify(payload),

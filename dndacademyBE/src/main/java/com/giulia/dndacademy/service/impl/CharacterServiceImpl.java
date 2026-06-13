@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
 import com.giulia.dndacademy.dto.AttackRequest;
+import com.giulia.dndacademy.dto.AttackResultDTO;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CharacterStatsDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
@@ -187,7 +188,7 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
-    public String attack(AttackRequest request, String username) {
+    public AttackResultDTO attack(AttackRequest request, String username) {
         Character attacker = characterRepository.findById(request.getAttackerId())
                 .orElseThrow(() -> new RuntimeException("Attaccante non trovato"));
 
@@ -226,21 +227,19 @@ public class CharacterServiceImpl implements CharacterService {
             throw new RuntimeException("Bersaglio non valido per questo combat");
         }
 
-        List<Long> alive = combat.getTurnOrder()
-                .stream()
-                .map(id -> characterRepository.findById(id).orElseThrow())
-                .filter(Character::isAlive)
-                .map(Character::getId)
-                .toList();
+        List<Long> aliveIds = getAliveCharacterIds(combat);
 
-        if (alive.size() <= 1) {
+        if (aliveIds.size() <= 1) {
             throw new RuntimeException("Il combattimento è finito!");
         }
 
         Long currentTurn = combat.getTurnOrder().get(combat.getCurrentTurnIndex());
 
         if (!attacker.getId().equals(currentTurn)) {
-            throw new RuntimeException("Non è il tuo turno. Tocca a: " + currentTurn);
+            Character currentTurnCharacter = characterRepository.findById(currentTurn)
+                    .orElseThrow(() -> new RuntimeException("Personaggio di turno non trovato"));
+
+            throw new RuntimeException("Non è il tuo turno. Tocca a: " + currentTurnCharacter.getName());
         }
 
         CharacterStats stats = attacker.getStats();
@@ -258,47 +257,84 @@ public class CharacterServiceImpl implements CharacterService {
         int totalAttack = attackRoll + abilityMod;
 
         boolean isCritical = attackRoll == 20;
+        boolean hit = isCritical || totalAttack >= target.getArmorClass();
 
-        if (isCritical || totalAttack >= target.getArmorClass()) {
-            int damageRoll = rollDie(actionData.damageDie());
+        int damage = 0;
+        int damageRoll = 0;
+        int newHp = target.getCurrentHp();
+        boolean targetDefeated = false;
+
+        if (hit) {
+            damageRoll = rollDie(actionData.damageDie());
 
             if (isCritical) {
                 damageRoll += rollDie(actionData.damageDie());
             }
 
-            int damage = Math.max(damageRoll + abilityMod, 1);
-            int newHp = Math.max(target.getCurrentHp() - damage, 0);
+            damage = Math.max(damageRoll + abilityMod, 1);
+            newHp = Math.max(target.getCurrentHp() - damage, 0);
 
             target.setCurrentHp(newHp);
 
             if (newHp == 0) {
                 target.setAlive(false);
+                targetDefeated = true;
             }
 
             characterRepository.save(target);
-
-            return "Colpito! 🎯 " +
-                    (isCritical ? "CRITICO 💀 " : "") +
-                    "| Azione: " + actionData.name() +
-                    " | Tiro per colpire: " + attackRoll +
-                    " + mod(" + abilityMod + ")" +
-                    " = " + totalAttack +
-                    " vs CA " + target.getArmorClass() +
-                    " | Dado danno: d" + actionData.damageDie() +
-                    " | Danno: " + damage +
-                    " | HP rimasti: " + newHp;
         }
 
-        return "Mancato ❌ | Azione: " + actionData.name() +
-                " | Tiro per colpire: " + attackRoll +
-                " + mod(" + abilityMod + ")" +
-                " = " + totalAttack +
-                " vs CA " + target.getArmorClass();
+        List<Long> aliveAfterAttack = getAliveCharacterIds(combat);
+
+        boolean combatOver = aliveAfterAttack.size() <= 1;
+        Long winnerCharacterId = combatOver && !aliveAfterAttack.isEmpty()
+                ? aliveAfterAttack.get(0)
+                : null;
+
+        Long nextTurnCharacterId = null;
+
+        if (!combatOver) {
+            moveToNextAliveTurn(combat);
+            Combat savedCombat = combatRepository.save(combat);
+            nextTurnCharacterId = savedCombat.getTurnOrder().get(savedCombat.getCurrentTurnIndex());
+        }
+
+        String message;
+
+        if (hit) {
+            message = isCritical ? "Colpo critico!" : "Colpito!";
+        } else {
+            message = "Mancato!";
+        }
+
+        return AttackResultDTO.builder()
+                .hit(hit)
+                .critical(isCritical)
+                .actionName(actionData.name())
+                .attackRoll(attackRoll)
+                .abilityModifier(abilityMod)
+                .totalAttack(totalAttack)
+                .targetArmorClass(target.getArmorClass())
+                .damage(damage)
+                .targetRemainingHp(newHp)
+                .targetDefeated(targetDefeated)
+                .combatOver(combatOver)
+                .winnerCharacterId(winnerCharacterId)
+                .nextTurnCharacterId(nextTurnCharacterId)
+                .message(message)
+                .damageDie(actionData.damageDie())
+                .damageRoll(damageRoll)
+                .actionType(request.getActionType())
+                .build();
     }
 
     private void validateCreateCharacterRequest(CreateCharacterRequest request) {
         if (request.getStats() == null) {
             throw new RuntimeException("Stats obbligatorie");
+        }
+
+        if (request.getWeaponName() == null || request.getWeaponName().isBlank()) {
+            throw new RuntimeException("Il nome dell'arma è obbligatorio");
         }
 
         if (!List.of(4, 6, 8, 10, 12).contains(request.getDamageDie())) {
@@ -307,10 +343,6 @@ public class CharacterServiceImpl implements CharacterService {
 
         if (request.getAttackAbility() == null) {
             throw new RuntimeException("La caratteristica di attacco è obbligatoria");
-        }
-
-        if (request.getWeaponName() == null || request.getWeaponName().isBlank()) {
-            throw new RuntimeException("Il nome dell'arma è obbligatorio");
         }
 
         if (request.isSpellcaster()) {
@@ -364,6 +396,37 @@ public class CharacterServiceImpl implements CharacterService {
                 attacker.getDamageDie(),
                 attacker.getAttackAbility()
         );
+    }
+
+    private List<Long> getAliveCharacterIds(Combat combat) {
+        return combat.getTurnOrder()
+                .stream()
+                .map(id -> characterRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Personaggio nel turno non trovato")))
+                .filter(Character::isAlive)
+                .map(Character::getId)
+                .toList();
+    }
+
+    private void moveToNextAliveTurn(Combat combat) {
+        List<Long> turnOrder = combat.getTurnOrder();
+
+        int originalIndex = combat.getCurrentTurnIndex();
+        int nextIndex = originalIndex;
+
+        do {
+            nextIndex = (nextIndex + 1) % turnOrder.size();
+
+            Character nextCharacter = characterRepository.findById(turnOrder.get(nextIndex))
+                    .orElseThrow(() -> new RuntimeException("Personaggio nel turno non trovato"));
+
+            if (nextCharacter.isAlive()) {
+                combat.setCurrentTurnIndex(nextIndex);
+                return;
+            }
+        } while (nextIndex != originalIndex);
+
+        throw new RuntimeException("Nessun personaggio vivo trovato");
     }
 
     private int rollDie(int sides) {

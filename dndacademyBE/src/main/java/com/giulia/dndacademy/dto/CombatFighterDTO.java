@@ -20,4 +20,10 @@ public class CombatFighterDTO {
     private boolean alive;
     private boolean currentTurn;
     private int initiative;
+
+    private boolean spellcaster;
+    private String weaponName;
+    private int damageDie;
+    private String spellName;
+    private int spellDamageDie;
 }

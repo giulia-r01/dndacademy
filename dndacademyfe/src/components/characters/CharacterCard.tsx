@@ -1,4 +1,4 @@
-import { FiHeart, FiShield, FiUser } from "react-icons/fi"
+import { FiHeart, FiShield, FiUser, FiZap } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
@@ -11,6 +11,14 @@ type CharacterCardProps = {
   mode?: CharacterCardMode
   isClaiming?: boolean
   onClaim?: (characterId: number) => void
+}
+
+const abilityLabels = {
+  STRENGTH: "Forza",
+  DEXTERITY: "Destrezza",
+  INTELLIGENCE: "Intelligenza",
+  WISDOM: "Saggezza",
+  CHARISMA: "Carisma",
 }
 
 export default function CharacterCard({
@@ -90,6 +98,45 @@ export default function CharacterCard({
                 {character.armorClass}
               </p>
             </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            <div className="rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent-soft)]">
+                Arma
+              </p>
+
+              <p className="mt-2 font-bold text-[var(--text-main)]">
+                {character.weaponName}
+              </p>
+
+              <p className="mt-1 text-sm text-[var(--text-muted)]">
+                Danno d{character.damageDie} ·{" "}
+                {abilityLabels[character.attackAbility]}
+              </p>
+            </div>
+
+            {character.spellcaster && (
+              <div className="rounded-xl border border-[var(--border-gold)]/40 bg-[rgba(245,158,11,0.12)] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <FiZap className="text-[var(--accent)]" aria-hidden="true" />
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent-soft)]">
+                    Incantesimo
+                  </p>
+                </div>
+
+                <p className="mt-2 font-bold text-[var(--text-main)]">
+                  {character.spellName}
+                </p>
+
+                <p className="mt-1 text-sm text-[var(--text-muted)]">
+                  Danno d{character.spellDamageDie} ·{" "}
+                  {character.spellAbility
+                    ? abilityLabels[character.spellAbility]
+                    : "Caratteristica non configurata"}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

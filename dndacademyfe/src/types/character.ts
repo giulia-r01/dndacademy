@@ -1,3 +1,10 @@
+export type AttackAbility =
+  | "STRENGTH"
+  | "DEXTERITY"
+  | "INTELLIGENCE"
+  | "WISDOM"
+  | "CHARISMA"
+
 export interface CharacterStats {
   strength: number
   dexterity: number
@@ -18,4 +25,13 @@ export interface Character {
   armorClass: number
   playerUsername: string | null
   campaignId: number
+
+  weaponName: string
+  damageDie: number
+  attackAbility: AttackAbility
+
+  spellcaster: boolean
+  spellName: string | null
+  spellDamageDie: number
+  spellAbility: AttackAbility | null
 }
