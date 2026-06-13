@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.model;
 
+import com.giulia.dndacademy.model.enumerations.AttackAbility;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,6 +32,24 @@ public class Character {
     private int currentHp;
 
     private int armorClass;
+
+    private String weaponName;
+
+    private int damageDie;
+
+    @Enumerated(EnumType.STRING)
+    private AttackAbility attackAbility;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean spellcaster = false;
+
+    private String spellName;
+
+    private int spellDamageDie;
+
+    @Enumerated(EnumType.STRING)
+    private AttackAbility spellAbility;
 
     @Builder.Default
     @Column(nullable = false)

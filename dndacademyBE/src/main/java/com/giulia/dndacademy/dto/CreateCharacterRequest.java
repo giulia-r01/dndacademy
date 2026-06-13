@@ -1,8 +1,9 @@
 package com.giulia.dndacademy.dto;
 
-import lombok.*;
+import com.giulia.dndacademy.model.enumerations.AttackAbility;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import lombok.*;
 
 @Getter
 @Setter
@@ -34,4 +35,22 @@ public class CreateCharacterRequest {
     @Valid
     @NotNull(message = "Le statistiche sono obbligatorie")
     private CharacterStatsDTO stats;
+
+    @NotBlank(message = "Il nome dell'arma è obbligatorio")
+    private String weaponName;
+
+    @Min(value = 4, message = "Il dado danno minimo è d4")
+    @Max(value = 12, message = "Il dado danno massimo è d12")
+    private int damageDie;
+
+    @NotNull(message = "La caratteristica di attacco è obbligatoria")
+    private AttackAbility attackAbility;
+
+    private boolean spellcaster;
+
+    private String spellName;
+
+    private int spellDamageDie;
+
+    private AttackAbility spellAbility;
 }
