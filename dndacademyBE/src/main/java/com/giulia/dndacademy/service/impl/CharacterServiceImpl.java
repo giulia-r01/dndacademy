@@ -209,7 +209,7 @@ public class CharacterServiceImpl implements CharacterService {
         }
 
         if (!attacker.isAlive()) {
-            throw new RuntimeException("Ops... Sei morto ☠️");
+            throw new RuntimeException("Ops... Sei morto, non puoi attaccare! ☠️");
         }
 
         if (!target.isAlive()) {
@@ -325,6 +325,10 @@ public class CharacterServiceImpl implements CharacterService {
                 .damageDie(actionData.damageDie())
                 .damageRoll(damageRoll)
                 .actionType(request.getActionType())
+                .attackerId(attacker.getId())
+                .attackerName(attacker.getName())
+                .targetId(target.getId())
+                .targetName(target.getName())
                 .build();
     }
 

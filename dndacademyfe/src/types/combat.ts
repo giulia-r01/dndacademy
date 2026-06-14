@@ -43,6 +43,10 @@ export interface AttackRequest {
 }
 
 export interface AttackResult {
+  attackerId: number
+  attackerName: string
+  targetId: number
+  targetName: string
   hit: boolean
   critical: boolean
   actionName: string

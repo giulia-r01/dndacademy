@@ -64,7 +64,10 @@ export default function LoginForm() {
       />
 
       {error && (
-        <p role="alert" className="text-sm text-[var(--danger)]">
+        <p
+          role="alert"
+          className="rounded-xl border border-danger px-4 py-3 text-sm text-danger"
+        >
           {error}
         </p>
       )}

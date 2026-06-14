@@ -15,6 +15,7 @@ import type {
   CombatStatus,
 } from "@/types/combat"
 import type { Campaign } from "@/types/campaign"
+import AttackResultCard from "@/components/combat/AttackResultCard"
 
 export default function CombatPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -192,8 +193,8 @@ export default function CombatPage() {
         )}
 
         {error && (
-          <AppCard>
-            <p role="alert" className="text-[var(--danger)]">
+          <AppCard className="border-danger">
+            <p role="alert" className="text-danger">
               {error}
             </p>
           </AppCard>
@@ -274,7 +275,7 @@ export default function CombatPage() {
                   </div>
                 </AppCard>
 
-                {!combatStatus.combatOver && currentFighter && (
+                {!combatStatus.combatOver && currentFighter?.alive && (
                   <AppCard>
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                       <div className="flex-1">
@@ -369,77 +370,7 @@ export default function CombatPage() {
                   </AppCard>
                 )}
 
-                {attackResult && (
-                  <AppCard>
-                    <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--accent-soft)]">
-                      Risultato azione
-                    </p>
-
-                    <h3 className="mt-2 text-2xl font-black text-[var(--text-main)]">
-                      {attackResult.critical
-                        ? "Colpo critico!"
-                        : attackResult.hit
-                          ? "Colpito!"
-                          : "Mancato!"}
-                    </h3>
-
-                    <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-                        <p className="text-sm font-bold text-[var(--text-soft)]">
-                          Azione
-                        </p>
-                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
-                          {attackResult.actionName}
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-                        <p className="text-sm font-bold text-[var(--text-soft)]">
-                          d20
-                        </p>
-                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
-                          {attackResult.attackRoll}
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-                        <p className="text-sm font-bold text-[var(--text-soft)]">
-                          Tiro totale
-                        </p>
-                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
-                          {attackResult.attackRoll} +{" "}
-                          {attackResult.abilityModifier} ={" "}
-                          {attackResult.totalAttack}
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-                        <p className="text-sm font-bold text-[var(--text-soft)]">
-                          CA bersaglio
-                        </p>
-                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
-                          {attackResult.targetArmorClass}
-                        </p>
-                      </div>
-
-                      <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-                        <p className="text-sm font-bold text-[var(--text-soft)]">
-                          Danno
-                        </p>
-                        <p className="mt-2 text-lg font-black text-[var(--text-main)]">
-                          d{attackResult.damageDie}: {attackResult.damageRoll} →{" "}
-                          {attackResult.damage}
-                        </p>
-                      </div>
-                    </div>
-
-                    {attackResult.targetDefeated && (
-                      <p className="mt-4 font-bold text-[var(--danger)]">
-                        Il bersaglio è stato sconfitto.
-                      </p>
-                    )}
-                  </AppCard>
-                )}
+                {attackResult && <AttackResultCard result={attackResult} />}
 
                 {combatStatus.combatOver && (
                   <AppCard>
@@ -492,7 +423,7 @@ export default function CombatPage() {
                               ? "bg-[var(--accent)] text-[var(--bg-app-deep)]"
                               : fighter.alive
                                 ? "border border-[var(--border-teal-soft)] text-[var(--text-soft)]"
-                                : "bg-[var(--danger)] text-white",
+                                : "border border-red-700 bg-red-950 text-red-100",
                           ].join(" ")}
                         >
                           {fighter.currentTurn

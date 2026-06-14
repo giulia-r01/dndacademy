@@ -74,8 +74,8 @@ export default function CampaignsPage() {
         )}
 
         {error && (
-          <AppCard>
-            <p role="alert" className="text-[var(--danger)]">
+          <AppCard className="border-danger">
+            <p role="alert" className="text-danger">
               {error}
             </p>
           </AppCard>

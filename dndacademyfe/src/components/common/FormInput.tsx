@@ -40,7 +40,7 @@ export default function FormInput({
             "w-full rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)]",
             "transition focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30",
             isPassword ? "pr-12" : "",
-            error ? "border-[var(--danger)]" : "",
+            error ? "border-danger" : "",
             className,
           ].join(" ")}
           aria-invalid={Boolean(error)}
@@ -65,7 +65,7 @@ export default function FormInput({
       </div>
 
       {error && (
-        <p id={`${inputId}-error`} className="text-sm text-[var(--danger)]">
+        <p id={`${inputId}-error`} className="text-sm text-danger">
           {error}
         </p>
       )}

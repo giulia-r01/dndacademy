@@ -13,17 +13,19 @@
   --border-teal: #047857;
   --border-teal-soft: rgba(16, 185, 129, 0.45);
   --border-gold: #d99a00;
+  --border-danger: #ef4444;
 
   --text-main: #ecfdf5;
   --text-soft: #a7f3d0;
   --text-muted: #8fb8aa;
+  --text-danger: #fd5050;
 
   --primary: #10b981;
   --primary-dark: #059669;
   --accent: #f59e0b;
   --accent-soft: #fde68a;
 
-  --danger: #ef4444;
+  --danger: #c61717;
   --info: #3b82f6;
   --magic: #a855f7;
 
@@ -90,4 +92,78 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: var(--text-main) !important;
   caret-color: var(--text-main);
   transition: background-color 9999s ease-in-out 0s;
+}
+
+@keyframes diceRoll {
+  0% {
+    transform: rotate(-25deg) scale(0.7);
+    opacity: 0;
+  }
+
+  35% {
+    transform: rotate(20deg) scale(1.15);
+    opacity: 1;
+  }
+
+  70% {
+    transform: rotate(-10deg) scale(0.95);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.dice-shape {
+  clip-path: polygon(
+    50% 0%,
+    90% 18%,
+    100% 60%,
+    72% 100%,
+    28% 100%,
+    0% 60%,
+    10% 18%
+  );
+  border: 2px solid var(--border-teal-soft);
+  background: var(--bg-app-deep);
+  animation: diceRoll 700ms ease-out;
+}
+
+.dice-shape-critical {
+  border-color: var(--border-gold);
+  background: var(--accent);
+}
+
+.text-danger {
+  color: var(--text-danger);
+}
+
+.border-danger {
+  border-color: var(--border-danger);
+}
+
+.danger {
+  background-color: var(--danger);
+}
+
+@keyframes fantasyDieRoll {
+  0% {
+    transform: rotate(-120deg) scale(0.55);
+    opacity: 0;
+  }
+
+  35% {
+    transform: rotate(36deg) scale(1.18);
+    opacity: 1;
+  }
+
+  65% {
+    transform: rotate(-18deg) scale(0.94);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
 }

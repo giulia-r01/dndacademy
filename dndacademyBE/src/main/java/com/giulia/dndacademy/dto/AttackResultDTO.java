@@ -34,4 +34,10 @@ public class AttackResultDTO {
     private CombatActionType actionType;
     private int damageDie;
     private int damageRoll;
+
+    private Long attackerId;
+    private String attackerName;
+
+    private Long targetId;
+    private String targetName;
 }

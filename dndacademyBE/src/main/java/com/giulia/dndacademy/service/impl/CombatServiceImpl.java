@@ -48,12 +48,17 @@ public class CombatServiceImpl implements CombatService {
         }
 
         List<CharacterInitiative> initiatives = characters.stream()
+                .filter(Character::isAlive)
                 .map(character -> new CharacterInitiative(
                         character,
                         rollD20() + getModifier(character.getStats().getDexterity())
                 ))
                 .sorted((a, b) -> Integer.compare(b.initiative(), a.initiative()))
                 .toList();
+
+        if (initiatives.size() < 2) {
+            throw new RuntimeException("Servono almeno 2 personaggi vivi per iniziare un combattimento");
+        }
 
         List<Long> turnOrder = initiatives.stream()
                 .map(item -> item.character().getId())
@@ -84,50 +89,37 @@ public class CombatServiceImpl implements CombatService {
     @Override
     public Long getCurrentTurn(Long combatId, String username) {
 
-        Combat combat = combatRepository.findById(combatId)
-                .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+        Combat combat = getCombatOrThrow(combatId);
 
         checkCampaignAccess(combat.getCampaign(), username);
 
-        return combat.getTurnOrder().get(combat.getCurrentTurnIndex());
+        if (isCombatOver(combat)) {
+            throw new RuntimeException("Il combattimento è finito");
+        }
+
+        Character currentCharacter = getCurrentTurnCharacter(combat);
+
+        if (!currentCharacter.isAlive()) {
+            moveToNextAliveTurn(combat);
+            combatRepository.save(combat);
+            currentCharacter = getCurrentTurnCharacter(combat);
+        }
+
+        return currentCharacter.getId();
     }
 
     @Override
     public void nextTurn(Long combatId, String username) {
 
-        Combat combat = combatRepository.findById(combatId)
-                .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+        Combat combat = getCombatOrThrow(combatId);
 
         checkCampaignAccess(combat.getCampaign(), username);
 
-        List<Long> turnOrder = combat.getTurnOrder();
-
-        long aliveCount = turnOrder.stream()
-                .map(id -> characterRepository.findById(id).orElseThrow())
-                .filter(Character::isAlive)
-                .count();
-
-        if (aliveCount <= 1) {
+        if (isCombatOver(combat)) {
             throw new RuntimeException("Il combattimento è finito");
         }
 
-        int nextIndex = combat.getCurrentTurnIndex();
-
-        do {
-            nextIndex = (nextIndex + 1) % turnOrder.size();
-
-            Long characterId = turnOrder.get(nextIndex);
-
-            Character character = characterRepository.findById(characterId)
-                    .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
-
-            if (character.isAlive()) {
-                break;
-            }
-
-        } while (true);
-
-        combat.setCurrentTurnIndex(nextIndex);
+        moveToNextAliveTurn(combat);
 
         combatRepository.save(combat);
     }
@@ -135,18 +127,31 @@ public class CombatServiceImpl implements CombatService {
     @Override
     public CombatStatusDTO getCombatStatus(Long combatId, String username) {
 
-        Combat combat = combatRepository.findById(combatId)
-                .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+        Combat combat = getCombatOrThrow(combatId);
 
         checkCampaignAccess(combat.getCampaign(), username);
 
-        Long currentTurnCharacterId = combat.getTurnOrder()
-                .get(combat.getCurrentTurnIndex());
+        boolean combatOver = isCombatOver(combat);
+
+        if (!combatOver) {
+            Character currentTurnCharacter = getCurrentTurnCharacter(combat);
+
+            if (!currentTurnCharacter.isAlive()) {
+                moveToNextAliveTurn(combat);
+                combat = combatRepository.save(combat);
+            }
+        }
+
+        final Combat finalCombat = combat;
+
+        Long currentTurnCharacterId = combatOver
+                ? null
+                : finalCombat.getTurnOrder().get(finalCombat.getCurrentTurnIndex());
 
         List<CombatFighterDTO> fighters = java.util.stream.IntStream
-                .range(0, combat.getTurnOrder().size())
+                .range(0, finalCombat.getTurnOrder().size())
                 .mapToObj(index -> {
-                    Long characterId = combat.getTurnOrder().get(index);
+                    Long characterId = finalCombat.getTurnOrder().get(index);
 
                     Character character = characterRepository.findById(characterId)
                             .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
@@ -159,8 +164,8 @@ public class CombatServiceImpl implements CombatService {
                             .maxHp(character.getMaxHp())
                             .armorClass(character.getArmorClass())
                             .alive(character.isAlive())
-                            .currentTurn(character.getId().equals(currentTurnCharacterId))
-                            .initiative(combat.getInitiativeRolls().get(index))
+                            .currentTurn(currentTurnCharacterId != null && character.getId().equals(currentTurnCharacterId))
+                            .initiative(finalCombat.getInitiativeRolls().get(index))
                             .spellcaster(character.isSpellcaster())
                             .weaponName(character.getWeaponName())
                             .damageDie(character.getDamageDie())
@@ -174,15 +179,13 @@ public class CombatServiceImpl implements CombatService {
                 .filter(CombatFighterDTO::isAlive)
                 .toList();
 
-        boolean combatOver = aliveFighters.size() <= 1;
-
         Long winnerCharacterId = combatOver && aliveFighters.size() == 1
                 ? aliveFighters.get(0).getCharacterId()
                 : null;
 
         return CombatStatusDTO.builder()
-                .combatId(combat.getId())
-                .campaignId(combat.getCampaign().getId())
+                .combatId(finalCombat.getId())
+                .campaignId(finalCombat.getCampaign().getId())
                 .currentTurnCharacterId(currentTurnCharacterId)
                 .combatOver(combatOver)
                 .winnerCharacterId(winnerCharacterId)
@@ -190,12 +193,55 @@ public class CombatServiceImpl implements CombatService {
                 .build();
     }
 
+    private Combat getCombatOrThrow(Long combatId) {
+        return combatRepository.findById(combatId)
+                .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+    }
+
+    private Character getCurrentTurnCharacter(Combat combat) {
+        Long currentCharacterId = combat.getTurnOrder().get(combat.getCurrentTurnIndex());
+
+        return characterRepository.findById(currentCharacterId)
+                .orElseThrow(() -> new RuntimeException("Personaggio di turno non trovato"));
+    }
+
+    private boolean isCombatOver(Combat combat) {
+        long aliveCount = combat.getTurnOrder()
+                .stream()
+                .map(id -> characterRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Personaggio nel turno non trovato")))
+                .filter(Character::isAlive)
+                .count();
+
+        return aliveCount <= 1;
+    }
+
+    private void moveToNextAliveTurn(Combat combat) {
+        List<Long> turnOrder = combat.getTurnOrder();
+
+        int currentIndex = combat.getCurrentTurnIndex();
+
+        for (int i = 1; i <= turnOrder.size(); i++) {
+            int nextIndex = (currentIndex + i) % turnOrder.size();
+
+            Character nextCharacter = characterRepository.findById(turnOrder.get(nextIndex))
+                    .orElseThrow(() -> new RuntimeException("Personaggio nel turno non trovato"));
+
+            if (nextCharacter.isAlive()) {
+                combat.setCurrentTurnIndex(nextIndex);
+                return;
+            }
+        }
+
+        throw new RuntimeException("Nessun personaggio vivo trovato");
+    }
+
     private int rollD20() {
         return (int) (Math.random() * 20) + 1;
     }
 
     private int getModifier(int stat) {
-        return (stat - 10) / 2;
+        return Math.floorDiv(stat - 10, 2);
     }
 
     private void checkCampaignAccess(Campaign campaign, String username) {
@@ -212,5 +258,6 @@ public class CombatServiceImpl implements CombatService {
         }
     }
 
-    private record CharacterInitiative(Character character, int initiative) {}
+    private record CharacterInitiative(Character character, int initiative) {
+    }
 }
