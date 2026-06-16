@@ -1,11 +1,23 @@
 import { apiFetch } from "@/services/api"
-import type { Campaign, PartyMember } from "@/types/campaign"
+import type {
+  Campaign,
+  CreateCampaignRequest,
+  PartyMember,
+} from "@/types/campaign"
 
 export const campaignService = {
   getAll() {
     return apiFetch<Campaign[]>("/api/campaigns", {
       method: "GET",
       auth: true,
+    })
+  },
+
+  create(payload: CreateCampaignRequest) {
+    return apiFetch<Campaign>("/api/campaigns", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
     })
   },
 

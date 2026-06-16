@@ -5,6 +5,11 @@ export interface Campaign {
   masterUsername: string
 }
 
+export interface CreateCampaignRequest {
+  name: string
+  description: string
+}
+
 export interface PartyMember {
   playerUsername: string
   characterName: string

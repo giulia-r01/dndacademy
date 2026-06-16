@@ -18,7 +18,7 @@
   --text-main: #ecfdf5;
   --text-soft: #a7f3d0;
   --text-muted: #8fb8aa;
-  --text-danger: #fd5050;
+  --text-danger: rgb(255 147 147);
 
   --primary: #10b981;
   --primary-dark: #059669;
@@ -82,6 +82,29 @@ button {
 ::selection {
   background: var(--accent);
   color: var(--bg-app-deep);
+}
+
+textarea {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-teal-soft) var(--surface-muted);
+}
+
+textarea::-webkit-scrollbar {
+  width: 8px;
+}
+
+textarea::-webkit-scrollbar-track {
+  background: var(--surface-muted);
+  border-radius: 999px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background: var(--border-teal-soft);
+  border-radius: 999px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 input:-webkit-autofill,

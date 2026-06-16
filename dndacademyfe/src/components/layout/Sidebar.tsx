@@ -11,6 +11,7 @@ import {
   FiX,
   FiUserPlus,
   FiCrosshair,
+  FiSettings,
 } from "react-icons/fi"
 import type { UserProfile } from "@/types/user"
 import { usePathname } from "next/navigation"
@@ -57,6 +58,11 @@ const navigationItems = [
     label: "Profilo",
     href: "/profile",
     icon: FiUser,
+  },
+  {
+    label: "Backoffice",
+    href: "/admin",
+    icon: FiSettings,
   },
 ]
 
