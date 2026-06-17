@@ -6,6 +6,7 @@ import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.repository.CharacterRepository;
+import com.giulia.dndacademy.repository.CombatRepository;
 import com.giulia.dndacademy.service.CampaignService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class CampaignServiceImpl implements CampaignService {
     private final CampaignRepository campaignRepository;
     private final UserService userService;
     private final CharacterRepository characterRepository;
+    private final CombatRepository combatRepository;
 
     @Override
     public CampaignDTO createCampaign(String name, String description, String username) {
@@ -112,6 +114,15 @@ public class CampaignServiceImpl implements CampaignService {
                 .toList();
     }
 
+    private CampaignDTO mapToDTO(Campaign campaign) {
+        return CampaignDTO.builder()
+                .id(campaign.getId())
+                .name(campaign.getName())
+                .description(campaign.getDescription())
+                .masterUsername(campaign.getMaster().getUsername())
+                .build();
+    }
+
     private void checkCampaignAccess(Campaign campaign, String username) {
         User user = userService.getByUsername(username);
 
@@ -124,5 +135,62 @@ public class CampaignServiceImpl implements CampaignService {
         if (!isMaster && !isPlayer) {
             throw new RuntimeException("Non fai parte di questa campagna");
         }
+    }
+
+    @Override
+    public CampaignDTO updateCampaign(Long campaignId, String name, String description, String username) {
+        User master = userService.getByUsername(username);
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        boolean isCampaignMaster = campaign.getMaster().getId().equals(master.getId());
+
+        if (!isCampaignMaster) {
+            throw new RuntimeException("Puoi modificare solo le campagne create da te");
+        }
+
+        if (name == null || name.isBlank()) {
+            throw new RuntimeException("Il nome della campagna è obbligatorio");
+        }
+
+        if (description == null || description.isBlank()) {
+            throw new RuntimeException("La descrizione della campagna è obbligatoria");
+        }
+
+        campaign.setName(name.trim());
+        campaign.setDescription(description.trim());
+
+        Campaign saved = campaignRepository.save(campaign);
+
+        return mapToDTO(saved);
+    }
+
+    @Override
+    public void deleteCampaign(Long campaignId, String username) {
+        User master = userService.getByUsername(username);
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        boolean isCampaignMaster = campaign.getMaster().getId().equals(master.getId());
+
+        if (!isCampaignMaster) {
+            throw new RuntimeException("Puoi eliminare solo le campagne create da te");
+        }
+
+        if (!characterRepository.findByCampaignId(campaignId).isEmpty()) {
+            throw new RuntimeException(
+                    "Non puoi eliminare una campagna che contiene personaggi"
+            );
+        }
+
+        if (!combatRepository.findByCampaignId(campaignId).isEmpty()) {
+            throw new RuntimeException(
+                    "Non puoi eliminare una campagna che contiene combattimenti"
+            );
+        }
+
+        campaignRepository.delete(campaign);
     }
 }

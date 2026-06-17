@@ -16,4 +16,8 @@ public interface CampaignService {
     List<String> getPlayers(Long campaignId, String username);
 
     List<PartyMemberDTO> getParty(Long campaignId, String username);
+
+    CampaignDTO updateCampaign(Long campaignId, String name, String description, String username);
+
+    void deleteCampaign(Long campaignId, String username);
 }

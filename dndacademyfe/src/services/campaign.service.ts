@@ -41,4 +41,19 @@ export const campaignService = {
       auth: true,
     })
   },
+
+  update(campaignId: number, payload: CreateCampaignRequest) {
+    return apiFetch<Campaign>(`/api/campaigns/${campaignId}`, {
+      method: "PUT",
+      auth: true,
+      body: JSON.stringify(payload),
+    })
+  },
+
+  remove(campaignId: number) {
+    return apiFetch<void>(`/api/campaigns/${campaignId}`, {
+      method: "DELETE",
+      auth: true,
+    })
+  },
 }

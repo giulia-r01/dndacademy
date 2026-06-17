@@ -2,7 +2,14 @@
 
 import { useEffect, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { FiArrowLeft, FiFlag, FiPlusCircle } from "react-icons/fi"
+import {
+  FiArrowLeft,
+  FiFlag,
+  FiPlusCircle,
+  FiEdit3,
+  FiTrash2,
+} from "react-icons/fi"
+import AppModal from "@/components/common/AppModal"
 
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
@@ -24,6 +31,41 @@ export default function AdminCampaignsPage() {
 
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
+
+  const [campaignToEdit, setCampaignToEdit] = useState<Campaign | null>(null)
+  const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(
+    null,
+  )
+
+  const [editName, setEditName] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  function openEditModal(campaign: Campaign) {
+    setCampaignToEdit(campaign)
+    setEditName(campaign.name)
+    setEditDescription(campaign.description ?? "")
+    setError("")
+    setSuccessMessage("")
+  }
+
+  function closeEditModal() {
+    setCampaignToEdit(null)
+    setEditName("")
+    setEditDescription("")
+  }
+
+  function openDeleteModal(campaign: Campaign) {
+    setCampaignToDelete(campaign)
+    setError("")
+    setSuccessMessage("")
+  }
+
+  function closeDeleteModal() {
+    setCampaignToDelete(null)
+  }
 
   useEffect(() => {
     async function loadCampaigns() {
@@ -78,6 +120,80 @@ export default function AdminCampaignsPage() {
       setError(message)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  async function handleUpdateCampaign(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (!campaignToEdit) {
+      return
+    }
+
+    setError("")
+    setSuccessMessage("")
+
+    if (!editName.trim()) {
+      setError("Il nome della campagna è obbligatorio.")
+      return
+    }
+
+    if (!editDescription.trim()) {
+      setError("La descrizione della campagna è obbligatoria.")
+      return
+    }
+
+    setIsUpdating(true)
+
+    try {
+      const updatedCampaign = await campaignService.update(campaignToEdit.id, {
+        name: editName.trim(),
+        description: editDescription.trim(),
+      })
+
+      setCampaigns((current) =>
+        current.map((campaign) =>
+          campaign.id === updatedCampaign.id ? updatedCampaign : campaign,
+        ),
+      )
+
+      setSuccessMessage("Campagna aggiornata correttamente.")
+      closeEditModal()
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Errore nella modifica campagna"
+
+      setError(message)
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  async function handleDeleteCampaign() {
+    if (!campaignToDelete) {
+      return
+    }
+
+    setError("")
+    setSuccessMessage("")
+    setIsDeleting(true)
+
+    try {
+      await campaignService.remove(campaignToDelete.id)
+
+      setCampaigns((current) =>
+        current.filter((campaign) => campaign.id !== campaignToDelete.id),
+      )
+
+      setSuccessMessage("Campagna eliminata correttamente.")
+      closeDeleteModal()
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Errore nell'eliminazione campagna"
+
+      setError(message)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -260,6 +376,29 @@ export default function AdminCampaignsPage() {
                         <p className="mt-3 text-xs font-bold text-[var(--accent-soft)]">
                           Master: {campaign.masterUsername}
                         </p>
+                        <div className="mt-5 flex flex-wrap gap-3">
+                          <AppButton
+                            type="button"
+                            variant="secondary"
+                            onClick={() => openEditModal(campaign)}
+                          >
+                            <span className="inline-flex items-center gap-2">
+                              <FiEdit3 aria-hidden="true" />
+                              Modifica
+                            </span>
+                          </AppButton>
+
+                          <AppButton
+                            type="button"
+                            variant="danger"
+                            onClick={() => openDeleteModal(campaign)}
+                          >
+                            <span className="inline-flex items-center gap-2">
+                              <FiTrash2 aria-hidden="true" />
+                              Elimina
+                            </span>
+                          </AppButton>
+                        </div>
                       </div>
                     </div>
                   </AppCard>
@@ -268,6 +407,95 @@ export default function AdminCampaignsPage() {
             )}
           </div>
         </div>
+        <AppModal
+          isOpen={campaignToEdit !== null}
+          title="Modifica campagna"
+          description="Aggiorna nome e descrizione della campagna."
+          onClose={closeEditModal}
+        >
+          <form onSubmit={handleUpdateCampaign} className="space-y-5">
+            <FormInput
+              label="Nome campagna"
+              name="editName"
+              type="text"
+              placeholder="Nome campagna"
+              value={editName}
+              onChange={(event) => setEditName(event.target.value)}
+            />
+
+            <div className="space-y-2">
+              <label
+                htmlFor="editDescription"
+                className="block text-sm font-bold text-[var(--text-main)]"
+              >
+                Descrizione
+              </label>
+
+              <textarea
+                id="editDescription"
+                name="editDescription"
+                rows={8}
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+                className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+              />
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <AppButton
+                type="button"
+                variant="secondary"
+                onClick={closeEditModal}
+              >
+                Annulla
+              </AppButton>
+
+              <AppButton type="submit" disabled={isUpdating}>
+                {isUpdating ? "Salvataggio..." : "Salva modifiche"}
+              </AppButton>
+            </div>
+          </form>
+        </AppModal>
+        <AppModal
+          isOpen={campaignToDelete !== null}
+          title="Eliminazione campagna"
+          description="Questa azione non può essere annullata."
+          onClose={closeDeleteModal}
+        >
+          <div className="space-y-5">
+            <p className="text-sm leading-6 text-[var(--text-soft)]">
+              Vuoi davvero eliminare{" "}
+              <span className="font-bold text-[var(--accent-soft)]">
+                {campaignToDelete?.name}
+              </span>
+              ?
+            </p>
+
+            <p className="rounded-xl bg-[rgba(239,68,68,0.12)] px-4 py-3 text-sm font-bold text-[var(--danger)]">
+              Puoi eliminare solo campagne senza personaggi o combattimenti
+              collegati.
+            </p>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <AppButton
+                type="button"
+                variant="secondary"
+                onClick={closeDeleteModal}
+              >
+                No, annulla
+              </AppButton>
+
+              <AppButton
+                type="button"
+                variant="danger"
+                disabled={isDeleting}
+                onClick={handleDeleteCampaign}
+              >
+                {isDeleting ? "Eliminazione..." : "Sì, elimina"}
+              </AppButton>
+            </div>
+          </div>
+        </AppModal>
       </section>
     </AppShell>
   )

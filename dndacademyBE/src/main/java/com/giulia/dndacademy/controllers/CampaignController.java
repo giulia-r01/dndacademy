@@ -68,4 +68,32 @@ public class CampaignController {
         String username = authentication.getName();
         return campaignService.getParty(campaignId, username);
     }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @PutMapping("/{id}")
+    public CampaignDTO updateCampaign(
+            @PathVariable Long id,
+            @RequestBody CreateCampaignRequest request,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+
+        return campaignService.updateCampaign(
+                id,
+                request.getName(),
+                request.getDescription(),
+                username
+        );
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @DeleteMapping("/{id}")
+    public void deleteCampaign(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+
+        campaignService.deleteCampaign(id, username);
+    }
 }
