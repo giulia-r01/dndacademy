@@ -26,6 +26,8 @@ export interface Character {
   playerUsername: string | null
   campaignId: number
 
+  imageUrl: string | null
+
   weaponName: string
   damageDie: number
   attackAbility: AttackAbility

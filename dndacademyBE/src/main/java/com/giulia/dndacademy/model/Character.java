@@ -24,6 +24,8 @@ public class Character {
 
     private String characterClass;
 
+    private String imageUrl;
+
     @Column(nullable = false)
     private int level;
 

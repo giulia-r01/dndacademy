@@ -30,6 +30,10 @@ export default function CharactersPage() {
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
 
+  function getCampaignName(campaignId: number) {
+    return campaigns.find((campaign) => campaign.id === campaignId)?.name
+  }
+
   useEffect(() => {
     async function loadInitialData() {
       try {
@@ -179,6 +183,7 @@ export default function CharactersPage() {
                     <CharacterCard
                       key={character.id}
                       character={character}
+                      campaignName={getCampaignName(character.campaignId)}
                       mode="owned"
                     />
                   ))}
@@ -287,6 +292,7 @@ export default function CharactersPage() {
                     <CharacterCard
                       key={character.id}
                       character={character}
+                      campaignName={getCampaignName(character.campaignId)}
                       mode="available"
                       isClaiming={claimingCharacterId === character.id}
                       onClaim={handleClaim}

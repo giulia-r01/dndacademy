@@ -1,9 +1,7 @@
 package com.giulia.dndacademy.service;
 
-import com.giulia.dndacademy.dto.AttackRequest;
-import com.giulia.dndacademy.dto.AttackResultDTO;
-import com.giulia.dndacademy.dto.CharacterDTO;
-import com.giulia.dndacademy.dto.CreateCharacterRequest;
+import com.giulia.dndacademy.dto.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -24,4 +22,10 @@ public interface CharacterService {
     CharacterDTO healCharacter(Long characterId, int heal);
 
     AttackResultDTO attack(AttackRequest request, String username);
+
+    CharacterDTO uploadCharacterImage(Long characterId, MultipartFile file, String username);
+
+    CharacterDTO updateCharacter(Long characterId, UpdateCharacterRequest request, String username);
+
+    void deleteCharacter(Long characterId, String username);
 }

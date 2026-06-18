@@ -1,15 +1,13 @@
 package com.giulia.dndacademy.controllers;
 
-import com.giulia.dndacademy.dto.AttackRequest;
-import com.giulia.dndacademy.dto.AttackResultDTO;
-import com.giulia.dndacademy.dto.CharacterDTO;
-import com.giulia.dndacademy.dto.CreateCharacterRequest;
+import com.giulia.dndacademy.dto.*;
 import com.giulia.dndacademy.service.CharacterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -88,5 +86,37 @@ public class CharacterController {
     ) {
         String username = authentication.getName();
         return characterService.attack(request, username);
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @PatchMapping("/{id}/image")
+    public CharacterDTO uploadCharacterImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.uploadCharacterImage(id, file, username);
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @PutMapping("/{id}")
+    public CharacterDTO updateCharacter(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateCharacterRequest request,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.updateCharacter(id, request, username);
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @DeleteMapping("/{id}")
+    public void deleteCharacter(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        characterService.deleteCharacter(id, username);
     }
 }

@@ -20,6 +20,9 @@ import com.giulia.dndacademy.service.CharacterService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.giulia.dndacademy.service.ImageUploadService;
+import org.springframework.web.multipart.MultipartFile;
+import com.giulia.dndacademy.dto.UpdateCharacterRequest;
 
 import java.util.List;
 
@@ -32,6 +35,7 @@ public class CharacterServiceImpl implements CharacterService {
     private final CampaignRepository campaignRepository;
     private final UserService userService;
     private final CombatRepository combatRepository;
+    private final ImageUploadService imageUploadService;
 
     @Override
     public CharacterDTO createCharacter(CreateCharacterRequest request, String username) {
@@ -457,6 +461,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .name(c.getName())
                 .race(c.getRace())
                 .characterClass(c.getCharacterClass())
+                .imageUrl(c.getImageUrl())
                 .level(c.getLevel())
                 .maxHp(c.getMaxHp())
                 .currentHp(c.getCurrentHp())
@@ -492,5 +497,154 @@ public class CharacterServiceImpl implements CharacterService {
             int damageDie,
             AttackAbility ability
     ) {
+    }
+
+    @Override
+    public CharacterDTO uploadCharacterImage(Long characterId, MultipartFile file, String username) {
+        User master = userService.getByUsername(username);
+
+        Character character = characterRepository.findById(characterId)
+                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+
+        boolean isCampaignMaster = character.getCampaign()
+                .getMaster()
+                .getId()
+                .equals(master.getId());
+
+        if (!isCampaignMaster) {
+            throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
+        }
+
+        String imageUrl = imageUploadService.uploadCharacterImage(file);
+
+        character.setImageUrl(imageUrl);
+
+        Character saved = characterRepository.save(character);
+
+        return mapToDTO(saved);
+    }
+
+    private void validateUpdateCharacterRequest(UpdateCharacterRequest request) {
+        if (request.getStats() == null) {
+            throw new RuntimeException("Stats obbligatorie");
+        }
+
+        if (request.getWeaponName() == null || request.getWeaponName().isBlank()) {
+            throw new RuntimeException("Il nome dell'arma è obbligatorio");
+        }
+
+        if (!List.of(4, 6, 8, 10, 12).contains(request.getDamageDie())) {
+            throw new RuntimeException("Il dado danno dell'arma deve essere d4, d6, d8, d10 o d12");
+        }
+
+        if (request.getAttackAbility() == null) {
+            throw new RuntimeException("La caratteristica di attacco è obbligatoria");
+        }
+
+        if (request.isSpellcaster()) {
+            if (request.getSpellName() == null || request.getSpellName().isBlank()) {
+                throw new RuntimeException("Il nome dell'incantesimo è obbligatorio per gli spellcaster");
+            }
+
+            if (!List.of(4, 6, 8, 10, 12).contains(request.getSpellDamageDie())) {
+                throw new RuntimeException("Il dado danno dell'incantesimo deve essere d4, d6, d8, d10 o d12");
+            }
+
+            if (request.getSpellAbility() == null) {
+                throw new RuntimeException("La caratteristica dell'incantesimo è obbligatoria");
+            }
+        }
+    }
+
+    @Override
+    public CharacterDTO updateCharacter(Long characterId, UpdateCharacterRequest request, String username) {
+        User master = userService.getByUsername(username);
+
+        Character character = characterRepository.findById(characterId)
+                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+
+        boolean isCampaignMaster = character.getCampaign()
+                .getMaster()
+                .getId()
+                .equals(master.getId());
+
+        if (!isCampaignMaster) {
+            throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
+        }
+
+        validateUpdateCharacterRequest(request);
+
+        character.setName(request.getName().trim());
+        character.setRace(request.getRace().trim());
+        character.setCharacterClass(request.getCharacterClass().trim());
+        character.setLevel(request.getLevel());
+        character.setMaxHp(request.getMaxHp());
+        character.setArmorClass(request.getArmorClass());
+
+        if (character.getCurrentHp() > request.getMaxHp()) {
+            character.setCurrentHp(request.getMaxHp());
+        }
+
+        character.setWeaponName(request.getWeaponName().trim());
+        character.setDamageDie(request.getDamageDie());
+        character.setAttackAbility(request.getAttackAbility());
+
+        character.setSpellcaster(request.isSpellcaster());
+
+        if (request.isSpellcaster()) {
+            character.setSpellName(request.getSpellName().trim());
+            character.setSpellDamageDie(request.getSpellDamageDie());
+            character.setSpellAbility(request.getSpellAbility());
+        } else {
+            character.setSpellName(null);
+            character.setSpellDamageDie(0);
+            character.setSpellAbility(null);
+        }
+
+        CharacterStats stats = character.getStats();
+
+        if (stats == null) {
+            stats = CharacterStats.builder()
+                    .character(character)
+                    .build();
+        }
+
+        CharacterStatsDTO statsDTO = request.getStats();
+
+        stats.setStrength(statsDTO.getStrength());
+        stats.setDexterity(statsDTO.getDexterity());
+        stats.setConstitution(statsDTO.getConstitution());
+        stats.setIntelligence(statsDTO.getIntelligence());
+        stats.setWisdom(statsDTO.getWisdom());
+        stats.setCharisma(statsDTO.getCharisma());
+
+        character.setStats(stats);
+
+        Character saved = characterRepository.save(character);
+
+        return mapToDTO(saved);
+    }
+
+    @Override
+    public void deleteCharacter(Long characterId, String username) {
+        User master = userService.getByUsername(username);
+
+        Character character = characterRepository.findById(characterId)
+                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+
+        boolean isCampaignMaster = character.getCampaign()
+                .getMaster()
+                .getId()
+                .equals(master.getId());
+
+        if (!isCampaignMaster) {
+            throw new RuntimeException("Puoi eliminare solo personaggi delle tue campagne");
+        }
+
+        if (character.getPlayer() != null) {
+            throw new RuntimeException("Non puoi eliminare un personaggio già scelto da un player");
+        }
+
+        characterRepository.delete(character);
     }
 }

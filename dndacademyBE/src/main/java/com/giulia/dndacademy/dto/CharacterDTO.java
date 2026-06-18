@@ -14,6 +14,7 @@ public class CharacterDTO {
     private String name;
     private String race;
     private String characterClass;
+    private String imageUrl;
     private int level;
 
     private String playerUsername;

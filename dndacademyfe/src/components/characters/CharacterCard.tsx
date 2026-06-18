@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { FiHeart, FiShield, FiUser, FiZap } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
@@ -8,6 +9,7 @@ type CharacterCardMode = "owned" | "available"
 
 type CharacterCardProps = {
   character: Character
+  campaignName?: string
   mode?: CharacterCardMode
   isClaiming?: boolean
   onClaim?: (characterId: number) => void
@@ -23,6 +25,7 @@ const abilityLabels = {
 
 export default function CharacterCard({
   character,
+  campaignName,
   mode = "owned",
   isClaiming = false,
   onClaim,
@@ -37,9 +40,21 @@ export default function CharacterCard({
 
   return (
     <AppCard className="transition hover:-translate-y-0.5 hover:border-[var(--border-gold)]">
-      <div className="flex items-start gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--accent)]">
-          <FiUser size={28} aria-hidden="true" />
+      <div className="flex flex-col gap-5 md:flex-row md:items-start">
+        <div className="relative h-[380px] w-full overflow-hidden rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] sm:h-[420px] lg:h-[380px] md:w-[270px] lg:w-[248px] lg:shrink-0">
+          {character.imageUrl ? (
+            <Image
+              src={character.imageUrl}
+              alt={`Ritratto di ${character.name}`}
+              fill
+              className="object-cover object-top"
+              sizes="(max-width: 1024px) 100vw, 248px"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[var(--accent)]">
+              <FiUser size={42} aria-hidden="true" />
+            </div>
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -141,7 +156,7 @@ export default function CharacterCard({
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-bold text-[var(--text-muted)]">
-              Campagna ID: {character.campaignId}
+              Campagna: {campaignName ?? `#${character.campaignId}`}
             </p>
 
             {canClaim && (
