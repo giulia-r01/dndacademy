@@ -32,4 +32,6 @@ public class CharacterDTO {
     private String spellName;
     private int spellDamageDie;
     private AttackAbility spellAbility;
+
+    private CharacterStatsDTO stats;
 }

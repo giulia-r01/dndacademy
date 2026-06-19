@@ -475,6 +475,18 @@ public class CharacterServiceImpl implements CharacterService {
                 .spellName(c.getSpellName())
                 .spellDamageDie(c.getSpellDamageDie())
                 .spellAbility(c.getSpellAbility())
+                .stats(
+                        c.getStats() != null
+                                ? CharacterStatsDTO.builder()
+                                .strength(c.getStats().getStrength())
+                                .dexterity(c.getStats().getDexterity())
+                                .constitution(c.getStats().getConstitution())
+                                .intelligence(c.getStats().getIntelligence())
+                                .wisdom(c.getStats().getWisdom())
+                                .charisma(c.getStats().getCharisma())
+                                .build()
+                                : null
+                )
                 .build();
     }
 
@@ -646,5 +658,27 @@ public class CharacterServiceImpl implements CharacterService {
         }
 
         characterRepository.delete(character);
+    }
+
+    @Override
+    public List<CharacterDTO> getAllCharactersByCampaignForMaster(
+            Long campaignId,
+            String username
+    ) {
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        User master = userService.getByUsername(username);
+
+        boolean isCampaignMaster = campaign.getMaster().getId().equals(master.getId());
+
+        if (!isCampaignMaster) {
+            throw new RuntimeException("Puoi visualizzare solo personaggi delle tue campagne");
+        }
+
+        return characterRepository.findByCampaignId(campaignId)
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 }

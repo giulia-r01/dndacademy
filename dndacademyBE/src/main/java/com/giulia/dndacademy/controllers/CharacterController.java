@@ -119,4 +119,14 @@ public class CharacterController {
         String username = authentication.getName();
         characterService.deleteCharacter(id, username);
     }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @GetMapping("/campaign/{campaignId}/admin")
+    public List<CharacterDTO> getAllCharactersByCampaignForMaster(
+            @PathVariable Long campaignId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        return characterService.getAllCharactersByCampaignForMaster(campaignId, username);
+    }
 }

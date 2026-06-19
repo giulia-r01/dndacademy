@@ -84,27 +84,43 @@ button {
   color: var(--bg-app-deep);
 }
 
-textarea {
+textarea,
+.custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: var(--border-teal-soft) var(--surface-muted);
 }
 
-textarea::-webkit-scrollbar {
+textarea::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
 
-textarea::-webkit-scrollbar-track {
+textarea::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
   background: var(--surface-muted);
   border-radius: 999px;
 }
 
-textarea::-webkit-scrollbar-thumb {
+textarea::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
   background: var(--border-teal-soft);
   border-radius: 999px;
 }
 
-textarea::-webkit-scrollbar-thumb:hover {
+textarea::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--accent);
+}
+
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
 input:-webkit-autofill,

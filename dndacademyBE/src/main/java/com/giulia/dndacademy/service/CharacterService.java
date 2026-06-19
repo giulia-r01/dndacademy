@@ -28,4 +28,6 @@ public interface CharacterService {
     CharacterDTO updateCharacter(Long characterId, UpdateCharacterRequest request, String username);
 
     void deleteCharacter(Long characterId, String username);
+
+    List<CharacterDTO> getAllCharactersByCampaignForMaster(Long campaignId, String username);
 }

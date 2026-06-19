@@ -6,23 +6,25 @@ type ApiFetchOptions = RequestInit & {
 
 export async function apiFetch<T>(
   endpoint: string,
-  options?: ApiFetchOptions,
+  options: ApiFetchOptions = {},
 ): Promise<T> {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null
 
+  const isFormData = options.body instanceof FormData
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
-      ...(options?.auth && token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options?.headers,
+      ...(options.auth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...options.headers,
     },
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || "Errore generico")
+    const error = await response.json().catch(() => null)
+    throw new Error(error?.message || "Errore generico")
   }
 
   if (response.status === 204) {
