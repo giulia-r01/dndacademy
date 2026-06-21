@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.dto.CampaignChapterPlayerDTO;
 import com.giulia.dndacademy.dto.CampaignChapterProgressDTO;
 import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.CampaignChapter;
@@ -12,6 +13,7 @@ import com.giulia.dndacademy.service.CampaignChapterProgressService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.giulia.dndacademy.service.BadgeService;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -26,6 +28,7 @@ public class CampaignChapterProgressServiceImpl
     private final CampaignChapterRepository campaignChapterRepository;
     private final CampaignChapterProgressRepository progressRepository;
     private final UserService userService;
+    private final BadgeService badgeService;
 
     @Override
     public List<CampaignChapterProgressDTO> getProgressByCampaign(
@@ -52,6 +55,20 @@ public class CampaignChapterProgressServiceImpl
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
+    }
+
+    private void assignRewardBadgeIfPresent(
+            CampaignChapter chapter,
+            String username
+    ) {
+        if (chapter.getRewardBadge() == null) {
+            return;
+        }
+
+        badgeService.assignBadge(
+                username,
+                chapter.getRewardBadge().getName()
+        );
     }
 
     @Override
@@ -83,6 +100,8 @@ public class CampaignChapterProgressServiceImpl
         progress.setCompletedAt(LocalDateTime.now());
 
         CampaignChapterProgress saved = progressRepository.save(progress);
+
+        assignRewardBadgeIfPresent(chapter, username);
 
         unlockNextChapterIfExists(user, chapters, chapter);
 
@@ -175,5 +194,56 @@ public class CampaignChapterProgressServiceImpl
                 .completed(progress.isCompleted())
                 .completedAt(progress.getCompletedAt())
                 .build();
+    }
+
+    private CampaignChapterPlayerDTO mapToPlayerDTO(CampaignChapterProgress progress) {
+        CampaignChapter chapter = progress.getChapter();
+
+        return CampaignChapterPlayerDTO.builder()
+                .chapterId(chapter.getId())
+                .campaignId(chapter.getCampaign().getId())
+                .title(chapter.getTitle())
+                .description(chapter.getDescription())
+                .storyText(chapter.getStoryText())
+                .orderIndex(chapter.getOrderIndex())
+                .hasCombat(chapter.isHasCombat())
+                .lessonId(chapter.getLesson() != null ? chapter.getLesson().getId() : null)
+                .lessonTitle(chapter.getLesson() != null ? chapter.getLesson().getTitle() : null)
+                .quizId(chapter.getQuiz() != null ? chapter.getQuiz().getId() : null)
+                .quizTitle(chapter.getQuiz() != null ? chapter.getQuiz().getTitle() : null)
+                .rewardBadgeId(chapter.getRewardBadge() != null ? chapter.getRewardBadge().getId() : null)
+                .rewardBadgeName(chapter.getRewardBadge() != null ? chapter.getRewardBadge().getName() : null)
+                .unlocked(progress.isUnlocked())
+                .completed(progress.isCompleted())
+                .completedAt(progress.getCompletedAt())
+                .build();
+    }
+
+    @Override
+    public List<CampaignChapterPlayerDTO> getPlayerChaptersByCampaign(
+            Long campaignId,
+            String username
+    ) {
+        User user = userService.getByUsername(username);
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        checkCampaignAccess(campaign, user);
+
+        List<CampaignChapter> chapters = campaignChapterRepository
+                .findByCampaignIdOrderByOrderIndexAsc(campaignId);
+
+        ensureProgressExistsForCampaign(user, chapters);
+
+        List<CampaignChapterProgress> progressList = progressRepository
+                .findByUserIdAndChapterCampaignIdOrderByChapterOrderIndexAsc(
+                        user.getId(),
+                        campaignId
+                );
+
+        return progressList.stream()
+                .map(this::mapToPlayerDTO)
+                .toList();
     }
 }

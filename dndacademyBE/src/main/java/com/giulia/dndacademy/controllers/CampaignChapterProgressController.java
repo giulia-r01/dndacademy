@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.controllers;
 
+import com.giulia.dndacademy.dto.CampaignChapterPlayerDTO;
 import com.giulia.dndacademy.dto.CampaignChapterProgressDTO;
 import com.giulia.dndacademy.service.CampaignChapterProgressService;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,19 @@ public class CampaignChapterProgressController {
 
         return campaignChapterProgressService.completeChapter(
                 chapterId,
+                username
+        );
+    }
+
+    @GetMapping("/{campaignId}/chapters/player")
+    public List<CampaignChapterPlayerDTO> getPlayerChaptersByCampaign(
+            @PathVariable Long campaignId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+
+        return campaignChapterProgressService.getPlayerChaptersByCampaign(
+                campaignId,
                 username
         );
     }
