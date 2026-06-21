@@ -1,3 +1,5 @@
+import AppButton from "@/components/common/AppButton"
+
 export default function HomePage() {
   return (
     <main className="min-h-screen px-6 py-10 text-[var(--text-main)]">
@@ -19,6 +21,19 @@ export default function HomePage() {
           iniziare a giocare senza perderti tra manuali, eccezioni e panico da
           d20.
         </p>
+
+        <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <AppButton href="/login" className="sm:min-w-40">
+            Accedi
+          </AppButton>
+          <AppButton
+            href="/register"
+            variant="secondary"
+            className="sm:min-w-40"
+          >
+            Registrati
+          </AppButton>
+        </div>
       </section>
     </main>
   )
