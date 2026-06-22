@@ -3,13 +3,9 @@ package com.giulia.dndacademy.service.impl;
 import com.giulia.dndacademy.dto.CombatDTO;
 import com.giulia.dndacademy.dto.CombatFighterDTO;
 import com.giulia.dndacademy.dto.CombatStatusDTO;
-import com.giulia.dndacademy.model.Campaign;
-import com.giulia.dndacademy.model.Combat;
+import com.giulia.dndacademy.model.*;
 import com.giulia.dndacademy.model.Character;
-import com.giulia.dndacademy.model.User;
-import com.giulia.dndacademy.repository.CampaignRepository;
-import com.giulia.dndacademy.repository.CharacterRepository;
-import com.giulia.dndacademy.repository.CombatRepository;
+import com.giulia.dndacademy.repository.*;
 import com.giulia.dndacademy.service.CombatService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,16 +21,12 @@ public class CombatServiceImpl implements CombatService {
     private final CharacterRepository characterRepository;
     private final CombatRepository combatRepository;
     private final UserService userService;
+    private final CampaignChapterRepository campaignChapterRepository;
+    private final CampaignChapterProgressRepository campaignChapterProgressRepository;
 
-    @Override
-    public CombatDTO startCombat(Long campaignId, String username) {
-
-        Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
-
-        checkCampaignAccess(campaign, username);
-
-        List<Character> characters = characterRepository.findByCampaignIdAndPlayerIsNotNull(campaignId);
+    private Combat createCombatForCampaign(Campaign campaign, CampaignChapter chapter) {
+        List<Character> characters = characterRepository
+                .findByCampaignIdAndPlayerIsNotNull(campaign.getId());
 
         if (characters.size() < 2) {
             throw new RuntimeException("Servono almeno 2 personaggi per iniziare un combattimento");
@@ -70,20 +62,73 @@ public class CombatServiceImpl implements CombatService {
 
         Combat combat = Combat.builder()
                 .campaign(campaign)
+                .chapter(chapter)
                 .turnOrder(turnOrder)
                 .initiativeRolls(initiativeRolls)
                 .currentTurnIndex(0)
+                .completed(false)
+                .winnerCharacterId(null)
+                .completedAt(null)
                 .build();
 
-        Combat saved = combatRepository.save(combat);
+        return combatRepository.save(combat);
+    }
 
+    private CombatDTO mapToDTO(Combat combat) {
         return CombatDTO.builder()
-                .id(saved.getId())
-                .campaignId(campaign.getId())
-                .turnOrder(saved.getTurnOrder())
-                .initiativeRolls(saved.getInitiativeRolls())
-                .currentTurnIndex(saved.getCurrentTurnIndex())
+                .id(combat.getId())
+                .campaignId(combat.getCampaign().getId())
+                .chapterId(combat.getChapter() != null ? combat.getChapter().getId() : null)
+                .turnOrder(combat.getTurnOrder())
+                .initiativeRolls(combat.getInitiativeRolls())
+                .currentTurnIndex(combat.getCurrentTurnIndex())
+                .completed(combat.isCompleted())
+                .winnerCharacterId(combat.getWinnerCharacterId())
+                .completedAt(combat.getCompletedAt())
                 .build();
+    }
+
+    @Override
+    public CombatDTO startChapterCombat(Long chapterId, String username) {
+
+        CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
+                .orElseThrow(() -> new RuntimeException("Capitolo non trovato"));
+
+        if (!chapter.isHasCombat()) {
+            throw new RuntimeException("Questo capitolo non prevede un combattimento");
+        }
+
+        Campaign campaign = chapter.getCampaign();
+
+        checkCampaignAccess(campaign, username);
+
+        User user = userService.getByUsername(username);
+
+        boolean chapterUnlocked = campaignChapterProgressRepository
+                .findByUserIdAndChapterId(user.getId(), chapter.getId())
+                .map(CampaignChapterProgress::isUnlocked)
+                .orElse(false);
+
+        if (!chapterUnlocked) {
+            throw new RuntimeException("Non puoi avviare il combattimento di un capitolo non sbloccato");
+        }
+
+        Combat saved = createCombatForCampaign(campaign, chapter);
+
+        return mapToDTO(saved);
+    }
+
+    @Override
+    public CombatDTO startCombat(Long campaignId, String username) {
+
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+
+        checkCampaignAccess(campaign, username);
+
+        Combat saved = createCombatForCampaign(campaign, null);
+
+        return mapToDTO(saved);
     }
 
     @Override
@@ -164,7 +209,10 @@ public class CombatServiceImpl implements CombatService {
                             .maxHp(character.getMaxHp())
                             .armorClass(character.getArmorClass())
                             .alive(character.isAlive())
-                            .currentTurn(currentTurnCharacterId != null && character.getId().equals(currentTurnCharacterId))
+                            .currentTurn(
+                                    currentTurnCharacterId != null
+                                            && character.getId().equals(currentTurnCharacterId)
+                            )
                             .initiative(finalCombat.getInitiativeRolls().get(index))
                             .spellcaster(character.isSpellcaster())
                             .weaponName(character.getWeaponName())
@@ -183,12 +231,21 @@ public class CombatServiceImpl implements CombatService {
                 ? aliveFighters.get(0).getCharacterId()
                 : null;
 
+        Combat completedCombat = markCombatAsCompletedIfOver(
+                finalCombat,
+                combatOver,
+                winnerCharacterId
+        );
+
         return CombatStatusDTO.builder()
-                .combatId(finalCombat.getId())
-                .campaignId(finalCombat.getCampaign().getId())
+                .combatId(completedCombat.getId())
+                .campaignId(completedCombat.getCampaign().getId())
+                .chapterId(completedCombat.getChapter() != null ? completedCombat.getChapter().getId() : null)
                 .currentTurnCharacterId(currentTurnCharacterId)
                 .combatOver(combatOver)
-                .winnerCharacterId(winnerCharacterId)
+                .completed(completedCombat.isCompleted())
+                .winnerCharacterId(completedCombat.getWinnerCharacterId())
+                .completedAt(completedCombat.getCompletedAt())
                 .fighters(fighters)
                 .build();
     }
@@ -259,5 +316,25 @@ public class CombatServiceImpl implements CombatService {
     }
 
     private record CharacterInitiative(Character character, int initiative) {
+    }
+
+    private Combat markCombatAsCompletedIfOver(
+            Combat combat,
+            boolean combatOver,
+            Long winnerCharacterId
+    ) {
+        if (!combatOver) {
+            return combat;
+        }
+
+        if (combat.isCompleted()) {
+            return combat;
+        }
+
+        combat.setCompleted(true);
+        combat.setWinnerCharacterId(winnerCharacterId);
+        combat.setCompletedAt(java.time.LocalDateTime.now());
+
+        return combatRepository.save(combat);
     }
 }

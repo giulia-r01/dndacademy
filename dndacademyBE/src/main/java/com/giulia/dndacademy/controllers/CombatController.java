@@ -14,6 +14,17 @@ public class CombatController {
 
     private final CombatService combatService;
 
+    @PostMapping("/chapter/{chapterId}/start")
+    public CombatDTO startChapterCombat(
+            @PathVariable Long chapterId,
+            Authentication authentication
+    ) {
+        return combatService.startChapterCombat(
+                chapterId,
+                authentication.getName()
+        );
+    }
+
     @PostMapping("/start/{campaignId}")
     public CombatDTO startCombat(
             @PathVariable Long campaignId,
@@ -45,4 +56,5 @@ public class CombatController {
     ) {
         return combatService.getCombatStatus(combatId, authentication.getName());
     }
+
 }

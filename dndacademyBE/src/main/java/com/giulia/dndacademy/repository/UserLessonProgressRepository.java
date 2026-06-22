@@ -11,4 +11,9 @@ public interface UserLessonProgressRepository extends JpaRepository<UserLessonPr
     List<UserLessonProgress> findByUserUsernameOrderByLessonOrderIndexAsc(String username);
 
     Optional<UserLessonProgress> findByUserUsernameAndLessonId(String username, Long lessonId);
+
+    boolean existsByUserUsernameAndLessonIdAndCompletedTrue(
+            String username,
+            Long lessonId
+    );
 }

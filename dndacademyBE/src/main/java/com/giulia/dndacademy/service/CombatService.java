@@ -12,4 +12,6 @@ public interface CombatService {
     void nextTurn(Long combatId, String username);
 
     CombatStatusDTO getCombatStatus(Long combatId, String username);
+
+    CombatDTO startChapterCombat(Long chapterId, String username);
 }

@@ -6,9 +6,7 @@ import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.CampaignChapter;
 import com.giulia.dndacademy.model.CampaignChapterProgress;
 import com.giulia.dndacademy.model.User;
-import com.giulia.dndacademy.repository.CampaignChapterProgressRepository;
-import com.giulia.dndacademy.repository.CampaignChapterRepository;
-import com.giulia.dndacademy.repository.CampaignRepository;
+import com.giulia.dndacademy.repository.*;
 import com.giulia.dndacademy.service.CampaignChapterProgressService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +27,9 @@ public class CampaignChapterProgressServiceImpl
     private final CampaignChapterProgressRepository progressRepository;
     private final UserService userService;
     private final BadgeService badgeService;
+    private final UserLessonProgressRepository userLessonProgressRepository;
+    private final UserQuizResultRepository userQuizResultRepository;
+    private final CombatRepository combatRepository;
 
     @Override
     public List<CampaignChapterProgressDTO> getProgressByCampaign(
@@ -71,6 +72,65 @@ public class CampaignChapterProgressServiceImpl
         );
     }
 
+    private void validateChapterRequirements(
+            CampaignChapter chapter,
+            String username
+    )
+    {
+        if (
+                chapter.getLesson() != null
+                        && chapter.getQuiz() != null
+                        && !chapter.getQuiz().getLesson().getId().equals(chapter.getLesson().getId())
+        ) {
+            throw new RuntimeException(
+                    "Il quiz collegato al capitolo non appartiene alla lezione collegata"
+            );
+        }
+
+
+        if (chapter.getLesson() != null) {
+            boolean lessonCompleted = userLessonProgressRepository
+                    .existsByUserUsernameAndLessonIdAndCompletedTrue(
+                            username,
+                            chapter.getLesson().getId()
+                    );
+
+            if (!lessonCompleted) {
+                throw new RuntimeException(
+                        "Devi completare la lezione prima di completare il capitolo"
+                );
+            }
+        }
+
+        if (chapter.getQuiz() != null) {
+            boolean quizPassed = userQuizResultRepository
+                    .existsByUserUsernameAndQuizIdAndPassedTrue(
+                            username,
+                            chapter.getQuiz().getId()
+                    );
+
+            if (!quizPassed) {
+                throw new RuntimeException(
+                        "Devi superare il quiz prima di completare il capitolo"
+                );
+            }
+        }
+
+        if (chapter.isHasCombat()) {
+
+            boolean combatCompleted = combatRepository
+                    .existsByChapterIdAndCompletedTrue(
+                            chapter.getId()
+                    );
+
+            if (!combatCompleted) {
+                throw new RuntimeException(
+                        "Devi completare il combattimento prima di completare il capitolo"
+                );
+            }
+        }
+    }
+
     @Override
     public CampaignChapterProgressDTO completeChapter(
             Long chapterId,
@@ -95,6 +155,8 @@ public class CampaignChapterProgressServiceImpl
         if (!progress.isUnlocked()) {
             throw new RuntimeException("Questo capitolo non è ancora sbloccato");
         }
+
+        validateChapterRequirements(chapter, username);
 
         progress.setCompleted(true);
         progress.setCompletedAt(LocalDateTime.now());

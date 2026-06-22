@@ -41,4 +41,17 @@ public class LessonController {
         return lessonService.getMyLessonProgress(username);
     }
 
+    @PatchMapping("/{lessonId}/complete")
+    public UserLessonProgressDTO completeLesson(
+            @PathVariable Long lessonId,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+
+        return lessonService.completeLesson(
+                lessonId,
+                username
+        );
+    }
+
 }
