@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
 import com.giulia.dndacademy.dto.CampaignDTO;
+import com.giulia.dndacademy.dto.CreateCampaignRequest;
 import com.giulia.dndacademy.dto.PartyMemberDTO;
 import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.User;
@@ -25,37 +26,27 @@ public class CampaignServiceImpl implements CampaignService {
     private final CombatRepository combatRepository;
 
     @Override
-    public CampaignDTO createCampaign(String name, String description, String username) {
+    public CampaignDTO createCampaign(CreateCampaignRequest request, String username) {
 
         User master = userService.getByUsername(username);
 
         Campaign campaign = Campaign.builder()
-                .name(name)
-                .description(description)
+                .name(request.getName().trim())
+                .description(request.getDescription() != null ? request.getDescription().trim() : null)
                 .master(master)
+                .difficulty(request.getDifficulty())
                 .build();
 
         Campaign saved = campaignRepository.save(campaign);
 
-        return CampaignDTO.builder()
-                .id(saved.getId())
-                .name(saved.getName())
-                .description(saved.getDescription())
-                .masterUsername(master.getUsername())
-                .build();
+        return mapToDTO(saved);
     }
 
     @Override
     public List<CampaignDTO> getAllCampaigns() {
-
         return campaignRepository.findAll()
                 .stream()
-                .map(c -> CampaignDTO.builder()
-                        .id(c.getId())
-                        .name(c.getName())
-                        .description(c.getDescription())
-                        .masterUsername(c.getMaster().getUsername())
-                        .build())
+                .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
@@ -73,12 +64,7 @@ public class CampaignServiceImpl implements CampaignService {
 
         campaignRepository.save(campaign);
 
-        return CampaignDTO.builder()
-                .id(campaign.getId())
-                .name(campaign.getName())
-                .description(campaign.getDescription())
-                .masterUsername(campaign.getMaster().getUsername())
-                .build();
+        return mapToDTO(campaign);
     }
 
     @Override
@@ -120,6 +106,7 @@ public class CampaignServiceImpl implements CampaignService {
                 .name(campaign.getName())
                 .description(campaign.getDescription())
                 .masterUsername(campaign.getMaster().getUsername())
+                .difficulty(campaign.getDifficulty())
                 .build();
     }
 
@@ -138,7 +125,7 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
-    public CampaignDTO updateCampaign(Long campaignId, String name, String description, String username) {
+    public CampaignDTO updateCampaign(Long campaignId, CreateCampaignRequest request, String username) {
         User master = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
@@ -150,16 +137,21 @@ public class CampaignServiceImpl implements CampaignService {
             throw new RuntimeException("Puoi modificare solo le campagne create da te");
         }
 
-        if (name == null || name.isBlank()) {
+        if (request.getName() == null || request.getName().isBlank()) {
             throw new RuntimeException("Il nome della campagna è obbligatorio");
         }
 
-        if (description == null || description.isBlank()) {
+        if (request.getDescription() == null || request.getDescription().isBlank()) {
             throw new RuntimeException("La descrizione della campagna è obbligatoria");
         }
 
-        campaign.setName(name.trim());
-        campaign.setDescription(description.trim());
+        if (request.getDifficulty() == null) {
+            throw new RuntimeException("La difficoltà della campagna è obbligatoria");
+        }
+
+        campaign.setName(request.getName().trim());
+        campaign.setDescription(request.getDescription().trim());
+        campaign.setDifficulty(request.getDifficulty());
 
         Campaign saved = campaignRepository.save(campaign);
 

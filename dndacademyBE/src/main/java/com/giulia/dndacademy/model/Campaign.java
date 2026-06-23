@@ -1,6 +1,8 @@
 package com.giulia.dndacademy.model;
 
+import com.giulia.dndacademy.model.enumerations.CampaignDifficulty;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.List;
@@ -36,4 +38,9 @@ public class Campaign {
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private List<User> players = new java.util.ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    @NotNull
+    @Column(nullable = false)
+    private CampaignDifficulty difficulty;
 }

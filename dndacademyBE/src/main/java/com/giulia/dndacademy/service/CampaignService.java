@@ -1,13 +1,14 @@
 package com.giulia.dndacademy.service;
 
 import com.giulia.dndacademy.dto.CampaignDTO;
+import com.giulia.dndacademy.dto.CreateCampaignRequest;
 import com.giulia.dndacademy.dto.PartyMemberDTO;
 
 import java.util.List;
 
 public interface CampaignService {
 
-    CampaignDTO createCampaign(String name, String description, String username);
+    CampaignDTO createCampaign(CreateCampaignRequest request, String username);
 
     List<CampaignDTO> getAllCampaigns();
 
@@ -17,7 +18,7 @@ public interface CampaignService {
 
     List<PartyMemberDTO> getParty(Long campaignId, String username);
 
-    CampaignDTO updateCampaign(Long campaignId, String name, String description, String username);
+    CampaignDTO updateCampaign(Long campaignId, CreateCampaignRequest request, String username);
 
     void deleteCampaign(Long campaignId, String username);
 }

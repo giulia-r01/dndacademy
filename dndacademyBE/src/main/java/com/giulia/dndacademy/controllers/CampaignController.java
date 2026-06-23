@@ -27,11 +27,7 @@ public class CampaignController {
 
         String username = authentication.getName();
 
-        return campaignService.createCampaign(
-                request.getName(),
-                request.getDescription(),
-                username
-        );
+        return campaignService.createCampaign(request, username);
     }
 
     @GetMapping
@@ -78,12 +74,7 @@ public class CampaignController {
     ) {
         String username = authentication.getName();
 
-        return campaignService.updateCampaign(
-                id,
-                request.getName(),
-                request.getDescription(),
-                username
-        );
+        return campaignService.updateCampaign(id, request, username);
     }
 
     @PreAuthorize("hasRole('MASTER')")

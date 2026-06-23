@@ -8,6 +8,7 @@ import com.giulia.dndacademy.model.CampaignChapterProgress;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.repository.*;
 import com.giulia.dndacademy.service.CampaignChapterProgressService;
+import com.giulia.dndacademy.service.CampaignProgressService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class CampaignChapterProgressServiceImpl
     private final UserLessonProgressRepository userLessonProgressRepository;
     private final UserQuizResultRepository userQuizResultRepository;
     private final CombatRepository combatRepository;
+    private final CampaignProgressService campaignProgressService;
 
     @Override
     public List<CampaignChapterProgressDTO> getProgressByCampaign(
@@ -166,6 +168,11 @@ public class CampaignChapterProgressServiceImpl
         assignRewardBadgeIfPresent(chapter, username);
 
         unlockNextChapterIfExists(user, chapters, chapter);
+
+        campaignProgressService.completeCampaignIfAllChaptersCompleted(
+                chapter.getCampaign().getId(),
+                username
+        );
 
         return mapToDTO(saved);
     }
