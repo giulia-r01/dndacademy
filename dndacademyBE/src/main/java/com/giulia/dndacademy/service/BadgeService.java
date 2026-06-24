@@ -12,4 +12,6 @@ public interface BadgeService {
     List<BadgeDTO> getMyBadges(String username);
 
     BadgeDTO createBadge(CreateBadgeRequest request);
+
+    List<BadgeDTO> getAllBadges();
 }

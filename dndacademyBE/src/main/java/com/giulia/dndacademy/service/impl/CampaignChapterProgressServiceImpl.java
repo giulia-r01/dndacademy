@@ -271,6 +271,7 @@ public class CampaignChapterProgressServiceImpl
         return CampaignChapterPlayerDTO.builder()
                 .chapterId(chapter.getId())
                 .campaignId(chapter.getCampaign().getId())
+                .campaignName(chapter.getCampaign().getName())
                 .title(chapter.getTitle())
                 .description(chapter.getDescription())
                 .storyText(chapter.getStoryText())

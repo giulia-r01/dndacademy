@@ -30,4 +30,10 @@ public class BadgeController {
 
         return badgeService.getMyBadges(username);
     }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @GetMapping
+    public List<BadgeDTO> getAllBadges() {
+        return badgeService.getAllBadges();
+    }
 }

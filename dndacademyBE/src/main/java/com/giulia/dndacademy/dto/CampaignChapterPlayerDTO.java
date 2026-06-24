@@ -15,6 +15,8 @@ public class CampaignChapterPlayerDTO {
 
     private Long campaignId;
 
+    private String campaignName;
+
     private String title;
 
     private String description;

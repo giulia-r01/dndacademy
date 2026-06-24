@@ -8,4 +8,11 @@ export const badgeService = {
       auth: true,
     })
   },
+
+  getAll() {
+    return apiFetch<Badge[]>("/api/badges", {
+      method: "GET",
+      auth: true,
+    })
+  },
 }

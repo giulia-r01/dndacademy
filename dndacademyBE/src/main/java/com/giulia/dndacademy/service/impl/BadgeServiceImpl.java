@@ -77,4 +77,17 @@ public class BadgeServiceImpl implements BadgeService {
                 .description(saved.getDescription())
                 .build();
     }
+
+    @Override
+    public List<BadgeDTO> getAllBadges() {
+        return badgeRepository.findAll()
+                .stream()
+                .map(badge -> BadgeDTO.builder()
+                        .id(badge.getId())
+                        .name(badge.getName())
+                        .description(badge.getDescription())
+                        .unlockedAt(null)
+                        .build())
+                .toList();
+    }
 }

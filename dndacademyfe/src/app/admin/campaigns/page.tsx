@@ -8,6 +8,7 @@ import {
   FiPlusCircle,
   FiEdit3,
   FiTrash2,
+  FiList,
 } from "react-icons/fi"
 import AppModal from "@/components/common/AppModal"
 
@@ -19,12 +20,26 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { campaignService } from "@/services/campaign.service"
 import type { Campaign } from "@/types/campaign"
 
+const difficultyOptions = [
+  { value: "BEGINNER", label: "Principiante" },
+  { value: "INTERMEDIATE", label: "Intermedio" },
+  { value: "ADVANCED", label: "Avanzato" },
+] as const
+
+function getDifficultyLabel(difficulty: Campaign["difficulty"]) {
+  const option = difficultyOptions.find((item) => item.value === difficulty)
+
+  return option?.label ?? difficulty
+}
+
 export default function AdminCampaignsPage() {
   const { user, isLoading: isCheckingUser, error: userError } = useCurrentUser()
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
+  const [difficulty, setDifficulty] =
+    useState<Campaign["difficulty"]>("BEGINNER")
 
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -39,6 +54,8 @@ export default function AdminCampaignsPage() {
 
   const [editName, setEditName] = useState("")
   const [editDescription, setEditDescription] = useState("")
+  const [editDifficulty, setEditDifficulty] =
+    useState<Campaign["difficulty"]>("BEGINNER")
 
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -47,6 +64,7 @@ export default function AdminCampaignsPage() {
     setCampaignToEdit(campaign)
     setEditName(campaign.name)
     setEditDescription(campaign.description ?? "")
+    setEditDifficulty(campaign.difficulty)
     setError("")
     setSuccessMessage("")
   }
@@ -55,6 +73,7 @@ export default function AdminCampaignsPage() {
     setCampaignToEdit(null)
     setEditName("")
     setEditDescription("")
+    setEditDifficulty("BEGINNER")
   }
 
   function openDeleteModal(campaign: Campaign) {
@@ -107,11 +126,13 @@ export default function AdminCampaignsPage() {
       const createdCampaign = await campaignService.create({
         name: name.trim(),
         description: description.trim(),
+        difficulty,
       })
 
       setCampaigns((current) => [createdCampaign, ...current])
       setName("")
       setDescription("")
+      setDifficulty("BEGINNER")
       setSuccessMessage("Campagna creata correttamente.")
     } catch (err) {
       const message =
@@ -149,6 +170,7 @@ export default function AdminCampaignsPage() {
       const updatedCampaign = await campaignService.update(campaignToEdit.id, {
         name: editName.trim(),
         description: editDescription.trim(),
+        difficulty: editDifficulty,
       })
 
       setCampaigns((current) =>
@@ -268,14 +290,14 @@ export default function AdminCampaignsPage() {
         )}
 
         {successMessage && (
-          <AppCard>
+          <AppCard className="self-start">
             <p role="status" className="text-[var(--primary)]">
               {successMessage}
             </p>
           </AppCard>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
+        <div className="grid items-start gap-6 xl:grid-cols-[420px_1fr]">
           <AppCard>
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--accent)]">
@@ -320,6 +342,30 @@ export default function AdminCampaignsPage() {
                   onChange={(event) => setDescription(event.target.value)}
                   className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="difficulty"
+                  className="block text-sm font-bold text-[var(--text-main)]"
+                >
+                  Difficoltà
+                </label>
+
+                <select
+                  id="difficulty"
+                  value={difficulty}
+                  onChange={(event) =>
+                    setDifficulty(event.target.value as Campaign["difficulty"])
+                  }
+                  className="w-full rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+                >
+                  {difficultyOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <AppButton type="submit" fullWidth disabled={isCreating}>
@@ -369,6 +415,10 @@ export default function AdminCampaignsPage() {
                           {campaign.name}
                         </h4>
 
+                        <p className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-[var(--accent-soft)]">
+                          {getDifficultyLabel(campaign.difficulty)}
+                        </p>
+
                         <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                           {campaign.description || "Nessuna descrizione."}
                         </p>
@@ -377,6 +427,17 @@ export default function AdminCampaignsPage() {
                           Master: {campaign.masterUsername}
                         </p>
                         <div className="mt-5 flex flex-wrap gap-3">
+                          <Link
+                            href={`/admin/campaigns/${campaign.id}/chapters`}
+                          >
+                            <AppButton type="button" variant="secondary">
+                              <span className="inline-flex items-center gap-2">
+                                <FiList aria-hidden="true" />
+                                Capitoli
+                              </span>
+                            </AppButton>
+                          </Link>
+
                           <AppButton
                             type="button"
                             variant="secondary"
@@ -439,6 +500,32 @@ export default function AdminCampaignsPage() {
                 onChange={(event) => setEditDescription(event.target.value)}
                 className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="editDifficulty"
+                className="block text-sm font-bold text-[var(--text-main)]"
+              >
+                Difficoltà
+              </label>
+
+              <select
+                id="editDifficulty"
+                value={editDifficulty}
+                onChange={(event) =>
+                  setEditDifficulty(
+                    event.target.value as Campaign["difficulty"],
+                  )
+                }
+                className="w-full rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+              >
+                {difficultyOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

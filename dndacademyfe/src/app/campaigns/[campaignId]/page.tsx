@@ -1,43 +1,37 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
 import Link from "next/link"
-import { FiArrowLeft, FiShield, FiUsers } from "react-icons/fi"
+import { useParams } from "next/navigation"
+import {
+  FiArrowLeft,
+  FiCheckCircle,
+  FiLock,
+  FiPlayCircle,
+} from "react-icons/fi"
 
+import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { campaignService } from "@/services/campaign.service"
-import type { PartyMember } from "@/types/campaign"
+import type { CampaignChapterPlayer } from "@/types/campaign-chapter"
 
 export default function CampaignDetailPage() {
-  const params = useParams<{ campaignId: string }>()
+  const params = useParams()
   const campaignId = Number(params.campaignId)
 
-  const [players, setPlayers] = useState<string[]>([])
-  const [party, setParty] = useState<PartyMember[]>([])
+  const [chapters, setChapters] = useState<CampaignChapterPlayer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
 
   useEffect(() => {
-    async function loadCampaignDetails() {
-      if (Number.isNaN(campaignId)) {
-        setError("ID campagna non valido")
-        setIsLoading(false)
-        return
-      }
-
+    async function loadChapters() {
       try {
-        const [playersData, partyData] = await Promise.all([
-          campaignService.getPlayers(campaignId),
-          campaignService.getParty(campaignId),
-        ])
-
-        setPlayers(playersData)
-        setParty(partyData)
+        const data = await campaignService.getPlayerChapters(campaignId)
+        setChapters(data)
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Errore nel caricamento campagna"
+          err instanceof Error ? err.message : "Errore nel caricamento capitoli"
 
         setError(message)
       } finally {
@@ -45,8 +39,12 @@ export default function CampaignDetailPage() {
       }
     }
 
-    loadCampaignDetails()
+    if (!Number.isNaN(campaignId)) {
+      loadChapters()
+    }
   }, [campaignId])
+
+  const campaignTitle = chapters[0]?.campaignName ?? "Campagna"
 
   return (
     <AppShell>
@@ -61,23 +59,22 @@ export default function CampaignDetailPage() {
 
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
-            Campagna tutorial
+            Percorso campagna
           </p>
 
           <h2 className="mt-2 text-3xl font-black text-[var(--text-main)]">
-            Dettaglio campagna
+            {campaignTitle}
           </h2>
 
-          <p className="mt-2 max-w-2xl text-[var(--text-soft)]">
-            Qui puoi vedere i partecipanti e il party collegato alla campagna.
+          <p className="mt-2 max-w-3xl text-[var(--text-soft)]">
+            Completa i capitoli in ordine: narrazione, lezioni, quiz,
+            combattimenti e ricompense.
           </p>
         </div>
 
         {isLoading && (
           <AppCard>
-            <p className="text-[var(--text-muted)]">
-              Caricamento dettagli campagna...
-            </p>
+            <p className="text-[var(--text-muted)]">Caricamento capitoli...</p>
           </AppCard>
         )}
 
@@ -89,78 +86,96 @@ export default function CampaignDetailPage() {
           </AppCard>
         )}
 
-        {!isLoading && !error && (
-          <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
-            <AppCard>
-              <div className="flex items-center gap-3 text-[var(--accent-soft)]">
-                <FiUsers size={22} aria-hidden="true" />
-                <h3 className="text-lg font-black text-[var(--text-main)]">
-                  Giocatori
-                </h3>
-              </div>
+        {!isLoading && !error && chapters.length === 0 && (
+          <AppCard>
+            <p className="text-[var(--text-muted)]">
+              Questa campagna non ha ancora capitoli.
+            </p>
+          </AppCard>
+        )}
 
-              {players.length === 0 ? (
-                <p className="mt-4 text-sm text-[var(--text-muted)]">
-                  Nessun giocatore iscritto.
-                </p>
-              ) : (
-                <ul className="mt-4 space-y-3">
-                  {players.map((player) => (
-                    <li
-                      key={player}
-                      className="rounded-xl bg-[var(--surface-muted)] px-4 py-3 text-sm font-bold text-[var(--text-soft)]"
-                    >
-                      {player}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </AppCard>
-
-            <AppCard>
-              <div className="flex items-center gap-3 text-[var(--accent-soft)]">
-                <FiShield size={22} aria-hidden="true" />
-                <h3 className="text-lg font-black text-[var(--text-main)]">
-                  Party
-                </h3>
-              </div>
-
-              {party.length === 0 ? (
-                <div className="mt-4 rounded-xl bg-[var(--surface-muted)] px-4 py-4">
-                  <p className="text-sm font-bold text-[var(--text-main)]">
-                    Il party è ancora vuoto.
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--text-muted)]">
-                    Crea un personaggio per iniziare a partecipare alla
-                    campagna.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  {party.map((member) => (
-                    <div
-                      key={`${member.playerUsername}-${member.characterName}`}
-                      className="rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-4"
-                    >
-                      <p className="text-lg font-black text-[var(--text-main)]">
-                        {member.characterName}
-                      </p>
-
-                      <p className="mt-1 text-sm text-[var(--accent-soft)]">
-                        {member.characterClass} · Livello {member.level}
-                      </p>
-
-                      <p className="mt-3 text-sm text-[var(--text-muted)]">
-                        Player: {member.playerUsername}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </AppCard>
+        {!isLoading && !error && chapters.length > 0 && (
+          <div className="space-y-4">
+            {chapters.map((chapter) => (
+              <ChapterCard key={chapter.chapterId} chapter={chapter} />
+            ))}
           </div>
         )}
       </section>
     </AppShell>
+  )
+}
+
+function ChapterCard({ chapter }: { chapter: CampaignChapterPlayer }) {
+  const status = chapter.completed
+    ? "completed"
+    : chapter.unlocked
+      ? "available"
+      : "locked"
+
+  const StatusIcon =
+    status === "completed"
+      ? FiCheckCircle
+      : status === "available"
+        ? FiPlayCircle
+        : FiLock
+
+  const statusLabel =
+    status === "completed"
+      ? "Completato"
+      : status === "available"
+        ? "Disponibile"
+        : "Bloccato"
+
+  return (
+    <AppCard className="transition hover:-translate-y-0.5 hover:border-[var(--border-gold)]">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="rounded-full border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-3 py-1 text-xs font-black uppercase tracking-[0.2em] text-[var(--accent-soft)]">
+              Capitolo {chapter.orderIndex}
+            </span>
+
+            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--surface-muted)] px-3 py-1 text-xs font-bold text-[var(--text-soft)]">
+              <StatusIcon aria-hidden="true" />
+              {statusLabel}
+            </span>
+          </div>
+
+          <h3 className="mt-4 text-2xl font-black text-[var(--text-main)]">
+            {chapter.title}
+          </h3>
+
+          {chapter.description && (
+            <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+              {chapter.description}
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[var(--text-soft)]">
+            {chapter.lessonId && <span>Lezione</span>}
+            {chapter.quizId && <span>Quiz</span>}
+            {chapter.hasCombat && <span>Combat</span>}
+            {chapter.rewardBadgeId && <span>Badge</span>}
+          </div>
+        </div>
+
+        <div className="shrink-0">
+          {chapter.unlocked ? (
+            <Link
+              href={`/campaigns/${chapter.campaignId}/chapters/${chapter.chapterId}`}
+            >
+              <AppButton type="button">
+                {chapter.completed ? "Rivedi" : "Continua"}
+              </AppButton>
+            </Link>
+          ) : (
+            <AppButton type="button" variant="secondary" disabled>
+              Bloccato
+            </AppButton>
+          )}
+        </div>
+      </div>
+    </AppCard>
   )
 }
