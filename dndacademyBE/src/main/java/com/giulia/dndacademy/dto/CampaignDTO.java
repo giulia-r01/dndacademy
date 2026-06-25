@@ -15,4 +15,5 @@ public class CampaignDTO {
     private String description;
     private String masterUsername;
     private CampaignDifficulty difficulty;
+    private long chaptersCount;
 }

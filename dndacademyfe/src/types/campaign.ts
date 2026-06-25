@@ -6,6 +6,7 @@ export type Campaign = {
   description: string | null
   masterUsername: string
   difficulty: CampaignDifficulty
+  chaptersCount: number
 }
 
 export interface CreateCampaignRequest {

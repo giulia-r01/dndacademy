@@ -51,6 +51,8 @@ export default function AdminCampaignsPage() {
   const [campaignToDelete, setCampaignToDelete] = useState<Campaign | null>(
     null,
   )
+  const [campaignBlockedByChapters, setCampaignBlockedByChapters] =
+    useState<Campaign | null>(null)
 
   const [editName, setEditName] = useState("")
   const [editDescription, setEditDescription] = useState("")
@@ -77,13 +79,23 @@ export default function AdminCampaignsPage() {
   }
 
   function openDeleteModal(campaign: Campaign) {
-    setCampaignToDelete(campaign)
     setError("")
     setSuccessMessage("")
+
+    if (campaign.chaptersCount > 0) {
+      setCampaignBlockedByChapters(campaign)
+      return
+    }
+
+    setCampaignToDelete(campaign)
   }
 
   function closeDeleteModal() {
     setCampaignToDelete(null)
+  }
+
+  function closeBlockedByChaptersModal() {
+    setCampaignBlockedByChapters(null)
   }
 
   useEffect(() => {
@@ -579,6 +591,44 @@ export default function AdminCampaignsPage() {
                 onClick={handleDeleteCampaign}
               >
                 {isDeleting ? "Eliminazione..." : "Sì, elimina"}
+              </AppButton>
+            </div>
+          </div>
+        </AppModal>
+        <AppModal
+          isOpen={campaignBlockedByChapters !== null}
+          title="Campagna non eliminabile"
+          description="Questa campagna contiene ancora dei capitoli."
+          onClose={closeBlockedByChaptersModal}
+        >
+          <div className="space-y-5">
+            <p className="text-sm leading-6 text-[var(--text-soft)]">
+              Non puoi eliminare{" "}
+              <span className="font-bold text-[var(--accent-soft)]">
+                {campaignBlockedByChapters?.name}
+              </span>{" "}
+              perché contiene ancora{" "}
+              <span className="font-bold text-[var(--accent-soft)]">
+                {campaignBlockedByChapters?.chaptersCount}
+              </span>{" "}
+              {campaignBlockedByChapters?.chaptersCount === 1
+                ? "capitolo"
+                : "capitoli"}
+              .
+            </p>
+
+            <p className="rounded-xl bg-[rgba(245,158,11,0.12)] px-4 py-3 text-sm font-bold text-[var(--accent-soft)]">
+              Per eliminare questa campagna devi prima eliminare tutti i
+              capitoli associati.
+            </p>
+
+            <div className="flex justify-end">
+              <AppButton
+                type="button"
+                variant="secondary"
+                onClick={closeBlockedByChaptersModal}
+              >
+                Ho capito
               </AppButton>
             </div>
           </div>

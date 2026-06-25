@@ -10,4 +10,8 @@ public interface CampaignChapterRepository extends JpaRepository<CampaignChapter
     List<CampaignChapter> findByCampaignIdOrderByOrderIndexAsc(Long campaignId);
 
     boolean existsByCampaignIdAndOrderIndex(Long campaignId, int orderIndex);
+
+    boolean existsByCampaignId(Long campaignId);
+
+    long countByCampaignId(Long campaignId);
 }

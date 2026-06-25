@@ -5,6 +5,7 @@ import com.giulia.dndacademy.dto.CreateCampaignRequest;
 import com.giulia.dndacademy.dto.PartyMemberDTO;
 import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.User;
+import com.giulia.dndacademy.repository.CampaignChapterRepository;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.repository.CharacterRepository;
 import com.giulia.dndacademy.repository.CombatRepository;
@@ -24,6 +25,7 @@ public class CampaignServiceImpl implements CampaignService {
     private final UserService userService;
     private final CharacterRepository characterRepository;
     private final CombatRepository combatRepository;
+    private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
     public CampaignDTO createCampaign(CreateCampaignRequest request, String username) {
@@ -107,6 +109,7 @@ public class CampaignServiceImpl implements CampaignService {
                 .description(campaign.getDescription())
                 .masterUsername(campaign.getMaster().getUsername())
                 .difficulty(campaign.getDifficulty())
+                .chaptersCount(campaignChapterRepository.countByCampaignId(campaign.getId()))
                 .build();
     }
 
@@ -169,6 +172,12 @@ public class CampaignServiceImpl implements CampaignService {
 
         if (!isCampaignMaster) {
             throw new RuntimeException("Puoi eliminare solo le campagne create da te");
+        }
+
+        if (campaignChapterRepository.existsByCampaignId(campaignId)) {
+            throw new RuntimeException(
+                    "Non puoi eliminare una campagna che contiene capitoli. Elimina prima tutti i capitoli della campagna."
+            );
         }
 
         if (!characterRepository.findByCampaignId(campaignId).isEmpty()) {
