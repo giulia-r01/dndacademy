@@ -2,6 +2,7 @@ package com.giulia.dndacademy.service;
 
 import com.giulia.dndacademy.dto.BadgeDTO;
 import com.giulia.dndacademy.dto.CreateBadgeRequest;
+import com.giulia.dndacademy.dto.UpdateBadgeRequest;
 
 import java.util.List;
 
@@ -14,4 +15,8 @@ public interface BadgeService {
     BadgeDTO createBadge(CreateBadgeRequest request);
 
     List<BadgeDTO> getAllBadges();
+
+    BadgeDTO updateBadge(Long badgeId, UpdateBadgeRequest request);
+
+    void deleteBadge(Long badgeId);
 }

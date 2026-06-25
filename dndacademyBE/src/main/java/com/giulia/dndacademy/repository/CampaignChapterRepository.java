@@ -20,4 +20,6 @@ public interface CampaignChapterRepository extends JpaRepository<CampaignChapter
     long countByLessonId(Long lessonId);
 
     List<CampaignChapter> findByLessonId(Long lessonId);
+
+    boolean existsByRewardBadgeId(Long badgeId);
 }

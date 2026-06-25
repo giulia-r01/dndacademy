@@ -71,12 +71,12 @@ function LessonFormContent({
     setFormError("")
 
     if (!formValues.lessonTitle.trim()) {
-      setFormError("Il titolo della lezione e' obbligatorio.")
+      setFormError("Il titolo della lezione è obbligatorio.")
       return
     }
 
     if (!formValues.content.trim()) {
-      setFormError("Il contenuto della lezione e' obbligatorio.")
+      setFormError("Il contenuto della lezione è obbligatorio.")
       return
     }
 

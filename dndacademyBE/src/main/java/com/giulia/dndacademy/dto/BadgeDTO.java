@@ -15,4 +15,7 @@ public class BadgeDTO {
     private String name;
     private String description;
     private LocalDateTime unlockedAt;
+
+    private boolean assignedToUsers;
+    private boolean usedAsChapterReward;
 }

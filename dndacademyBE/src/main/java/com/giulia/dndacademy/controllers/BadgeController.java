@@ -2,8 +2,10 @@ package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.BadgeDTO;
 import com.giulia.dndacademy.dto.CreateBadgeRequest;
+import com.giulia.dndacademy.dto.UpdateBadgeRequest;
 import com.giulia.dndacademy.service.BadgeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -35,5 +37,21 @@ public class BadgeController {
     @GetMapping
     public List<BadgeDTO> getAllBadges() {
         return badgeService.getAllBadges();
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @PutMapping("/{badgeId}")
+    public BadgeDTO updateBadge(
+            @PathVariable Long badgeId,
+            @RequestBody UpdateBadgeRequest request
+    ) {
+        return badgeService.updateBadge(badgeId, request);
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @DeleteMapping("/{badgeId}")
+    public ResponseEntity<Void> deleteBadge(@PathVariable Long badgeId) {
+        badgeService.deleteBadge(badgeId);
+        return ResponseEntity.noContent().build();
     }
 }
