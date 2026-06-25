@@ -2,6 +2,7 @@ package com.giulia.dndacademy.service;
 
 import com.giulia.dndacademy.dto.CreateLessonRequest;
 import com.giulia.dndacademy.dto.LessonDTO;
+import com.giulia.dndacademy.dto.UpdateLessonRequest;
 import com.giulia.dndacademy.dto.UserLessonProgressDTO;
 
 import java.util.List;
@@ -19,4 +20,8 @@ public interface LessonService {
     UserLessonProgressDTO completeLesson(Long lessonId, String username);
 
     void completeLessonAfterQuiz(Long lessonId, String username);
+
+    LessonDTO updateLesson(Long lessonId, UpdateLessonRequest request);
+
+    void deleteLesson(Long lessonId);
 }

@@ -2,10 +2,12 @@ package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.CreateLessonRequest;
 import com.giulia.dndacademy.dto.LessonDTO;
+import com.giulia.dndacademy.dto.UpdateLessonRequest;
 import com.giulia.dndacademy.dto.UserLessonProgressDTO;
 import com.giulia.dndacademy.service.LessonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
@@ -52,6 +54,23 @@ public class LessonController {
                 lessonId,
                 username
         );
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @PutMapping("/{lessonId}")
+    public ResponseEntity<LessonDTO> updateLesson(
+            @PathVariable Long lessonId,
+            @Valid @RequestBody UpdateLessonRequest request
+    ) {
+        LessonDTO updatedLesson = lessonService.updateLesson(lessonId, request);
+        return ResponseEntity.ok(updatedLesson);
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @DeleteMapping("/{lessonId}")
+    public ResponseEntity<Void> deleteLesson(@PathVariable Long lessonId) {
+        lessonService.deleteLesson(lessonId);
+        return ResponseEntity.noContent().build();
     }
 
 }

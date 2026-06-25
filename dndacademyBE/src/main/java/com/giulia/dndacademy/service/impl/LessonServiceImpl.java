@@ -1,10 +1,10 @@
 package com.giulia.dndacademy.service.impl;
 
-import com.giulia.dndacademy.dto.CreateLessonRequest;
-import com.giulia.dndacademy.dto.LessonDTO;
-import com.giulia.dndacademy.dto.UserLessonProgressDTO;
+import com.giulia.dndacademy.dto.*;
 import com.giulia.dndacademy.model.Lesson;
+import com.giulia.dndacademy.repository.CampaignChapterRepository;
 import com.giulia.dndacademy.repository.LessonRepository;
+import com.giulia.dndacademy.repository.QuizRepository;
 import com.giulia.dndacademy.repository.UserLessonProgressRepository;
 import com.giulia.dndacademy.service.LessonService;
 import com.giulia.dndacademy.service.UserService;
@@ -24,6 +24,8 @@ public class LessonServiceImpl implements LessonService {
     private final LessonRepository lessonRepository;
     private final UserLessonProgressRepository userLessonProgressRepository;
     private final UserService userService;
+    private final QuizRepository quizRepository;
+    private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
     public LessonDTO createLesson(CreateLessonRequest request) {
@@ -54,12 +56,30 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private LessonDTO mapToDTO(Lesson lesson) {
+        QuizSummaryDTO quizSummary = quizRepository.findByLessonId(lesson.getId())
+                .map(quiz -> QuizSummaryDTO.builder()
+                        .id(quiz.getId())
+                        .title(quiz.getTitle())
+                        .build())
+                .orElse(null);
+
+        List<ChapterSummaryDTO> chapterSummaries = campaignChapterRepository
+                .findByLessonId(lesson.getId())
+                .stream()
+                .map(chapter -> ChapterSummaryDTO.builder()
+                        .id(chapter.getId())
+                        .title(chapter.getTitle())
+                        .build())
+                .toList();
+
         return LessonDTO.builder()
                 .id(lesson.getId())
                 .title(lesson.getTitle())
                 .content(lesson.getContent())
                 .orderIndex(lesson.getOrderIndex())
                 .unlockedByDefault(lesson.isUnlockedByDefault())
+                .quiz(quizSummary)
+                .chapters(chapterSummaries)
                 .build();
     }
 
@@ -193,5 +213,40 @@ public class LessonServiceImpl implements LessonService {
                     nextProgress.setUnlocked(true);
                     userLessonProgressRepository.save(nextProgress);
                 });
+    }
+
+    @Override
+    public LessonDTO updateLesson(Long lessonId, UpdateLessonRequest request) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+
+        lesson.setTitle(request.getTitle().trim());
+        lesson.setContent(request.getContent().trim());
+        lesson.setOrderIndex(request.getOrderIndex());
+        lesson.setUnlockedByDefault(request.getUnlockedByDefault());
+
+        Lesson updatedLesson = lessonRepository.save(lesson);
+
+        return mapToDTO(updatedLesson);
+    }
+
+    @Override
+    public void deleteLesson(Long lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+
+        if (quizRepository.findByLessonId(lessonId).isPresent()) {
+            throw new RuntimeException(
+                    "Non puoi eliminare questa lezione perché è collegata a un quiz. Elimina prima il quiz associato."
+            );
+        }
+
+        if (!campaignChapterRepository.findByLessonId(lessonId).isEmpty()) {
+            throw new RuntimeException(
+                    "Non puoi eliminare questa lezione perché è collegata a uno o più capitoli. Rimuovi prima il collegamento dai capitoli."
+            );
+        }
+
+        lessonRepository.delete(lesson);
     }
 }

@@ -2,6 +2,8 @@ package com.giulia.dndacademy.dto;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,4 +16,7 @@ public class LessonDTO {
     private String content;
     private int orderIndex;
     private boolean unlockedByDefault;
+
+    private QuizSummaryDTO quiz;
+    private List<ChapterSummaryDTO> chapters;
 }
