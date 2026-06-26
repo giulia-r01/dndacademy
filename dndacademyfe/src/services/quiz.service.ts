@@ -1,9 +1,11 @@
 import { apiFetch } from "@/services/api"
 import type {
+  CreateQuizRequest,
   Question,
   Quiz,
   QuizResult,
   SubmitQuizRequest,
+  UpdateQuizRequest,
   UserQuizResult,
 } from "@/types/quiz"
 
@@ -34,6 +36,43 @@ export const quizService = {
       method: "POST",
       auth: true,
       body: JSON.stringify(payload),
+    })
+  },
+
+  getAll() {
+    return apiFetch<Quiz[]>("/api/quizzes", {
+      method: "GET",
+      auth: true,
+    })
+  },
+
+  getById(id: number) {
+    return apiFetch<Quiz>(`/api/quizzes/${id}`, {
+      method: "GET",
+      auth: true,
+    })
+  },
+
+  create(request: CreateQuizRequest) {
+    return apiFetch<Quiz>("/api/quizzes", {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(request),
+    })
+  },
+
+  update(id: number, request: UpdateQuizRequest) {
+    return apiFetch<Quiz>(`/api/quizzes/${id}`, {
+      method: "PUT",
+      auth: true,
+      body: JSON.stringify(request),
+    })
+  },
+
+  remove(id: number) {
+    return apiFetch<void>(`/api/quizzes/${id}`, {
+      method: "DELETE",
+      auth: true,
     })
   },
 }

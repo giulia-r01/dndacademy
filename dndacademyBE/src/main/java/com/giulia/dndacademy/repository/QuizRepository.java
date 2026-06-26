@@ -9,4 +9,6 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     Optional<Quiz> findByLessonId(Long lessonId);
 
     boolean existsByLessonId(Long lessonId);
+
+    boolean existsByLessonIdAndIdNot(Long lessonId, Long quizId);
 }

@@ -17,4 +17,6 @@ public interface UserQuizResultRepository extends JpaRepository<UserQuizResult, 
 
     @Query("SELECT COUNT(DISTINCT r.quiz.id) FROM UserQuizResult r WHERE r.user.username = :username AND r.passed = true")
     long countDistinctPassedQuizzesByUsername(@Param("username") String username);
+
+    boolean existsByQuizId(Long quizId);
 }

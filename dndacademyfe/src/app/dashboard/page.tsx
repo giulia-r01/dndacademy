@@ -32,7 +32,7 @@ export default function DashboardPage() {
         const [lessonsData, quizResultsData, badgesData] = await Promise.all([
           lessonService.getMyProgress(),
           quizService.getMyResults(),
-          badgeService.getMyBadges(),
+          badgeService.getMine(),
         ])
 
         setLessons(lessonsData)

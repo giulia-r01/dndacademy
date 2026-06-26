@@ -12,4 +12,12 @@ public interface QuizService {
     QuizResultDTO submitQuiz(SubmitQuizRequest request, String username);
 
     List<UserQuizResultDTO> getMyQuizResults(String username);
+
+    List<QuizDTO> getAllQuizzes();
+
+    QuizDTO getQuizById(Long quizId);
+
+    QuizDTO updateQuiz(Long quizId, UpdateQuizRequest request);
+
+    void deleteQuiz(Long quizId);
 }

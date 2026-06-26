@@ -32,36 +32,52 @@ public class QuizServiceImpl implements QuizService {
     private final LessonService lessonService;
     private final BadgeService badgeService;
     private final UserLessonProgressRepository userLessonProgressRepository;
+    private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
     public QuizDTO createQuiz(CreateQuizRequest request) {
         Lesson lesson = lessonRepository.findById(request.getLessonId())
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata"));
+                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+
+        if (quizRepository.existsByLessonId(request.getLessonId())) {
+            throw new RuntimeException(
+                    "Questa lezione ha già un quiz associato. Ogni lezione può avere un solo quiz."
+            );
+        }
 
         Quiz quiz = Quiz.builder()
-                .title(request.getTitle())
+                .title(request.getTitle().trim())
                 .lesson(lesson)
                 .passingScore(request.getPassingScore())
                 .build();
 
-        return mapToDTO(quizRepository.save(quiz));
+        Quiz savedQuiz = quizRepository.save(quiz);
+
+        return mapToDTO(savedQuiz);
+    }
+
+    @Override
+    public List<QuizDTO> getAllQuizzes() {
+        return quizRepository.findAll()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
+    }
+
+    @Override
+    public QuizDTO getQuizById(Long quizId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz non trovato."));
+
+        return mapToDTO(quiz);
     }
 
     @Override
     public QuizDTO getQuizByLesson(Long lessonId) {
         Quiz quiz = quizRepository.findByLessonId(lessonId)
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato per questa lezione"));
+                .orElseThrow(() -> new RuntimeException("Quiz non trovato per questa lezione."));
 
         return mapToDTO(quiz);
-    }
-
-    private QuizDTO mapToDTO(Quiz quiz) {
-        return QuizDTO.builder()
-                .id(quiz.getId())
-                .title(quiz.getTitle())
-                .lessonId(quiz.getLesson().getId())
-                .passingScore(quiz.getPassingScore())
-                .build();
     }
 
     @Override
@@ -172,5 +188,67 @@ public class QuizServiceImpl implements QuizService {
                         .completedAt(result.getCompletedAt())
                         .build())
                 .toList();
+    }
+
+    @Override
+    public QuizDTO updateQuiz(Long quizId, UpdateQuizRequest request) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz non trovato."));
+
+        Lesson lesson = lessonRepository.findById(request.getLessonId())
+                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+
+        if (quizRepository.existsByLessonIdAndIdNot(request.getLessonId(), quizId)) {
+            throw new RuntimeException(
+                    "Questa lezione ha già un quiz associato. Scegli un'altra lezione."
+            );
+        }
+
+        quiz.setTitle(request.getTitle().trim());
+        quiz.setLesson(lesson);
+        quiz.setPassingScore(request.getPassingScore());
+
+        Quiz updatedQuiz = quizRepository.save(quiz);
+
+        return mapToDTO(updatedQuiz);
+    }
+
+    @Override
+    public void deleteQuiz(Long quizId) {
+        Quiz quiz = quizRepository.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz non trovato."));
+
+        if (questionRepository.existsByQuizId(quizId)) {
+            throw new RuntimeException(
+                    "Non puoi eliminare questo quiz perché contiene ancora una o più domande. Elimina prima tutte le domande associate."
+            );
+        }
+
+        if (userQuizResultRepository.existsByQuizId(quizId)) {
+            throw new RuntimeException(
+                    "Non puoi eliminare questo quiz perché è già stato svolto da uno o più utenti."
+            );
+        }
+
+        if (campaignChapterRepository.existsByQuizId(quizId)) {
+            throw new RuntimeException(
+                    "Non puoi eliminare questo quiz perché è collegato a uno o più capitoli. Rimuovi prima il collegamento dai capitoli."
+            );
+        }
+
+        quizRepository.delete(quiz);
+    }
+
+    private QuizDTO mapToDTO(Quiz quiz) {
+        return QuizDTO.builder()
+                .id(quiz.getId())
+                .title(quiz.getTitle())
+                .lessonId(quiz.getLesson().getId())
+                .lessonTitle(quiz.getLesson().getTitle())
+                .passingScore(quiz.getPassingScore())
+                .questionCount(questionRepository.countByQuizId(quiz.getId()))
+                .hasResults(userQuizResultRepository.existsByQuizId(quiz.getId()))
+                .usedInChapters(campaignChapterRepository.existsByQuizId(quiz.getId()))
+                .build();
     }
 }

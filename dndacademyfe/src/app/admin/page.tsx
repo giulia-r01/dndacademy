@@ -6,6 +6,7 @@ import {
   FiFlag,
   FiShield,
   FiUserPlus,
+  FiHelpCircle,
 } from "react-icons/fi"
 
 import AppCard from "@/components/common/AppCard"
@@ -32,6 +33,12 @@ const adminSections = [
     description: "Gestisci i contenuti didattici del percorso.",
     icon: FiBookOpen,
     href: "/admin/lessons",
+  },
+  {
+    title: "Quiz",
+    description: "Crea e gestisci quiz e domande.",
+    icon: FiHelpCircle,
+    href: "/admin/quizzes",
   },
   {
     title: "Badge",
