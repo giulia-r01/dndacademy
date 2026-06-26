@@ -73,7 +73,7 @@ export default function CampaignProgressCard({
           {campaign.unlocked ? (
             <Link href={`/campaigns/${campaign.campaignId}`}>
               <AppButton type="button">
-                {campaign.completed ? "Rivedi campagna" : "Continua"}
+                {campaign.completed ? "Rivedi campagna" : "Vai"}
               </AppButton>
             </Link>
           ) : (
