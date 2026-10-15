@@ -26,6 +26,8 @@ export default function CampaignChapterDetailPage() {
   const [chapter, setChapter] = useState<CampaignChapterPlayer | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [completeError, setCompleteError] = useState("")
 
   useEffect(() => {
     async function loadChapter() {
@@ -65,6 +67,40 @@ export default function CampaignChapterDetailPage() {
 
     loadChapter()
   }, [campaignId, chapterId])
+
+  async function handleCompleteChapter() {
+    if (!chapter || chapter.completed || isCompleting) {
+      return
+    }
+
+    setIsCompleting(true)
+    setCompleteError("")
+
+    try {
+      const progress = await campaignService.completeChapter(chapterId)
+
+      setChapter((currentChapter) => {
+        if (!currentChapter) {
+          return null
+        }
+
+        return {
+          ...currentChapter,
+          completed: progress.completed,
+          completedAt: progress.completedAt,
+        }
+      })
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Errore durante il completamento del capitolo"
+
+      setCompleteError(message)
+    } finally {
+      setIsCompleting(false)
+    }
+  }
 
   return (
     <AppShell>
@@ -152,7 +188,7 @@ export default function CampaignChapterDetailPage() {
                 />
               )}
 
-              {chapter.rewardBadgeId && (
+              {chapter.rewardBadgeId !== null && (
                 <RewardCard
                   rewardBadgeName={chapter.rewardBadgeName}
                   completed={chapter.completed}
@@ -173,11 +209,22 @@ export default function CampaignChapterDetailPage() {
                     presenti.
                   </p>
                 </div>
+                {completeError && (
+                  <p role="alert" className="text-danger">
+                    {completeError}
+                  </p>
+                )}
 
-                <AppButton type="button" disabled={chapter.completed}>
-                  {chapter.completed
-                    ? "Capitolo completato"
-                    : "Completa capitolo"}
+                <AppButton
+                  type="button"
+                  onClick={handleCompleteChapter}
+                  disabled={chapter.completed || isCompleting}
+                >
+                  {isCompleting
+                    ? "Completamento in corso..."
+                    : chapter.completed
+                      ? "Capitolo completato"
+                      : "Completa capitolo"}
                 </AppButton>
               </div>
             </AppCard>

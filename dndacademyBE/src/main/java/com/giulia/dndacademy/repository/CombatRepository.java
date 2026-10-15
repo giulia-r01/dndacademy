@@ -15,4 +15,6 @@ public interface CombatRepository extends JpaRepository<Combat, Long> {
     Optional<Combat> findTopByChapterIdOrderByIdDesc(Long chapterId);
 
     boolean existsByChapterIdAndCompletedTrue(Long chapterId);
+
+    boolean existsByChapterIdAndUserIdAndCompletedTrue( Long chapterId, Long userId );
 }

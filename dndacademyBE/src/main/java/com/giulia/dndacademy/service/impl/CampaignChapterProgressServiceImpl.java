@@ -76,7 +76,7 @@ public class CampaignChapterProgressServiceImpl
 
     private void validateChapterRequirements(
             CampaignChapter chapter,
-            String username
+            User user
     )
     {
         if (
@@ -93,7 +93,7 @@ public class CampaignChapterProgressServiceImpl
         if (chapter.getLesson() != null) {
             boolean lessonCompleted = userLessonProgressRepository
                     .existsByUserUsernameAndLessonIdAndCompletedTrue(
-                            username,
+                            user.getUsername(),
                             chapter.getLesson().getId()
                     );
 
@@ -107,7 +107,7 @@ public class CampaignChapterProgressServiceImpl
         if (chapter.getQuiz() != null) {
             boolean quizPassed = userQuizResultRepository
                     .existsByUserUsernameAndQuizIdAndPassedTrue(
-                            username,
+                            user.getUsername(),
                             chapter.getQuiz().getId()
                     );
 
@@ -121,8 +121,9 @@ public class CampaignChapterProgressServiceImpl
         if (chapter.isHasCombat()) {
 
             boolean combatCompleted = combatRepository
-                    .existsByChapterIdAndCompletedTrue(
-                            chapter.getId()
+                    .existsByChapterIdAndUserIdAndCompletedTrue(
+                            chapter.getId(),
+                            user.getId()
                     );
 
             if (!combatCompleted) {
@@ -158,7 +159,7 @@ public class CampaignChapterProgressServiceImpl
             throw new RuntimeException("Questo capitolo non è ancora sbloccato");
         }
 
-        validateChapterRequirements(chapter, username);
+        validateChapterRequirements(chapter, user);
 
         progress.setCompleted(true);
         progress.setCompletedAt(LocalDateTime.now());

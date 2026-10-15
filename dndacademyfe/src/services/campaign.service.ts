@@ -8,6 +8,7 @@ import type {
   CampaignChapter,
   CampaignChapterPlayer,
   CreateCampaignChapterRequest,
+  CampaignChapterProgress,
 } from "@/types/campaign-chapter"
 import type { CampaignProgress } from "@/types/campaign-progress"
 
@@ -81,14 +82,11 @@ export const campaignService = {
   },
 
   createChapter(campaignId: number, payload: CreateCampaignChapterRequest) {
-    return apiFetch<CampaignChapter>(
-      `/api/campaigns/${campaignId}/chapters`,
-      {
-        method: "POST",
-        auth: true,
-        body: JSON.stringify(payload),
-      },
-    )
+    return apiFetch<CampaignChapter>(`/api/campaigns/${campaignId}/chapters`, {
+      method: "POST",
+      auth: true,
+      body: JSON.stringify(payload),
+    })
   },
 
   updateChapter(chapterId: number, payload: CreateCampaignChapterRequest) {
@@ -111,6 +109,16 @@ export const campaignService = {
       `/api/campaigns/${campaignId}/chapters/player`,
       {
         method: "GET",
+        auth: true,
+      },
+    )
+  },
+
+  completeChapter(chapterId: number) {
+    return apiFetch<CampaignChapterProgress>(
+      `/api/campaigns/chapters/${chapterId}/complete`,
+      {
+        method: "PATCH",
         auth: true,
       },
     )

@@ -45,3 +45,12 @@ export type CreateCampaignChapterRequest = {
   quizId: number | null
   rewardBadgeId: number | null
 }
+
+export type CampaignChapterProgress = {
+  chapterId: number
+  chapterTitle: string
+  orderIndex: number
+  unlocked: boolean
+  completed: boolean
+  completedAt: string | null
+}

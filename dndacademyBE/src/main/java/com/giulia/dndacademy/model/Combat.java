@@ -25,6 +25,10 @@ public class Combat {
     @JoinColumn(name = "chapter_id")
     private CampaignChapter chapter;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @ElementCollection
     private List<Long> turnOrder;
 

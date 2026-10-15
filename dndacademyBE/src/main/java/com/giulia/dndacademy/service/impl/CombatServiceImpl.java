@@ -9,7 +9,9 @@ import com.giulia.dndacademy.repository.*;
 import com.giulia.dndacademy.service.CombatService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -24,7 +26,7 @@ public class CombatServiceImpl implements CombatService {
     private final CampaignChapterRepository campaignChapterRepository;
     private final CampaignChapterProgressRepository campaignChapterProgressRepository;
 
-    private Combat createCombatForCampaign(Campaign campaign, CampaignChapter chapter) {
+    private Combat createCombatForCampaign(Campaign campaign, CampaignChapter chapter, User user) {
         List<Character> characters = characterRepository
                 .findByCampaignIdAndPlayerIsNotNull(campaign.getId());
 
@@ -63,6 +65,7 @@ public class CombatServiceImpl implements CombatService {
         Combat combat = Combat.builder()
                 .campaign(campaign)
                 .chapter(chapter)
+                .user(user)
                 .turnOrder(turnOrder)
                 .initiativeRolls(initiativeRolls)
                 .currentTurnIndex(0)
@@ -113,7 +116,7 @@ public class CombatServiceImpl implements CombatService {
             throw new RuntimeException("Non puoi avviare il combattimento di un capitolo non sbloccato");
         }
 
-        Combat saved = createCombatForCampaign(campaign, chapter);
+        Combat saved = createCombatForCampaign(campaign, chapter, user);
 
         return mapToDTO(saved);
     }
@@ -126,7 +129,9 @@ public class CombatServiceImpl implements CombatService {
 
         checkCampaignAccess(campaign, username);
 
-        Combat saved = createCombatForCampaign(campaign, null);
+        User user = userService.getByUsername(username);
+
+        Combat saved = createCombatForCampaign(campaign, null, user);
 
         return mapToDTO(saved);
     }
@@ -134,9 +139,7 @@ public class CombatServiceImpl implements CombatService {
     @Override
     public Long getCurrentTurn(Long combatId, String username) {
 
-        Combat combat = getCombatOrThrow(combatId);
-
-        checkCampaignAccess(combat.getCampaign(), username);
+        Combat combat = getAuthorizedCombatOrThrow(combatId, username);
 
         if (isCombatOver(combat)) {
             throw new RuntimeException("Il combattimento è finito");
@@ -156,9 +159,7 @@ public class CombatServiceImpl implements CombatService {
     @Override
     public void nextTurn(Long combatId, String username) {
 
-        Combat combat = getCombatOrThrow(combatId);
-
-        checkCampaignAccess(combat.getCampaign(), username);
+        Combat combat = getAuthorizedCombatOrThrow(combatId, username);
 
         if (isCombatOver(combat)) {
             throw new RuntimeException("Il combattimento è finito");
@@ -172,9 +173,7 @@ public class CombatServiceImpl implements CombatService {
     @Override
     public CombatStatusDTO getCombatStatus(Long combatId, String username) {
 
-        Combat combat = getCombatOrThrow(combatId);
-
-        checkCampaignAccess(combat.getCampaign(), username);
+        Combat combat = getAuthorizedCombatOrThrow(combatId, username);
 
         boolean combatOver = isCombatOver(combat);
 
@@ -253,6 +252,26 @@ public class CombatServiceImpl implements CombatService {
     private Combat getCombatOrThrow(Long combatId) {
         return combatRepository.findById(combatId)
                 .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
+    }
+
+    private Combat getAuthorizedCombatOrThrow(
+            Long combatId,
+            String username
+    ) {
+        Combat combat = getCombatOrThrow(combatId);
+
+        User user = userService.getByUsername(username);
+
+        if (combat.getUser() == null ||
+                !combat.getUser().getId().equals(user.getId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Non sei autorizzato ad accedere a questo combattimento"
+            );
+        }
+
+        return combat;
     }
 
     private Character getCurrentTurnCharacter(Combat combat) {
