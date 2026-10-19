@@ -6,6 +6,7 @@ export type CampaignProgress = {
   campaignDescription: string
   difficulty: CampaignDifficulty
   unlocked: boolean
+  joined: boolean
   completed: boolean
   completedAt: string | null
 }

@@ -13,10 +13,14 @@ const difficultyLabels = {
 
 type CampaignProgressCardProps = {
   campaign: CampaignProgress
+  onJoin: (campaignId: number) => void
+  isJoining: boolean
 }
 
 export default function CampaignProgressCard({
   campaign,
+  onJoin,
+  isJoining,
 }: CampaignProgressCardProps) {
   const status = campaign.completed
     ? "completed"
@@ -70,16 +74,24 @@ export default function CampaignProgressCard({
         </div>
 
         <div className="shrink-0">
-          {campaign.unlocked ? (
-            <Link href={`/campaigns/${campaign.campaignId}`}>
-              <AppButton type="button">
-                {campaign.completed ? "Rivedi campagna" : "Vai"}
-              </AppButton>
-            </Link>
-          ) : (
+          {!campaign.unlocked ? (
             <AppButton type="button" variant="secondary" disabled>
               Bloccata
             </AppButton>
+          ) : !campaign.joined ? (
+            <AppButton
+              type="button"
+              onClick={() => onJoin(campaign.campaignId)}
+              disabled={isJoining}
+            >
+              {isJoining ? "Iscrizione..." : "Unisciti"}
+            </AppButton>
+          ) : (
+            <Link href={`/campaigns/${campaign.campaignId}`}>
+              <AppButton type="button">
+                {campaign.completed ? "Rivedi campagna" : "Continua"}
+              </AppButton>
+            </Link>
           )}
         </div>
       </div>

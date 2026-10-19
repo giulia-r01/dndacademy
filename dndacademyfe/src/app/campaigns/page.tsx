@@ -12,6 +12,8 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<CampaignProgress[]>([])
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [joiningCampaignId, setJoiningCampaignId] = useState<number | null>(null)
+  const [joinError, setJoinError] = useState("")
 
   useEffect(() => {
     async function loadCampaignProgress() {
@@ -38,6 +40,32 @@ export default function CampaignsPage() {
     (campaign) => campaign.unlocked && !campaign.completed,
   )
   const lockedCampaigns = campaigns.filter((campaign) => !campaign.unlocked)
+
+  async function handleJoinCampaign(campaignId: number) {
+    if (joiningCampaignId !== null) {
+      return
+    }
+
+    setJoiningCampaignId(campaignId)
+    setJoinError("")
+
+    try {
+      await campaignService.join(campaignId)
+
+      const updatedCampaigns = await campaignService.getMyProgress()
+
+      setCampaigns(updatedCampaigns)
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Errore durante l'iscrizione alla campagna"
+
+      setJoinError(message)
+    } finally {
+      setJoiningCampaignId(null)
+    }
+  }
 
   return (
     <AppShell>
@@ -71,6 +99,14 @@ export default function CampaignsPage() {
           </AppCard>
         )}
 
+        {joinError && (
+          <AppCard className="border-danger">
+            <p role="alert" className="text-danger">
+              {joinError}
+            </p>
+          </AppCard>
+        )}
+
         {!isLoading && !error && campaigns.length === 0 && (
           <AppCard>
             <p className="text-[var(--text-muted)]">
@@ -86,6 +122,8 @@ export default function CampaignsPage() {
                 title="Disponibili"
                 description="Campagne che puoi iniziare o continuare."
                 campaigns={availableCampaigns}
+                onJoin={handleJoinCampaign}
+                joiningCampaignId={joiningCampaignId}
               />
             )}
 
@@ -94,6 +132,8 @@ export default function CampaignsPage() {
                 title="Completate"
                 description="Campagne che hai già portato a termine."
                 campaigns={completedCampaigns}
+                onJoin={handleJoinCampaign}
+                joiningCampaignId={joiningCampaignId}
               />
             )}
 
@@ -102,6 +142,8 @@ export default function CampaignsPage() {
                 title="Bloccate"
                 description="Completa campagne di difficoltà precedente per sbloccarle."
                 campaigns={lockedCampaigns}
+                onJoin={handleJoinCampaign}
+                joiningCampaignId={joiningCampaignId}
               />
             )}
           </div>
@@ -115,12 +157,16 @@ type CampaignSectionProps = {
   title: string
   description: string
   campaigns: CampaignProgress[]
+  onJoin: (campaignId: number) => void
+  joiningCampaignId: number | null
 }
 
 function CampaignSection({
   title,
   description,
   campaigns,
+  onJoin,
+  joiningCampaignId,
 }: CampaignSectionProps) {
   return (
     <section className="space-y-4">
@@ -132,7 +178,12 @@ function CampaignSection({
 
       <div className="space-y-4">
         {campaigns.map((campaign) => (
-          <CampaignProgressCard key={campaign.campaignId} campaign={campaign} />
+          <CampaignProgressCard
+            key={campaign.campaignId}
+            campaign={campaign}
+            onJoin={onJoin}
+            isJoining={joiningCampaignId === campaign.campaignId}
+          />
         ))}
       </div>
     </section>
