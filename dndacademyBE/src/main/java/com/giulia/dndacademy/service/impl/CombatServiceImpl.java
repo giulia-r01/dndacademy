@@ -25,6 +25,9 @@ public class CombatServiceImpl implements CombatService {
     private final UserService userService;
     private final CampaignChapterRepository campaignChapterRepository;
     private final CampaignChapterProgressRepository campaignChapterProgressRepository;
+    private final EncounterRepository encounterRepository;
+    private final EncounterNpcRepository encounterNpcRepository;
+    private final CombatParticipantRepository combatParticipantRepository;
 
     private Combat createCombatForCampaign(Campaign campaign, CampaignChapter chapter, User user) {
         List<Character> characters = characterRepository
@@ -75,6 +78,117 @@ public class CombatServiceImpl implements CombatService {
                 .build();
 
         return combatRepository.save(combat);
+    }
+
+    private Combat createNarrativeCombat(
+            Campaign campaign,
+            CampaignChapter chapter,
+            Encounter encounter,
+            User user
+    ) {
+
+        // Recuperiamo il personaggio del giocatore nella campagna
+        Character playerCharacter = characterRepository
+                .findByCampaignIdAndPlayerId(campaign.getId(), user.getId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Non hai un personaggio assegnato a questa campagna"
+                ));
+
+        if (playerCharacter.getStats() == null) {
+            throw new RuntimeException(
+                    "Il personaggio non possiede le statistiche necessarie"
+            );
+        }
+
+        if (!playerCharacter.isAlive() || playerCharacter.getCurrentHp() <= 0) {
+            throw new RuntimeException(
+                    "Il personaggio non può partecipare al combattimento"
+            );
+        }
+
+        // Recuperiamo gli NPC previsti dall'incontro
+        List<EncounterNpc> encounterNpcs =
+                encounterNpcRepository.findByEncounterId(encounter.getId());
+
+        if (encounterNpcs.isEmpty()) {
+            throw new RuntimeException(
+                    "L'incontro non contiene NPC"
+            );
+        }
+
+        // Creiamo la sessione di combattimento
+        Combat combat = Combat.builder()
+                .campaign(campaign)
+                .chapter(chapter)
+                .encounter(encounter)
+                .user(user)
+                .currentTurnIndex(0)
+                .completed(false)
+                .build();
+
+        Combat savedCombat = combatRepository.save(combat);
+
+        // Creiamo il partecipante del giocatore
+        CombatParticipant playerParticipant = CombatParticipant.builder()
+                .combat(savedCombat)
+                .character(playerCharacter)
+                .currentHp(playerCharacter.getCurrentHp())
+                .maxHp(playerCharacter.getMaxHp())
+                .initiative(
+                        rollD20() +
+                                getModifier(playerCharacter.getStats().getDexterity())
+                )
+                .alive(true)
+                .enemy(false)
+                .build();
+
+        combatParticipantRepository.save(playerParticipant);
+
+        // Creiamo i partecipanti NPC
+        boolean hasEnemy = false;
+
+        for (EncounterNpc encounterNpc : encounterNpcs) {
+
+            Npc npc = encounterNpc.getNpc();
+
+            if (encounterNpc.getQuantity() < 1 || npc.getMaxHp() <= 0
+                    || npc.getArmorClass() <= 0) {
+                throw new RuntimeException(
+                        "Configurazione NPC non valida: " + npc.getName()
+                );
+            }
+
+            if (npc.isEnemy()) {
+                hasEnemy = true;
+            }
+
+            for (int i = 0; i < encounterNpc.getQuantity(); i++) {
+
+                CombatParticipant npcParticipant =
+                        CombatParticipant.builder()
+                                .combat(savedCombat)
+                                .npc(npc)
+                                .currentHp(npc.getMaxHp())
+                                .maxHp(npc.getMaxHp())
+                                .initiative(
+                                        rollD20() +
+                                                getModifier(npc.getDexterity())
+                                )
+                                .alive(true)
+                                .enemy(npc.isEnemy())
+                                .build();
+
+                combatParticipantRepository.save(npcParticipant);
+            }
+        }
+
+        if (!hasEnemy) {
+            throw new RuntimeException(
+                    "L'incontro deve contenere almeno un nemico"
+            );
+        }
+
+        return savedCombat;
     }
 
     private CombatDTO mapToDTO(Combat combat) {

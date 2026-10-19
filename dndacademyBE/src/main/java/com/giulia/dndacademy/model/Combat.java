@@ -26,6 +26,10 @@ public class Combat {
     private CampaignChapter chapter;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "encounter_id")
+    private Encounter encounter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
