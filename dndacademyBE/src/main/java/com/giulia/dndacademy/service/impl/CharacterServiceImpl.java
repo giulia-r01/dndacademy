@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 import com.giulia.dndacademy.service.ImageUploadService;
 import org.springframework.web.multipart.MultipartFile;
 import com.giulia.dndacademy.dto.UpdateCharacterRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -223,8 +225,29 @@ public class CharacterServiceImpl implements CharacterService {
         Combat combat = combatRepository.findById(request.getCombatId())
                 .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
 
+        if (combat.getUser() == null ||
+                !combat.getUser().getId().equals(currentUser.getId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Non sei autorizzato ad attaccare in questo combattimento"
+            );
+        }
+
         if (!attacker.getCampaign().getId().equals(combat.getCampaign().getId())) {
             throw new RuntimeException("Non sei in questa campagna");
+        }
+
+        if (!combat.getTurnOrder().contains(attacker.getId())) {
+            throw new RuntimeException(
+                    "Il personaggio attaccante non partecipa a questo combattimento"
+            );
+        }
+
+        if (!combat.getTurnOrder().contains(target.getId())) {
+            throw new RuntimeException(
+                    "Il bersaglio non partecipa a questo combattimento"
+            );
         }
 
         if (!target.getCampaign().getId().equals(combat.getCampaign().getId())) {

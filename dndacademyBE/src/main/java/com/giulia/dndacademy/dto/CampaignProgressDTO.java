@@ -22,6 +22,8 @@ public class CampaignProgressDTO {
 
     private boolean unlocked;
 
+    private boolean joined;
+
     private boolean completed;
 
     private LocalDateTime completedAt;

@@ -157,12 +157,19 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
     private CampaignProgressDTO mapToDTO(CampaignProgress progress) {
         Campaign campaign = progress.getCampaign();
 
+        User user = progress.getUser();
+
+        boolean joined = campaign.getPlayers()
+                .stream()
+                .anyMatch(player -> player.getId().equals(user.getId()));
+
         return CampaignProgressDTO.builder()
                 .campaignId(campaign.getId())
                 .campaignName(campaign.getName())
                 .campaignDescription(campaign.getDescription())
                 .difficulty(campaign.getDifficulty())
                 .unlocked(progress.isUnlocked())
+                .joined(joined)
                 .completed(progress.isCompleted())
                 .completedAt(progress.getCompletedAt())
                 .build();
