@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.dto;
 
 import com.giulia.dndacademy.model.enumerations.CombatActionType;
+import com.giulia.dndacademy.model.enumerations.CombatOutcome;
 import lombok.*;
 
 @Getter
@@ -26,8 +27,9 @@ public class AttackResultDTO {
     private boolean targetDefeated;
     private boolean combatOver;
 
-    private Long winnerCharacterId;
-    private Long nextTurnCharacterId;
+    private CombatOutcome outcome;
+
+    private Long nextTurnParticipantId;
 
     private String message;
 

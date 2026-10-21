@@ -5,26 +5,22 @@ import com.giulia.dndacademy.dto.AttackResultDTO;
 import com.giulia.dndacademy.dto.CharacterDTO;
 import com.giulia.dndacademy.dto.CharacterStatsDTO;
 import com.giulia.dndacademy.dto.CreateCharacterRequest;
-import com.giulia.dndacademy.model.Campaign;
+import com.giulia.dndacademy.model.*;
 import com.giulia.dndacademy.model.Character;
-import com.giulia.dndacademy.model.CharacterStats;
-import com.giulia.dndacademy.model.Combat;
-import com.giulia.dndacademy.model.User;
-import com.giulia.dndacademy.model.enumerations.AttackAbility;
-import com.giulia.dndacademy.model.enumerations.CombatActionType;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.repository.CharacterRepository;
 import com.giulia.dndacademy.repository.CharacterStatsRepository;
-import com.giulia.dndacademy.repository.CombatRepository;
+
 import com.giulia.dndacademy.service.CharacterService;
 import com.giulia.dndacademy.service.UserService;
+import com.giulia.dndacademy.service.CombatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.giulia.dndacademy.service.ImageUploadService;
 import org.springframework.web.multipart.MultipartFile;
 import com.giulia.dndacademy.dto.UpdateCharacterRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+
+
 
 import java.util.List;
 
@@ -36,8 +32,9 @@ public class CharacterServiceImpl implements CharacterService {
     private final CharacterStatsRepository characterStatsRepository;
     private final CampaignRepository campaignRepository;
     private final UserService userService;
-    private final CombatRepository combatRepository;
+    private final CombatService combatService;
     private final ImageUploadService imageUploadService;
+
 
     @Override
     public CharacterDTO createCharacter(CreateCharacterRequest request, String username) {
@@ -112,6 +109,16 @@ public class CharacterServiceImpl implements CharacterService {
 
         if (character.getPlayer() != null) {
             throw new RuntimeException("Questo personaggio è già stato scelto");
+        }
+
+        boolean alreadyHasCharacter = characterRepository
+                .findByCampaignIdAndPlayerId(campaign.getId(), player.getId())
+                .isPresent();
+
+        if (alreadyHasCharacter) {
+            throw new RuntimeException(
+                    "Hai già scelto un personaggio per questa campagna"
+            );
         }
 
         character.setPlayer(player);
@@ -195,168 +202,7 @@ public class CharacterServiceImpl implements CharacterService {
 
     @Override
     public AttackResultDTO attack(AttackRequest request, String username) {
-        Character attacker = characterRepository.findById(request.getAttackerId())
-                .orElseThrow(() -> new RuntimeException("Attaccante non trovato"));
-
-        Character target = characterRepository.findById(request.getTargetId())
-                .orElseThrow(() -> new RuntimeException("Bersaglio non trovato"));
-
-        User currentUser = userService.getByUsername(username);
-
-        if (attacker.getPlayer() == null) {
-            throw new RuntimeException("Il personaggio attaccante non è stato ancora scelto da nessun player");
-        }
-
-        boolean isOwner = attacker.getPlayer().getId().equals(currentUser.getId());
-        boolean isMaster = attacker.getCampaign().getMaster().getId().equals(currentUser.getId());
-
-        if (!isOwner && !isMaster) {
-            throw new RuntimeException("Non puoi usare un personaggio che non ti appartiene");
-        }
-
-        if (!attacker.isAlive()) {
-            throw new RuntimeException("Ops... Sei morto, non puoi attaccare! ☠️");
-        }
-
-        if (!target.isAlive()) {
-            throw new RuntimeException("Il bersaglio è già morto ☠️");
-        }
-
-        Combat combat = combatRepository.findById(request.getCombatId())
-                .orElseThrow(() -> new RuntimeException("Combattimento non trovato"));
-
-        if (combat.getUser() == null ||
-                !combat.getUser().getId().equals(currentUser.getId())) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "Non sei autorizzato ad attaccare in questo combattimento"
-            );
-        }
-
-        if (!attacker.getCampaign().getId().equals(combat.getCampaign().getId())) {
-            throw new RuntimeException("Non sei in questa campagna");
-        }
-
-        if (!combat.getTurnOrder().contains(attacker.getId())) {
-            throw new RuntimeException(
-                    "Il personaggio attaccante non partecipa a questo combattimento"
-            );
-        }
-
-        if (!combat.getTurnOrder().contains(target.getId())) {
-            throw new RuntimeException(
-                    "Il bersaglio non partecipa a questo combattimento"
-            );
-        }
-
-        if (!target.getCampaign().getId().equals(combat.getCampaign().getId())) {
-            throw new RuntimeException("Bersaglio non valido per questo combat");
-        }
-
-        List<Long> aliveIds = getAliveCharacterIds(combat);
-
-        if (aliveIds.size() <= 1) {
-            throw new RuntimeException("Il combattimento è finito!");
-        }
-
-        Long currentTurn = combat.getTurnOrder().get(combat.getCurrentTurnIndex());
-
-        if (!attacker.getId().equals(currentTurn)) {
-            Character currentTurnCharacter = characterRepository.findById(currentTurn)
-                    .orElseThrow(() -> new RuntimeException("Personaggio di turno non trovato"));
-
-            throw new RuntimeException("Non è il tuo turno. Tocca a: " + currentTurnCharacter.getName());
-        }
-
-        CharacterStats stats = attacker.getStats();
-
-        if (stats == null) {
-            throw new RuntimeException("Il personaggio non ha statistiche");
-        }
-
-        CombatActionData actionData = getCombatActionData(attacker, request.getActionType());
-
-        int abilityScore = getAbilityScore(stats, actionData.ability());
-        int abilityMod = getModifier(abilityScore);
-
-        int attackRoll = rollDie(20);
-        int totalAttack = attackRoll + abilityMod;
-
-        boolean isCritical = attackRoll == 20;
-        boolean hit = isCritical || totalAttack >= target.getArmorClass();
-
-        int damage = 0;
-        int damageRoll = 0;
-        int newHp = target.getCurrentHp();
-        boolean targetDefeated = false;
-
-        if (hit) {
-            damageRoll = rollDie(actionData.damageDie());
-
-            if (isCritical) {
-                damageRoll += rollDie(actionData.damageDie());
-            }
-
-            damage = Math.max(damageRoll + abilityMod, 1);
-            newHp = Math.max(target.getCurrentHp() - damage, 0);
-
-            target.setCurrentHp(newHp);
-
-            if (newHp == 0) {
-                target.setAlive(false);
-                targetDefeated = true;
-            }
-
-            characterRepository.save(target);
-        }
-
-        List<Long> aliveAfterAttack = getAliveCharacterIds(combat);
-
-        boolean combatOver = aliveAfterAttack.size() <= 1;
-        Long winnerCharacterId = combatOver && !aliveAfterAttack.isEmpty()
-                ? aliveAfterAttack.get(0)
-                : null;
-
-        Long nextTurnCharacterId = null;
-
-        if (!combatOver) {
-            moveToNextAliveTurn(combat);
-            Combat savedCombat = combatRepository.save(combat);
-            nextTurnCharacterId = savedCombat.getTurnOrder().get(savedCombat.getCurrentTurnIndex());
-        }
-
-        String message;
-
-        if (hit) {
-            message = isCritical ? "Colpo critico!" : "Colpito!";
-        } else {
-            message = "Mancato!";
-        }
-
-        return AttackResultDTO.builder()
-                .hit(hit)
-                .critical(isCritical)
-                .actionName(actionData.name())
-                .attackRoll(attackRoll)
-                .abilityModifier(abilityMod)
-                .totalAttack(totalAttack)
-                .targetArmorClass(target.getArmorClass())
-                .damage(damage)
-                .targetRemainingHp(newHp)
-                .targetDefeated(targetDefeated)
-                .combatOver(combatOver)
-                .winnerCharacterId(winnerCharacterId)
-                .nextTurnCharacterId(nextTurnCharacterId)
-                .message(message)
-                .damageDie(actionData.damageDie())
-                .damageRoll(damageRoll)
-                .actionType(request.getActionType())
-                .attackerId(attacker.getId())
-                .attackerName(attacker.getName())
-                .targetId(target.getId())
-                .targetName(target.getName())
-                .build();
+        return combatService.attack(request, username);
     }
 
     private void validateCreateCharacterRequest(CreateCharacterRequest request) {
@@ -389,93 +235,6 @@ public class CharacterServiceImpl implements CharacterService {
                 throw new RuntimeException("La caratteristica dell'incantesimo è obbligatoria");
             }
         }
-    }
-
-    private CombatActionData getCombatActionData(Character attacker, CombatActionType actionType) {
-        if (actionType == null) {
-            throw new RuntimeException("Tipo azione obbligatorio");
-        }
-
-        if (actionType == CombatActionType.SPELL) {
-            if (!attacker.isSpellcaster()) {
-                throw new RuntimeException("Questo personaggio non può lanciare incantesimi");
-            }
-
-            if (attacker.getSpellName() == null ||
-                    attacker.getSpellName().isBlank() ||
-                    attacker.getSpellAbility() == null ||
-                    attacker.getSpellDamageDie() <= 0) {
-                throw new RuntimeException("Incantesimo non configurato correttamente");
-            }
-
-            return new CombatActionData(
-                    attacker.getSpellName(),
-                    attacker.getSpellDamageDie(),
-                    attacker.getSpellAbility()
-            );
-        }
-
-        if (attacker.getWeaponName() == null ||
-                attacker.getWeaponName().isBlank() ||
-                attacker.getAttackAbility() == null ||
-                attacker.getDamageDie() <= 0) {
-            throw new RuntimeException("Arma non configurata correttamente");
-        }
-
-        return new CombatActionData(
-                attacker.getWeaponName(),
-                attacker.getDamageDie(),
-                attacker.getAttackAbility()
-        );
-    }
-
-    private List<Long> getAliveCharacterIds(Combat combat) {
-        return combat.getTurnOrder()
-                .stream()
-                .map(id -> characterRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Personaggio nel turno non trovato")))
-                .filter(Character::isAlive)
-                .map(Character::getId)
-                .toList();
-    }
-
-    private void moveToNextAliveTurn(Combat combat) {
-        List<Long> turnOrder = combat.getTurnOrder();
-
-        int originalIndex = combat.getCurrentTurnIndex();
-        int nextIndex = originalIndex;
-
-        do {
-            nextIndex = (nextIndex + 1) % turnOrder.size();
-
-            Character nextCharacter = characterRepository.findById(turnOrder.get(nextIndex))
-                    .orElseThrow(() -> new RuntimeException("Personaggio nel turno non trovato"));
-
-            if (nextCharacter.isAlive()) {
-                combat.setCurrentTurnIndex(nextIndex);
-                return;
-            }
-        } while (nextIndex != originalIndex);
-
-        throw new RuntimeException("Nessun personaggio vivo trovato");
-    }
-
-    private int rollDie(int sides) {
-        return (int) (Math.random() * sides) + 1;
-    }
-
-    private int getAbilityScore(CharacterStats stats, AttackAbility ability) {
-        return switch (ability) {
-            case STRENGTH -> stats.getStrength();
-            case DEXTERITY -> stats.getDexterity();
-            case INTELLIGENCE -> stats.getIntelligence();
-            case WISDOM -> stats.getWisdom();
-            case CHARISMA -> stats.getCharisma();
-        };
-    }
-
-    private int getModifier(int stat) {
-        return Math.floorDiv(stat - 10, 2);
     }
 
     private CharacterDTO mapToDTO(Character c) {
@@ -527,12 +286,6 @@ public class CharacterServiceImpl implements CharacterService {
         }
     }
 
-    private record CombatActionData(
-            String name,
-            int damageDie,
-            AttackAbility ability
-    ) {
-    }
 
     @Override
     public CharacterDTO uploadCharacterImage(Long characterId, MultipartFile file, String username) {

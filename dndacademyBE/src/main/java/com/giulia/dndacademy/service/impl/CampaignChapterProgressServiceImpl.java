@@ -12,6 +12,8 @@ import com.giulia.dndacademy.service.CampaignProgressService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.giulia.dndacademy.model.enumerations.CombatOutcome;
 import com.giulia.dndacademy.service.BadgeService;
 
 import java.time.LocalDateTime;
@@ -34,10 +36,7 @@ public class CampaignChapterProgressServiceImpl
     private final CampaignProgressService campaignProgressService;
 
     @Override
-    public List<CampaignChapterProgressDTO> getProgressByCampaign(
-            Long campaignId,
-            String username
-    ) {
+    public List<CampaignChapterProgressDTO> getProgressByCampaign( Long campaignId, String username ) {
         User user = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
@@ -60,10 +59,7 @@ public class CampaignChapterProgressServiceImpl
                 .toList();
     }
 
-    private void assignRewardBadgeIfPresent(
-            CampaignChapter chapter,
-            String username
-    ) {
+    private void assignRewardBadgeIfPresent( CampaignChapter chapter, String username ) {
         if (chapter.getRewardBadge() == null) {
             return;
         }
@@ -74,11 +70,7 @@ public class CampaignChapterProgressServiceImpl
         );
     }
 
-    private void validateChapterRequirements(
-            CampaignChapter chapter,
-            User user
-    )
-    {
+    private void validateChapterRequirements( CampaignChapter chapter, User user ) {
         if (
                 chapter.getLesson() != null
                         && chapter.getQuiz() != null
@@ -121,9 +113,10 @@ public class CampaignChapterProgressServiceImpl
         if (chapter.isHasCombat()) {
 
             boolean combatCompleted = combatRepository
-                    .existsByChapterIdAndUserIdAndCompletedTrue(
+                    .existsByChapterIdAndUserIdAndCompletedTrueAndOutcome(
                             chapter.getId(),
-                            user.getId()
+                            user.getId(),
+                            CombatOutcome.PLAYER_VICTORY
                     );
 
             if (!combatCompleted) {
@@ -135,10 +128,8 @@ public class CampaignChapterProgressServiceImpl
     }
 
     @Override
-    public CampaignChapterProgressDTO completeChapter(
-            Long chapterId,
-            String username
-    ) {
+    @Transactional
+    public CampaignChapterProgressDTO completeChapter( Long chapterId, String username ) {
         User user = userService.getByUsername(username);
 
         CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
@@ -159,6 +150,8 @@ public class CampaignChapterProgressServiceImpl
             throw new RuntimeException("Questo capitolo non è ancora sbloccato");
         }
 
+        if (progress.isCompleted()) return mapToDTO(progress);
+
         validateChapterRequirements(chapter, user);
 
         progress.setCompleted(true);
@@ -178,10 +171,7 @@ public class CampaignChapterProgressServiceImpl
         return mapToDTO(saved);
     }
 
-    private void ensureProgressExistsForCampaign(
-            User user,
-            List<CampaignChapter> chapters
-    ) {
+    private void ensureProgressExistsForCampaign( User user, List<CampaignChapter> chapters ) {
         if (chapters.isEmpty()) {
             return;
         }
@@ -212,11 +202,7 @@ public class CampaignChapterProgressServiceImpl
         }
     }
 
-    private void unlockNextChapterIfExists(
-            User user,
-            List<CampaignChapter> chapters,
-            CampaignChapter completedChapter
-    ) {
+    private void unlockNextChapterIfExists( User user, List<CampaignChapter> chapters, CampaignChapter completedChapter ) {
         List<CampaignChapter> orderedChapters = chapters.stream()
                 .sorted(Comparator.comparingInt(CampaignChapter::getOrderIndex))
                 .toList();

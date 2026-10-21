@@ -1,60 +1,39 @@
 package com.giulia.dndacademy.controllers;
 
-import com.giulia.dndacademy.dto.CombatDTO;
-import com.giulia.dndacademy.dto.CombatStatusDTO;
+import com.giulia.dndacademy.dto.*;
 import com.giulia.dndacademy.service.CombatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequestMapping("/api/combat")
 @RequiredArgsConstructor
 public class CombatController {
-
     private final CombatService combatService;
-
     @PostMapping("/chapter/{chapterId}/start")
-    public CombatDTO startChapterCombat(
-            @PathVariable Long chapterId,
-            Authentication authentication
-    ) {
-        return combatService.startChapterCombat(
-                chapterId,
-                authentication.getName()
-        );
-    }
-
-    @PostMapping("/start/{campaignId}")
-    public CombatDTO startCombat(
-            @PathVariable Long campaignId,
-            Authentication authentication
-    ) {
-        return combatService.startCombat(campaignId, authentication.getName());
+    public CombatDTO startChapterCombat(@PathVariable Long chapterId, Authentication authentication) {
+        return combatService.startChapterCombat(chapterId, authentication.getName());
     }
 
     @GetMapping("/{combatId}/current")
-    public Long currentTurn(
-            @PathVariable Long combatId,
-            Authentication authentication
-    ) {
+    public Long currentTurn(@PathVariable Long combatId, Authentication authentication) {
         return combatService.getCurrentTurn(combatId, authentication.getName());
     }
 
-    @PostMapping("/{combatId}/next")
-    public void nextTurn(
-            @PathVariable Long combatId,
-            Authentication authentication
-    ) {
-        combatService.nextTurn(combatId, authentication.getName());
-    }
-
     @GetMapping("/{combatId}/status")
-    public CombatStatusDTO getCombatStatus(
-            @PathVariable Long combatId,
-            Authentication authentication
-    ) {
+    public CombatStatusDTO getCombatStatus(@PathVariable Long combatId, Authentication authentication) {
         return combatService.getCombatStatus(combatId, authentication.getName());
     }
 
+    @PostMapping("/{combatId}/attack")
+    public AttackResultDTO attack(@PathVariable Long combatId,
+                                  @RequestBody
+                                  @Valid AttackRequest request, Authentication authentication) {
+        if (!combatId.equals(request.getCombatId()))
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "ID combattimento non corrispondente");
+        return combatService.attack(request, authentication.getName());
+    }
 }

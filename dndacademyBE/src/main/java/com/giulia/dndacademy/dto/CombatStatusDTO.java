@@ -1,5 +1,6 @@
 package com.giulia.dndacademy.dto;
 
+import com.giulia.dndacademy.model.enumerations.CombatOutcome;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -16,12 +17,13 @@ public class CombatStatusDTO {
     private Long campaignId;
     private Long chapterId;
 
-    private Long currentTurnCharacterId;
-
+    // Nuovo sistema narrativo
+    private Long encounterId;
+    private Long currentTurnParticipantId;
     private boolean combatOver;
     private boolean completed;
-    private Long winnerCharacterId;
-    private LocalDateTime completedAt;
 
+    private CombatOutcome outcome;
+    private LocalDateTime completedAt;
     private List<CombatFighterDTO> fighters;
 }
