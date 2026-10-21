@@ -7,23 +7,16 @@ import type {
 } from "@/types/combat"
 
 export const combatService = {
-  start(campaignId: number) {
-    return apiFetch<Combat>(`/api/combat/start/${campaignId}`, {
+  startChapter(chapterId: number) {
+    return apiFetch<Combat>(`/api/combat/chapter/${chapterId}/start`, {
       method: "POST",
       auth: true,
     })
   },
 
   getCurrentTurn(combatId: number) {
-    return apiFetch<number>(`/api/combat/${combatId}/current`, {
+    return apiFetch<number | null>(`/api/combat/${combatId}/current`, {
       method: "GET",
-      auth: true,
-    })
-  },
-
-  nextTurn(combatId: number) {
-    return apiFetch<void>(`/api/combat/${combatId}/next`, {
-      method: "POST",
       auth: true,
     })
   },
@@ -36,7 +29,7 @@ export const combatService = {
   },
 
   attack(payload: AttackRequest) {
-    return apiFetch<AttackResult>("/api/characters/attack", {
+    return apiFetch<AttackResult>(`/api/combat/${payload.combatId}/attack`, {
       method: "POST",
       auth: true,
       body: JSON.stringify(payload),

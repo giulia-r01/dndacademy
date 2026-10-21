@@ -1,24 +1,31 @@
 export type CombatActionType = "WEAPON" | "SPELL"
+export type CombatOutcome = "PLAYER_VICTORY" | "ENEMY_VICTORY"
 
 export interface Combat {
   id: number
   campaignId: number
-  turnOrder: number[]
+  chapterId: number
+  encounterId: number
+  turnOrder: number[] // ID CombatParticipant
   currentTurnIndex: number
-  initiativeRolls: number[]
+  completed: boolean
+  outcome: CombatOutcome | null
+  completedAt: string | null
 }
 
 export interface CombatFighter {
-  characterId: number
+  participantId: number
+  characterId: number | null
+  npcId: number | null
   name: string
   characterClass: string
   currentHp: number
   maxHp: number
   armorClass: number
   alive: boolean
+  enemy: boolean
   currentTurn: boolean
   initiative: number
-
   spellcaster: boolean
   weaponName: string
   damageDie: number
@@ -29,15 +36,19 @@ export interface CombatFighter {
 export interface CombatStatus {
   combatId: number
   campaignId: number
-  currentTurnCharacterId: number
+  chapterId: number
+  encounterId: number
+  currentTurnParticipantId: number | null
   combatOver: boolean
-  winnerCharacterId: number | null
+  completed: boolean
+  outcome: CombatOutcome | null
+  completedAt: string | null
   fighters: CombatFighter[]
 }
 
 export interface AttackRequest {
-  attackerId: number
-  targetId: number
+  attackerId: number // CombatParticipant ID
+  targetId: number // CombatParticipant ID
   combatId: number
   actionType: CombatActionType
 }
@@ -58,8 +69,8 @@ export interface AttackResult {
   targetRemainingHp: number
   targetDefeated: boolean
   combatOver: boolean
-  winnerCharacterId: number | null
-  nextTurnCharacterId: number | null
+  outcome: CombatOutcome | null
+  nextTurnParticipantId: number | null
   message: string
   actionType: CombatActionType
   damageDie: number
