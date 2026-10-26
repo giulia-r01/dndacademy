@@ -36,6 +36,7 @@ public class CampaignChapterProgressServiceImpl
     private final CampaignProgressService campaignProgressService;
 
     @Override
+    @Transactional
     public List<CampaignChapterProgressDTO> getProgressByCampaign( Long campaignId, String username ) {
         User user = userService.getByUsername(username);
 
@@ -171,7 +172,12 @@ public class CampaignChapterProgressServiceImpl
         return mapToDTO(saved);
     }
 
-    private void ensureProgressExistsForCampaign( User user, List<CampaignChapter> chapters ) {
+    /**
+     * Sincronizza la progressione con la struttura attuale della campagna.
+     * Supporta capitoli aggiunti dopo che il giocatore ha completato i precedenti.
+     * Non rimuove gli sblocchi gia' ottenuti.
+     */
+    private void ensureProgressExistsForCampaign(User user, List<CampaignChapter> chapters) {
         if (chapters.isEmpty()) {
             return;
         }
@@ -180,25 +186,31 @@ public class CampaignChapterProgressServiceImpl
                 .sorted(Comparator.comparingInt(CampaignChapter::getOrderIndex))
                 .toList();
 
-        for (int i = 0; i < orderedChapters.size(); i++) {
-            CampaignChapter chapter = orderedChapters.get(i);
+        CampaignChapterProgress previousProgress = null;
 
-            boolean alreadyExists = progressRepository.existsByUserIdAndChapterId(
-                    user.getId(),
-                    chapter.getId()
-            );
+        for (CampaignChapter chapter : orderedChapters) {
+            CampaignChapterProgress progress = progressRepository
+                    .findByUserIdAndChapterId(user.getId(), chapter.getId())
+                    .orElse(null);
 
-            if (!alreadyExists) {
-                CampaignChapterProgress progress = CampaignChapterProgress.builder()
+            boolean shouldBeUnlocked = previousProgress == null
+                    || previousProgress.isCompleted();
+
+            if (progress == null) {
+                progress = CampaignChapterProgress.builder()
                         .user(user)
                         .chapter(chapter)
-                        .unlocked(i == 0)
+                        .unlocked(shouldBeUnlocked)
                         .completed(false)
                         .completedAt(null)
                         .build();
-
-                progressRepository.save(progress);
+                progress = progressRepository.save(progress);
+            } else if (shouldBeUnlocked && !progress.isUnlocked()) {
+                progress.setUnlocked(true);
+                progress = progressRepository.save(progress);
             }
+
+            previousProgress = progress;
         }
     }
 
@@ -277,6 +289,7 @@ public class CampaignChapterProgressServiceImpl
     }
 
     @Override
+    @Transactional
     public List<CampaignChapterPlayerDTO> getPlayerChaptersByCampaign(
             Long campaignId,
             String username

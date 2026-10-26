@@ -239,6 +239,14 @@ export default function AdminCampaignChaptersPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-3">
+                      {chapter.hasCombat && (
+                        <Link
+                          href={`/admin/encounters?campaignId=${campaignId}&chapterId=${chapter.id}`}
+                          className="inline-flex items-center rounded-xl border border-[var(--border-teal-soft)] px-4 py-2 text-sm font-bold text-[var(--accent-soft)] hover:border-[var(--border-gold)]"
+                        >
+                          Configura incontro
+                        </Link>
+                      )}
                       <AppButton
                         type="button"
                         variant="secondary"

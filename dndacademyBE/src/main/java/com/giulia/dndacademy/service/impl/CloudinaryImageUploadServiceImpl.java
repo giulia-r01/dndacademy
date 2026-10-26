@@ -27,13 +27,22 @@ public class CloudinaryImageUploadServiceImpl implements ImageUploadService {
 
     @Override
     public String uploadCharacterImage(MultipartFile file) {
+        return uploadImage(file, "dndacademy/characters");
+    }
+
+    @Override
+    public String uploadNpcImage(MultipartFile file) {
+        return uploadImage(file, "dndacademy/npcs");
+    }
+
+    private String uploadImage(MultipartFile file, String folder) {
         validateFile(file);
 
         try {
             Map uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
-                            "folder", "dndacademy/characters",
+                            "folder", folder,
                             "resource_type", "image"
                     )
             );
@@ -56,7 +65,7 @@ public class CloudinaryImageUploadServiceImpl implements ImageUploadService {
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new RuntimeException("L'immagine non può superare 2 MB");
+            throw new RuntimeException("L'immagine non può superare 5 MB");
         }
 
         String contentType = file.getContentType();

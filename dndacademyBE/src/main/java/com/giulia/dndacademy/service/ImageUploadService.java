@@ -5,4 +5,5 @@ import org.springframework.web.multipart.MultipartFile;
 public interface ImageUploadService {
 
     String uploadCharacterImage(MultipartFile file);
+    String uploadNpcImage(MultipartFile file);
 }

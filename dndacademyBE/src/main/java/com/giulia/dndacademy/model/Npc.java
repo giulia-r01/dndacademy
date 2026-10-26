@@ -22,6 +22,8 @@ public class Npc {
     @Column(length = 1000)
     private String description;
 
+    private String imageUrl;
+
     @Column(nullable = false)
     private int maxHp;
 
@@ -42,4 +44,8 @@ public class Npc {
 
     @Column(nullable = false)
     private boolean enemy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }

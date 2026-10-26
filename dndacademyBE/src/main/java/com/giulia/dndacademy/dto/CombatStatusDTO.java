@@ -26,4 +26,5 @@ public class CombatStatusDTO {
     private CombatOutcome outcome;
     private LocalDateTime completedAt;
     private List<CombatFighterDTO> fighters;
+    private List<com.giulia.dndacademy.model.CombatEvent> events;
 }

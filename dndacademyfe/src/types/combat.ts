@@ -18,6 +18,7 @@ export interface CombatFighter {
   characterId: number | null
   npcId: number | null
   name: string
+  imageUrl: string | null
   characterClass: string
   currentHp: number
   maxHp: number
@@ -44,6 +45,7 @@ export interface CombatStatus {
   outcome: CombatOutcome | null
   completedAt: string | null
   fighters: CombatFighter[]
+  events: CombatEvent[]
 }
 
 export interface AttackRequest {
@@ -75,4 +77,20 @@ export interface AttackResult {
   actionType: CombatActionType
   damageDie: number
   damageRoll: number
+}
+
+export interface CombatEvent {
+  attackerId: number
+  attackerName: string
+  targetId: number
+  targetName: string
+  enemy: boolean
+  hit: boolean
+  critical: boolean
+  attackRoll: number
+  totalAttack: number
+  targetArmorClass: number
+  damage: number
+  targetHpBefore: number
+  targetRemainingHp: number
 }

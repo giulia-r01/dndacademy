@@ -18,4 +18,6 @@ public interface CombatRepository extends JpaRepository<Combat, Long> {
     Optional<Combat> findLockedById(@Param("id") Long id);
 
     List<Combat> findByCampaignId(Long campaignId);
+
+    boolean existsByEncounterId(Long encounterId);
 }

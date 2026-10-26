@@ -14,6 +14,12 @@ export const combatService = {
     })
   },
 
+  advanceNpcTurn(combatId: number, expectedEventCount: number) {
+    return apiFetch<CombatStatus>(`/api/combat/${combatId}/npc-turn?expectedEventCount=${expectedEventCount}`, {
+      method: "POST", auth: true,
+    })
+  },
+
   getCurrentTurn(combatId: number) {
     return apiFetch<number | null>(`/api/combat/${combatId}/current`, {
       method: "GET",

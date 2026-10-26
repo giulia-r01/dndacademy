@@ -67,10 +67,15 @@ public class CombatServiceImpl implements CombatService {
                     .initiative(roll(20) + modifier(npc.getDexterity()))
                     .alive(true).enemy(npc.isEnemy()).build());
         }
-        List<CombatParticipant> ordered = combatParticipantRepository.findByCombatIdOrderByInitiativeDesc(combat.getId());
-        combat.setTurnOrder(ordered.stream().map(CombatParticipant::getId).toList());
+        List<CombatParticipant> ordered =
+                combatParticipantRepository.findByCombatIdOrderByInitiativeDesc(combat.getId());
+
+        List<Long> turnOrder = ordered.stream()
+                .map(CombatParticipant::getId)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+
+        combat.setTurnOrder(turnOrder);
         combat.setCurrentTurnIndex(0);
-        advanceAutomaticTurns(combat);
         combatRepository.save(combat);
         return mapToDTO(combat);
     }
@@ -94,6 +99,7 @@ public class CombatServiceImpl implements CombatService {
             return CombatFighterDTO.builder().participantId(p.getId())
                     .characterId(c == null ? null : c.getId()).npcId(n == null ? null : n.getId())
                     .name(c == null ? n.getName() : c.getName())
+                    .imageUrl(c == null ? n.getImageUrl() : c.getImageUrl())
                     .characterClass(c == null ? "NPC" : c.getCharacterClass())
                     .currentHp(p.getCurrentHp()).maxHp(p.getMaxHp())
                     .armorClass(c == null ? n.getArmorClass() : c.getArmorClass())
@@ -109,7 +115,7 @@ public class CombatServiceImpl implements CombatService {
                 .chapterId(combat.getChapter().getId()).encounterId(combat.getEncounter().getId())
                 .currentTurnParticipantId(current).combatOver(combat.isCompleted())
                 .completed(combat.isCompleted()).outcome(combat.getOutcome())
-                .completedAt(combat.getCompletedAt()).fighters(fighters).build();
+                .completedAt(combat.getCompletedAt()).fighters(fighters).events(combat.getEvents()).build();
     }
 
     @Override @Transactional
@@ -147,17 +153,17 @@ public class CombatServiceImpl implements CombatService {
         boolean hit = crit || (roll != 1 && total >= ac);
         int damageRoll = hit ? roll(die) + (crit ? roll(die) : 0) : 0;
         int damage = hit ? Math.max(1, damageRoll + bonus) : 0;
+        int hpBefore = target.getCurrentHp();
         if (hit) damage(target, damage);
+        recordEvent(combat, attacker, target, roll, total, ac, hit, crit, damage, hpBefore);
         boolean defeated = !target.isAlive();
         finishIfOver(combat);
-        String npcActions = "";
         if (!combat.isCompleted()) {
             nextAlive(combat);
-            npcActions = advanceAutomaticTurns(combat);
         }
         combatRepository.save(combat);
         Long next = combat.isCompleted() ? null : combat.getTurnOrder().get(combat.getCurrentTurnIndex());
-        String msg = (hit ? (crit ? "Colpo critico!" : "Colpito!") : "Mancato!") + npcActions;
+        String msg = hit ? (crit ? "Colpo critico!" : "Colpito!") : "Mancato!";
         return AttackResultDTO.builder().hit(hit).critical(crit)
                 .actionName(spell ? c.getSpellName() : c.getWeaponName()).attackRoll(roll)
                 .abilityModifier(bonus).totalAttack(total).targetArmorClass(ac)
@@ -169,30 +175,48 @@ public class CombatServiceImpl implements CombatService {
                 .targetName(target.getNpc().getName()).build();
     }
 
-    private String advanceAutomaticTurns(Combat combat) {
-        StringBuilder events = new StringBuilder();
-        for (int attempts = 0; attempts < combat.getTurnOrder().size() && !combat.isCompleted(); attempts++) {
-            CombatParticipant actor = current(combat);
-            if (actor.getCharacter() != null && !actor.isEnemy()) break;
-            if (!actor.isAlive()) { nextAlive(combat); continue; }
-            List<CombatParticipant> targets = combatParticipantRepository.findByCombatId(combat.getId())
-                    .stream().filter(p -> p.isAlive() && p.isEnemy() != actor.isEnemy()).toList();
-            if (targets.isEmpty()) { finishIfOver(combat); break; }
-            CombatParticipant target = targets.get(0); // Strategia MVP deterministica
+    @Override @Transactional
+    public CombatStatusDTO advanceNpcTurn(Long combatId, int expectedEventCount, String username) {
+        Combat combat = authorized(combatRepository.findLockedById(combatId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Combattimento non trovato")), username);
+        // A retried request must never resolve another turn.
+        if (expectedEventCount < 0 || expectedEventCount != combat.getEvents().size())
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Il turno è già cambiato: aggiorna il combattimento");
+        if (combat.isCompleted())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Combattimento terminato");
+        CombatParticipant actor = current(combat);
+        if (actor.getNpc() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "È il turno del tuo personaggio");
+        List<CombatParticipant> targets = combatParticipantRepository.findByCombatId(combatId)
+                .stream().filter(p -> p.isAlive() && p.isEnemy() != actor.isEnemy())
+                .sorted(Comparator.comparing(CombatParticipant::getId)).toList();
+        if (!targets.isEmpty()) {
+            CombatParticipant target = targets.get(0);
             Npc npc = actor.getNpc();
             int roll = roll(20);
-            boolean hit = roll == 20 || (roll != 1 && roll + npc.getAttackModifier() >= armorClass(target));
-            if (hit) {
-                int dmg = Math.max(1, roll(npc.getDamageDie()) +
-                        (roll == 20 ? roll(npc.getDamageDie()) : 0) + npc.getDamageModifier());
-                damage(target, dmg);
-                events.append(" | ").append(npc.getName()).append(" colpisce ").append(name(target))
-                        .append(" per ").append(dmg).append(" danni");
-            } else events.append(" | ").append(npc.getName()).append(" manca ").append(name(target));
-            finishIfOver(combat);
-            if (!combat.isCompleted()) nextAlive(combat);
+            int total = roll + npc.getAttackModifier();
+            int ac = armorClass(target);
+            boolean critical = roll == 20;
+            boolean hit = critical || (roll != 1 && total >= ac);
+            int amount = hit ? Math.max(1, roll(npc.getDamageDie()) +
+                    (critical ? roll(npc.getDamageDie()) : 0) + npc.getDamageModifier()) : 0;
+            int hpBefore = target.getCurrentHp();
+            if (hit) damage(target, amount);
+            recordEvent(combat, actor, target, roll, total, ac, hit, critical, amount, hpBefore);
         }
-        return events.toString();
+        finishIfOver(combat);
+        if (!combat.isCompleted()) nextAlive(combat);
+        combatRepository.save(combat);
+        return getCombatStatus(combatId, username);
+    }
+
+    private void recordEvent(Combat combat, CombatParticipant actor, CombatParticipant target,
+                             int roll, int total, int ac, boolean hit, boolean critical, int amount, int hpBefore) {
+        combat.getEvents().add(CombatEvent.builder()
+                .attackerId(actor.getId()).attackerName(name(actor)).enemy(actor.isEnemy())
+                .targetId(target.getId()).targetName(name(target)).attackRoll(roll).totalAttack(total)
+                .targetArmorClass(ac).hit(hit).critical(critical).damage(amount)
+                .targetHpBefore(hpBefore).targetRemainingHp(target.getCurrentHp()).build());
     }
 
     private void finishIfOver(Combat combat) {

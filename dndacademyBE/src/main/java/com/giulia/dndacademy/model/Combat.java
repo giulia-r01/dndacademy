@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Getter
@@ -36,6 +37,11 @@ public class Combat {
     @ElementCollection
     private List<Long> turnOrder;
     private int currentTurnIndex;
+    @ElementCollection
+    @CollectionTable(name = "combat_events", joinColumns = @JoinColumn(name = "combat_id"))
+    @OrderColumn(name = "event_index")
+    @Builder.Default
+    private List<CombatEvent> events = new ArrayList<>();
     private boolean completed;
 
     @Enumerated(EnumType.STRING)

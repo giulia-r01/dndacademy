@@ -14,4 +14,6 @@ public interface CombatService {
     CombatStatusDTO getCombatStatus(Long combatId, String username);
 
     AttackResultDTO attack(AttackRequest request, String username);
+
+    CombatStatusDTO advanceNpcTurn(Long combatId, int expectedEventCount, String username);
 }

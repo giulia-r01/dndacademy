@@ -11,4 +11,6 @@ public interface EncounterRepository extends JpaRepository<Encounter, Long> {
     List<Encounter> findByChapterId(Long chapterId);
 
     Optional<Encounter> findFirstByChapterIdOrderByIdAsc(Long chapterId);
+
+    boolean existsByChapterId(Long chapterId);
 }

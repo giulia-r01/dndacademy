@@ -36,4 +36,11 @@ public class CombatController {
             throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "ID combattimento non corrispondente");
         return combatService.attack(request, authentication.getName());
     }
+
+    @PostMapping("/{combatId}/npc-turn")
+    public CombatStatusDTO advanceNpcTurn(@PathVariable Long combatId,
+                                          @RequestParam int expectedEventCount,
+                                          Authentication authentication) {
+        return combatService.advanceNpcTurn(combatId, expectedEventCount, authentication.getName());
+    }
 }

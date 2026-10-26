@@ -1,289 +1,83 @@
-# 🐉 DnD Academy – Web App per Imparare Dungeons & Dragons
+# D&D Academy
 
-**DnD Academy** è una piattaforma didattica progettata per insegnare *Dungeons & Dragons* in modo semplice, guidato e accessibile.
+Piattaforma didattica per imparare le basi di Dungeons & Dragons attraverso lezioni, quiz e campagne tutorial a capitoli, con personaggi e combattimenti guidati. Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
 
-Non è un simulatore completo e non vuole sostituire un VTT.
-L’obiettivo è accompagnare chi non ha mai giocato a D&D nel comprendere:
+## Stato del progetto
 
-* regole base
-* combattimento
-* creazione personaggi
-* statistiche
-* tiri di dado
-* logiche di gioco
+Backend Spring Boot e frontend Next.js sono integrati. Sono presenti il percorso Player, il backoffice Master e il combattimento narrativo contro NPC. Il progetto è in sviluppo attivo: le meccaniche di D&D sono semplificate e la preparazione al rilascio in produzione resta da completare.
 
-in modo graduale, pratico e interattivo.
+Gli ultimi aggiornamenti comprendono:
 
-> 🎯 Obiettivo del progetto: trasformare “non capisco nulla di D&D” in “ok, posso iniziare una campagna”.
+- Gestione di NPC e incontri, con quantità di nemici e aiutanti per capitolo.
+- Sincronizzazione dei progressi anche quando vengono aggiunti nuovi capitoli.
+- Verifica e scelta del personaggio nella pagina prima di avviare lo scontro.
+- Turni NPC visibili e risolti una singola azione alla volta.
+- Avvisi dei danni subiti, HP prima/dopo e registro persistente degli attacchi.
+- Immagini caricabili per nemici e aiutanti e mostrate insieme ai personaggi.
+- Errori HTTP espliciti preservati e messaggi di ripiego al posto dei messaggi nulli.
 
----
+## Ruoli e flusso di gioco
 
-# 🧠 Filosofia del Progetto
+Il **PLAYER** si registra, segue lezioni, supera quiz, consulta progressi e badge, si iscrive alle campagne e sceglie un personaggio preparato dal Master. Completa i capitoli in ordine rispettando i requisiti configurati: lezione, quiz e vittoria in combattimento, quando previsti.
 
-Dungeons & Dragons è spesso percepito come complesso per chi inizia:
+Il **MASTER** gestisce campagne, capitoli narrativi, personaggi, lezioni, quiz, domande, risposte e badge. Prepara NPC nemici o aiutanti e li inserisce negli incontri dei capitoli. La registrazione pubblica crea account PLAYER; per il backoffice occorre un account MASTER già predisposto.
 
-* manuali lunghi
-* tante eccezioni
-* terminologia tecnica
-* meccaniche difficili da visualizzare
+Nel combattimento il Player sceglie bersaglio e azione con arma o incantesimo. Quando tocca a un NPC, la pagina mostra il suo turno: il pulsante **“Mostra l'azione di…”** fa proseguire lo scontro. Tiri, bersaglio NPC e danni sono decisi dal backend. Dopo la vittoria si torna al capitolo per completarlo e ottenere l'eventuale ricompensa.
 
-DnD Academy nasce per abbassare la barriera d’ingresso attraverso:
+## Struttura e tecnologie
 
-* lezioni guidate
-* quiz interattivi
-* campagne tutorial
-* progressione didattica
-* combattimenti semplificati
-* feedback immediati
+| Cartella | Contenuto | Stack |
+| --- | --- | --- |
+| [dndacademyBE](dndacademyBE/README.md) | API, sicurezza, regole e persistenza | Java 17, Spring Boot 3.5.11, JPA, PostgreSQL, Maven |
+| [dndacademyfe](dndacademyfe/README.md) | Interfaccia Player e Master | Next.js 16.2.7, React 19.2.4, TypeScript, Tailwind CSS 4 |
 
-Fallire non significa perdere.
+JWT e BCrypt gestiscono l'autenticazione. Cloudinary ospita le immagini di personaggi e NPC; SMTP supporta le email di benvenuto e recupero password. Il frontend usa stato React e servizi TypeScript per comunicare con le API.
 
-> Fallire significa imparare.
+## Avvio locale
 
----
+Servono JDK 17 o compatibile, PostgreSQL, Node.js **20.9 o superiore** e npm. Configurare database, JWT, SMTP e Cloudinary seguendo il [README backend](dndacademyBE/README.md#configurazione-e-avvio). Impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per allineare CORS e link delle email.
 
-# 👥 Ruoli
+In un terminale, dalla radice del progetto:
 
-## 🧑‍🎓 PLAYER
+```powershell
+cd dndacademyBE
+.\mvnw.cmd spring-boot:run
+```
 
-Può:
+Nel file locale `dndacademyfe/.env.local`:
 
-* seguire lezioni
-* completare quiz
-* monitorare i propri progressi
-* ottenere badge
-* aumentare il proprio livello didattico
-* partecipare a campagne tutorial
-* usare personaggi guidati
-* simulare combattimenti base
+```dotenv
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
 
----
+In un secondo terminale, dalla radice:
 
-## 🧙‍♂️ MASTER
+```powershell
+cd dndacademyfe
+npm ci
+npm run dev
+```
 
-Può:
+Aprire [l'app locale](http://localhost:3000). L'API ascolta sulla porta 8080. Su macOS/Linux il comando backend è `./mvnw spring-boot:run`. Le credenziali di database e servizi esterni vanno mantenute nella configurazione locale.
 
-* creare campagne
-* creare lezioni
-* creare quiz
-* creare domande e risposte
-* gestire contenuti didattici
-* supervisionare l’esperienza di apprendimento
+Per provare lo scontro, il Master prepara campagna, capitolo con combattimento, personaggi e incontro con almeno un nemico. Il Player si iscrive, sblocca il capitolo e sceglie il personaggio. Il combattimento usa attualmente il primo incontro del capitolo in ordine di ID.
 
-Il MASTER non è un semplice admin tecnico.
+## Verifiche e limiti attuali
 
-> È il “Dungeon Master didattico” della piattaforma.
+Le modifiche recenti hanno superato compilazione backend, nove test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. I comandi sono descritti nei README dei due componenti. Restano da verificare nell'app lo scontro completo e il caricamento reale su Cloudinary; non è ancora disponibile una suite end-to-end.
 
----
+- I combattimenti sono individuali contro NPC; il party della campagna non implica uno scontro multiplayer in tempo reale.
+- La UI non ripristina ancora il combattimento al ricaricamento della pagina, anche se stato e registro sono persistiti.
+- Gli HP dello scontro sono separati da quelli permanenti del personaggio.
+- La strategia NPC è semplice e deterministica nella scelta del bersaglio.
+- Il database usa `ddl-auto: update`; le migrazioni versionate sono ancora da introdurre.
 
-# ✅ Stato Attuale del Backend
+## Prossimi sviluppi
 
-Il backend Spring Boot è attualmente completo per la prima integrazione frontend locale.
+- Validazione completa dei flussi Player e Master nell'app.
+- Ripresa delle sessioni di combattimento e miglioramenti alla presentazione delle azioni.
+- Strategie NPC, magie e condizioni più articolate.
+- Test di integrazione ed end-to-end, migrazioni e configurazioni per ambiente.
+- Preparazione e verifica del deploy.
 
-## ✔️ Implementato
-
-### 🔐 Autenticazione & Sicurezza
-
-* JWT Authentication
-* Login/Register
-* Spring Security
-* Password hashate con BCrypt
-* RBAC (PLAYER / MASTER)
-* Ownership checks
-* Protezione accessi campagne/combat
-
----
-
-### 📘 Sistema Didattico
-
-* Lezioni
-* Quiz
-* Domande
-* Risposte multiple
-* Salvataggio progresso utente
-* Quiz completati
-* Sblocco lezioni
-* Badge automatici
-* Learning Levels:
-
-  * BEGINNER
-  * INTERMEDIATE
-  * ADVANCED
-
----
-
-### ⚔️ Sistema Combat
-
-* Combattimento a turni
-* Iniziativa con modificatore DEX
-* Gestione HP
-* Attacco e danni
-* Critici
-* Turn order
-* Combat over
-* Winner detection
-* Protezione anti-spoofing
-* Validazione ownership personaggi
-
----
-
-### 🧑‍🎓 Personaggi
-
-* Creazione personaggi
-* Razza
-* Classe
-* Statistiche
-* Armor Class
-* HP
-* Associazione a campagne
-* Associazione al player
-
----
-
-### 🏕️ Campagne
-
-* Creazione campagne
-* Join campaign
-* Party system
-* Gestione player/master
-* Protezione accessi cross-campaign
-
----
-
-# 🧩 Feature MVP
-
-## 📘 Impara D&D
-
-* lezioni guidate
-* quiz interattivi
-* progressione
-* livelli apprendimento
-* badge
-
----
-
-## ⚔️ Combattimento Tutorial
-
-* simulazione turni
-* gestione dadi
-* CA / HP / danni
-* feedback immediato
-
----
-
-## 🎲 Dadi
-
-Attualmente implementata la logica backend per:
-
-* d20 attack roll
-* modificatori statistiche
-* critici
-
-Frontend 3D dice previsto nelle prossime fasi.
-
----
-
-# 🗺️ Roadmap Future
-
-## Frontend
-
-* Next.js App Router
-* UI responsive
-* Dashboard player
-* Dashboard master
-* Wizard creazione personaggio
-* Dice animations
-* Progress UI
-* Combat UI
-
----
-
-## Backend Improvements
-
-* Flyway/Liquibase
-* Error handling semantico (401/403/404)
-* Ottimizzazione query JPA
-* Transaction management avanzato
-* Profili dev/prod
-* Deploy production-ready
-
----
-
-# 🧱 Stack Tecnologico
-
-## 🖥️ Backend
-
-* Java 17
-* Spring Boot
-* Spring Security
-* JWT
-* JPA / Hibernate
-* PostgreSQL
-* Maven
-
-📁 `dndacademyBE/`
-
----
-
-## 🌐 Frontend
-
-* Next.js
-* React
-* TypeScript
-* Zustand / Redux Toolkit
-* TailwindCSS o Bootstrap
-
-📁 `dndacademyFE/`
-
----
-
-# 🗄️ Database
-
-Database relazionale PostgreSQL.
-
-Principali entità:
-
-* users
-* campaigns
-* characters
-* character_stats
-* combats
-* lessons
-* quizzes
-* questions
-* answers
-* user_lesson_progress
-* user_quiz_results
-* badges
-
----
-
-# ☁️ Deploy
-
-## Backend
-
-🚀 Railway
-
-## Frontend
-
-🌐 Vercel
-
----
-
-# 📌 Stato del Progetto
-
-Il backend è attualmente pronto per l’integrazione frontend locale.
-
-Il progetto è in sviluppo attivo e continuerà ad evolversi con:
-
-* frontend completo
-* UI didattica
-* campagne tutorial avanzate
-* sistema dadi visuale
-* miglioramenti architetturali production-grade
-
----
-
-# 📄 Licenza
-
-Progetto sviluppato per portfolio personale e scopi educativi.
+Il progetto ha finalità educative e di portfolio.

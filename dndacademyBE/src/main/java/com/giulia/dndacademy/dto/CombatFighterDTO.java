@@ -16,6 +16,7 @@ public class CombatFighterDTO {
 
     // Informazioni del combattente
     private String name;
+    private String imageUrl;
     private String characterClass;
 
     // Stato durante il combattimento

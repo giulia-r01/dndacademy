@@ -9,11 +9,20 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+  public ResponseEntity<ErrorResponse> handleStatus(org.springframework.web.server.ResponseStatusException ex) {
+    return ResponseEntity.status(ex.getStatusCode())
+            .body(ErrorResponse.builder()
+                    .message(ex.getReason() == null ? "Richiesta non valida" : ex.getReason())
+                    .build());
+  }
+
   @ExceptionHandler(RuntimeException.class)
   public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
     return ResponseEntity.badRequest()
             .body(ErrorResponse.builder()
-                    .message(ex.getMessage())
+                    .message(ex.getMessage() == null || ex.getMessage().isBlank()
+                            ? "Impossibile completare l'operazione" : ex.getMessage())
                     .build());
   }
 

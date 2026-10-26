@@ -2,12 +2,14 @@
 
 import { Suspense, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 
 import AppCard from "@/components/common/AppCard"
 import AppButton from "@/components/common/AppButton"
 import AppShell from "@/components/layout/AppShell"
 import AttackResultCard from "@/components/combat/AttackResultCard"
+import CombatPreparation from "@/components/combat/CombatPreparation"
 import { combatService } from "@/services/combat.service"
 import type {
   AttackResult,
@@ -83,6 +85,29 @@ function CombatContent() {
   const availableTargets =
     status?.fighters.filter((fighter) => fighter.alive && fighter.enemy) ?? []
 
+  const latestEvent = status?.events?.at(-1)
+  const player = status?.fighters.find(fighter => fighter.characterId !== null)
+  const npcCanAct = Boolean(status && !status.completed && currentFighter?.npcId != null && currentFighter.alive)
+  function fighterName(id: number, fallback: string) {
+    const matches = status?.fighters.filter(fighter => fighter.name === fallback) ?? []
+    return matches.length > 1 ? `${fallback} ${matches.findIndex(fighter => fighter.participantId === id) + 1}` : fallback
+  }
+  const currentName = currentFighter ? fighterName(currentFighter.participantId, currentFighter.name) : "..."
+
+  async function handleNpcTurn() {
+    if (!combatId || !status || isBusy || !npcCanAct) return
+    setIsBusy(true)
+    setError("")
+    setAttackResult(null)
+    try {
+      setStatus(await combatService.advanceNpcTurn(combatId, status.events.length))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossibile mostrare l'azione")
+      // Recover the authoritative state without repeating the action after a network failure.
+      try { await refreshCombatStatus(combatId) } catch { /* Keep the original error visible. */ }
+    } finally { setIsBusy(false) }
+  }
+
   async function handleAttack() {
     if (
       isBusy ||
@@ -107,6 +132,7 @@ function CombatContent() {
       await refreshCombatStatus(combatId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Errore durante l'attacco")
+      try { await refreshCombatStatus(combatId) } catch { /* Keep the original error visible. */ }
     } finally {
       setIsBusy(false)
     }
@@ -158,9 +184,9 @@ function CombatContent() {
               Capitolo {chapterId}. Il Master deve aver configurato almeno un
               incontro e un nemico.
             </p>
-            <AppButton type="button" onClick={startCombat} disabled={isBusy}>
-              {isBusy ? "Avvio in corso..." : "Inizia il combattimento"}
-            </AppButton>
+            {campaignId !== null
+              ? <CombatPreparation key={campaignId} campaignId={campaignId} isBusy={isBusy} onStart={startCombat} />
+              : <p>Apri il combattimento dal capitolo della campagna per scegliere il tuo personaggio.</p>}
           </AppCard>
         ) : (
           status && (
@@ -176,8 +202,17 @@ function CombatContent() {
                     ? status.outcome === "PLAYER_VICTORY"
                       ? "Vittoria! Torna al capitolo per completarlo e ottenere la ricompensa."
                       : "Sconfitta. Potrai tentare un nuovo combattimento."
-                    : `Tocca a ${currentFighter?.name ?? "..."}`}
+                    : playerCanAct ? `È il tuo turno: ${currentFighter?.name}. Scegli un bersaglio e attacca.`
+                    : `Turno di ${currentName} (${currentFighter?.enemy ? "nemico" : "aiutante"}). Il tuo personaggio attende.`}
                 </p>
+                {npcCanAct && (
+                  <div className="mt-4 space-y-3">
+                    <p className="text-sm text-[var(--text-soft)]">Prosegui per vedere il suo attacco. Bersaglio e danni vengono decisi dal combattimento.</p>
+                    <AppButton type="button" disabled={isBusy} onClick={handleNpcTurn}>
+                      {isBusy ? "Azione in corso..." : `Mostra l'azione di ${currentName}`}
+                    </AppButton>
+                  </div>
+                )}
                 {status.completed && status.outcome === "ENEMY_VICTORY" && (
                   <div className="mt-4">
                     <AppButton
@@ -191,6 +226,19 @@ function CombatContent() {
                 )}
               </AppCard>
 
+              {latestEvent && (
+                <AppCard className={latestEvent.targetId === player?.participantId && latestEvent.hit ? "border-red-500 bg-red-500/10" : "border-[var(--border-gold)]"}>
+                  <div role="status" aria-live="polite" aria-atomic="true" key={status.events.length}>
+                    <h3 className="text-xl font-black">
+                      {latestEvent.targetId === player?.participantId
+                        ? latestEvent.hit ? `Sei stato colpito! −${latestEvent.damage} HP` : "Hai evitato l'attacco!"
+                        : latestEvent.hit ? "Colpo a segno!" : "Attacco mancato"}
+                    </h3>
+                    <p className="mt-2">{fighterName(latestEvent.attackerId, latestEvent.attackerName)} → {fighterName(latestEvent.targetId, latestEvent.targetName)} · {latestEvent.critical ? "Critico! " : ""}{latestEvent.hit ? `${latestEvent.damage} danni` : "Nessun danno"}</p>
+                    <p className="mt-2 font-bold">HP di {fighterName(latestEvent.targetId, latestEvent.targetName)}: {latestEvent.targetHpBefore} → {latestEvent.targetRemainingHp}{latestEvent.targetRemainingHp === 0 ? " · Sconfitto" : ""}</p>
+                  </div>
+                </AppCard>
+              )}
               <AppCard>
                 <h3 className="text-lg font-black text-[var(--text-main)]">
                   Ordine di iniziativa
@@ -199,12 +247,16 @@ function CombatContent() {
                   {status.fighters.map((fighter) => (
                     <div
                       key={fighter.participantId}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[var(--surface-muted)] px-4 py-3"
+                      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 ${fighter.currentTurn && !status.completed ? "border-amber-400 bg-amber-400/10" : latestEvent?.targetId === fighter.participantId && latestEvent.hit ? "border-red-500 bg-red-500/10" : "border-transparent bg-[var(--surface-muted)]"}`}
                     >
-                      <div>
+                      <div className="flex items-center gap-3">
+                        {fighter.imageUrl
+                          ? <Image unoptimized src={fighter.imageUrl} alt={fighter.name} width={64} height={64} className="h-16 w-16 rounded-xl object-cover" />
+                          : <span aria-hidden="true" className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-2xl font-black">{fighter.name.slice(0, 1)}</span>}
+                        <div>
                         <p className="font-bold text-[var(--text-main)]">
-                          {fighter.name}
-                          {fighter.enemy ? " (nemico)" : " (alleato)"}
+                          {fighterName(fighter.participantId, fighter.name)}
+                          {fighter.characterId !== null ? " (tu)" : fighter.enemy ? " (nemico)" : " (aiutante)"}
                           {fighter.currentTurn && !status.completed
                             ? " · In turno"
                             : ""}
@@ -213,6 +265,7 @@ function CombatContent() {
                           Iniziativa: {fighter.initiative} · CA:{" "}
                           {fighter.armorClass}
                         </p>
+                        </div>
                       </div>
                       <p className="font-bold text-[var(--text-main)]">
                         HP {fighter.currentHp}/{fighter.maxHp}
@@ -283,7 +336,7 @@ function CombatContent() {
                             key={fighter.participantId}
                             value={fighter.participantId}
                           >
-                            {fighter.name} · HP {fighter.currentHp}/
+                            {fighterName(fighter.participantId, fighter.name)} · HP {fighter.currentHp}/
                             {fighter.maxHp}
                           </option>
                         ))}
@@ -301,6 +354,20 @@ function CombatContent() {
               )}
 
               {attackResult && <AttackResultCard result={attackResult} />}
+              {status.events.length > 0 && (
+                <AppCard>
+                  <h3 className="text-xl font-black">Registro del combattimento</h3>
+                  <ol className="mt-4 max-h-96 space-y-3 overflow-y-auto" reversed>
+                    {status.events.map((event, index) => ({ event, index })).reverse().map(({ event, index }) => (
+                      <li key={index} className="rounded-xl bg-[var(--surface-muted)] p-3">
+                        <p className="font-bold">{index + 1}. {fighterName(event.attackerId, event.attackerName)} → {fighterName(event.targetId, event.targetName)}</p>
+                        <p>{event.critical ? "Critico! " : ""}{event.hit ? `Colpito: ${event.damage} danni.` : "Mancato: nessun danno."} HP {event.targetHpBefore} → {event.targetRemainingHp}</p>
+                        <p className="text-sm text-[var(--text-soft)]">d20: {event.attackRoll} · Totale: {event.totalAttack} · CA: {event.targetArmorClass}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </AppCard>
+              )}
             </>
           )
         )}
