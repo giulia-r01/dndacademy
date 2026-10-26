@@ -1,0 +1,44 @@
+.layout { container-type: inline-size; max-width: 1440px; margin-inline: auto; }
+.toolbar { display: grid; gap: .75rem; min-width: 0; }
+.toolbar > nav { min-width: 0; }
+.arena { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; align-items: start; }
+.player { order: 1; }
+.opponent { order: 2; }
+.stage { order: 3; grid-column: 1 / -1; }
+.player, .opponent, .stage { min-width: 0; }
+.fighter { position: relative; overflow: hidden; }
+.portrait { width: 100%; height: clamp(220px, 32svh, 280px); border: 0; border-radius: 0; }
+.fighterInfo { position: absolute; inset: auto 0 0; padding: 2.5rem .75rem .75rem; background: linear-gradient(transparent, rgba(5,18,24,.94) 28%); }
+.fighterInfo h3 { font-size: .875rem; line-height: 1.25; }
+.fighterInfo > div:first-child > p { font-size: .6rem; letter-spacing: .07em; }
+.fighterInfo > p { font-size: .75rem; }
+.turn { display: flex; align-items: center; justify-content: space-between; gap: .75rem; border: 1px solid var(--border-teal-soft); border-radius: 1rem; padding: .8rem 1rem; background: var(--surface); }
+.actionBody { padding: 1rem; }
+.dice { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1rem; border-radius: .9rem; padding: .75rem; background: var(--surface-muted); }
+.controls { padding: 1rem; border-top: 1px solid var(--border-teal-soft); background: var(--surface-muted); border-radius: 0 0 1rem 1rem; }
+.initiative { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; }
+.initiative button { max-width: 210px; }
+@container (min-width: 600px) {
+  .portrait { height: 380px; }
+  .fighterInfo { padding: 3rem 1rem 1rem; }
+  .fighterInfo h3 { font-size: 1.1rem; }
+  .result { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 1fr); gap: 1rem; align-items: center; }
+  .result > details { grid-column: 1 / -1; }
+}
+@container (min-width: 900px) {
+  .toolbar { grid-template-columns: minmax(0, 1fr) minmax(250px, .4fr); align-items: stretch; }
+}
+@container (min-width: 1050px) {
+  .arena { grid-template-columns: minmax(240px, 1fr) minmax(340px, 1.45fr) minmax(240px, 1fr); gap: 1rem; }
+  .stage { order: 2; grid-column: auto; }
+  .opponent { order: 3; }
+  .portrait { height: clamp(380px, 42svh, 440px); }
+  .result { display: block; }
+  .dice { min-height: 160px; }
+  .stage { align-self: start; }
+}
+.impact { animation: impact 650ms ease-out; }
+.arrival { animation: arrival 400ms ease-out; }
+@keyframes impact { 20%, 60% { filter: brightness(1.3); } 40%, 80% { filter: brightness(.85); } }
+@keyframes arrival { from { opacity: .35; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .impact, .arrival { animation: none; } }

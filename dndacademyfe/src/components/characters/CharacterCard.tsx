@@ -1,5 +1,5 @@
-import Image from "next/image"
-import { FiHeart, FiShield, FiUser, FiZap } from "react-icons/fi"
+import EntityPortrait from "@/components/common/EntityPortrait"
+import { FiHeart, FiShield, FiZap } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
@@ -41,21 +41,7 @@ export default function CharacterCard({
   return (
     <AppCard className="transition hover:-translate-y-0.5 hover:border-[var(--border-gold)]">
       <div className="flex flex-col gap-5 md:flex-row md:items-start">
-        <div className="relative h-[380px] w-full overflow-hidden rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] sm:h-[420px] lg:h-[380px] md:w-[270px] lg:w-[248px] lg:shrink-0">
-          {character.imageUrl ? (
-            <Image
-              src={character.imageUrl}
-              alt={`Ritratto di ${character.name}`}
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 1024px) 100vw, 248px"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-[var(--accent)]">
-              <FiUser size={42} aria-hidden="true" />
-            </div>
-          )}
-        </div>
+        <EntityPortrait name={character.name} imageUrl={character.imageUrl} />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

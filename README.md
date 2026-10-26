@@ -13,7 +13,8 @@ Gli ultimi aggiornamenti comprendono:
 - Verifica e scelta del personaggio nella pagina prima di avviare lo scontro.
 - Turni NPC visibili e risolti una singola azione alla volta.
 - Avvisi dei danni subiti, HP prima/dopo e registro persistente degli attacchi.
-- Immagini caricabili per nemici e aiutanti e mostrate insieme ai personaggi.
+- Immagini caricabili per nemici e aiutanti, schede uniformate ai personaggi e anteprima nel modulo NPC.
+- Arena di combattimento con comandi centrali, ritratti ai lati e NPC mostrato automaticamente secondo turni e colpi, iniziativa compatta e registro espandibile.
 - Errori HTTP espliciti preservati e messaggi di ripiego al posto dei messaggi nulli.
 
 ## Ruoli e flusso di gioco
@@ -64,7 +65,7 @@ Per provare lo scontro, il Master prepara campagna, capitolo con combattimento, 
 
 ## Verifiche e limiti attuali
 
-Le modifiche recenti hanno superato compilazione backend, nove test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. I comandi sono descritti nei README dei due componenti. Restano da verificare nell'app lo scontro completo e il caricamento reale su Cloudinary; non è ancora disponibile una suite end-to-end.
+Le modifiche recenti hanno superato compilazione backend, nove test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti nove test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
 
 - I combattimenti sono individuali contro NPC; il party della campagna non implica uno scontro multiplayer in tempo reale.
 - La UI non ripristina ancora il combattimento al ricaricamento della pagina, anche se stato e registro sono persistiti.

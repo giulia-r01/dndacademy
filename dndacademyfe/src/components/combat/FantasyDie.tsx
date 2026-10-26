@@ -15,7 +15,7 @@ export default function FantasyDie({
     <div
       className={[
         "relative flex h-24 w-24 shrink-0 items-center justify-center",
-        "animate-[fantasyDieRoll_800ms_ease-out]",
+        "animate-[fantasyDieRoll_800ms_ease-out] motion-reduce:animate-none",
       ].join(" ")}
       aria-label={`${dieLabel}, risultato ${value}`}
     >

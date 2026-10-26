@@ -64,15 +64,17 @@ Il backoffice richiede un account MASTER già predisposto. La registrazione pubb
 6. Il risultato mostra colpi riusciti o mancati, critici, danni e HP prima/dopo. I danni al proprio personaggio hanno un avviso dedicato; il registro mostra prima gli eventi più recenti.
 7. Dopo una vittoria il Player torna al capitolo per completarlo e ottenere l'eventuale ricompensa.
 
+La schermata ha una larghezza massima di 1440 px. Su desktop risultato, dadi e comandi stanno al centro, tra il personaggio e l’NPC. Le colonne laterali mantengono spazio per ritratti ampi senza allargare eccessivamente il pannello centrale. Le container query adattano la disposizione alla larghezza effettiva del contenuto, inclusa la sidebar: su tablet e telefono i comandi passano sotto i ritratti. Le informazioni HP e CA sono sovrapposte alla parte bassa delle immagini; le altezze si adattano allo schermo. Iniziativa e turno condividono la fascia superiore quando c’è spazio. L’iniziativa è una fascia compatta e il registro è espandibile. Il ritratto NPC segue automaticamente il combattimento: dopo ogni azione mostra per 1,6 secondi il bersaglio NPC o l’autore NPC del colpo, quindi passa al prossimo NPC in turno. Durante questa presentazione i comandi attendono, per evitare di saltare il feedback. A scontro concluso resta visibile l’NPC coinvolto nell’ultima azione. Non c’è un selettore manuale del ritratto; la scelta del bersaglio di attacco resta disponibile nel turno del Player. Il danno anima il ritratto colpito e la barra HP; le animazioni rispettano la preferenza di movimento ridotto.
+
 Gli NPC con lo stesso nome sono distinti con un numero. Le richieste di azione sono protette durante il caricamento; dopo un errore il client tenta di rileggere lo stato senza ripetere automaticamente l'attacco.
 
 Le azioni NPC inviano `expectedEventCount` per evitare che una richiesta ripetuta risolva un altro turno. Il contratto delle API è descritto nel README backend.
 
 ## Immagini
 
-Il Master può aggiungere o sostituire l'immagine di un NPC dalla sua scheda in `/admin/npcs`, anche se già usato. Sono accettati JPG, PNG e WEBP fino al limite applicativo di 5 MB; il file viene inviato al backend e caricato su Cloudinary.
+Le schede di `/admin/npcs` riusano lo stesso componente ritratto delle schede personaggio, con HP, CA, attacco e iniziativa. Il modulo di creazione/modifica è organizzato in identità, difesa e statistiche, con anteprima del ritratto e selezione del file. Il Master può caricare l’immagine durante la creazione oppure aggiungerla o sostituirla dalla scheda, anche per NPC già usati. Se il caricamento fallisce dopo il salvataggio, la scheda resta disponibile e il messaggio invita a riprovare senza ricreare l’NPC. Sono accettati JPG, PNG e WEBP fino al limite applicativo di 5 MB; il file viene inviato al backend e caricato su Cloudinary.
 
-Le immagini di personaggi, nemici e aiutanti sono mostrate nel combattimento. Se manca un'immagine, l'ordine di iniziativa mostra l'iniziale del nome. La configurazione Next.js consente le immagini remote da `res.cloudinary.com`.
+Le immagini di personaggi, nemici e aiutanti sono mostrate nel combattimento. Se manca un’immagine, il riquadro del ritratto mostra un’icona segnaposto. La configurazione Next.js consente le immagini remote da `res.cloudinary.com`.
 
 ## Struttura
 
@@ -97,7 +99,20 @@ npx tsc --noEmit --incremental false
 npm run lint
 ```
 
-Sui file interessati dalle modifiche recenti sono passati TypeScript ed ESLint. Questo non equivale alla verifica di tutti i flussi nell'app o della build di produzione. Lo scontro completo e l'upload reale su Cloudinary restano da provare; non è ancora presente una suite end-to-end.
+Sono presenti nove test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
+
+Con il frontend avviato in un altro terminale:
+
+```powershell
+# Installazione del browser di prova, una volta
+npx playwright install chromium
+
+npm run test:ui
+```
+
+Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
+
+Passati i nove test UI, TypeScript ed ESLint sui file interessati. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
 
 ## Limiti attuali e prossimi sviluppi
 

@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { FiPlus, FiEdit2, FiTrash2 } from "react-icons/fi"
+import NpcCard from "@/components/npcs/NpcCard"
 import AppShell from "@/components/layout/AppShell"
 import AppCard from "@/components/common/AppCard"
 import AppButton from "@/components/common/AppButton"
@@ -52,16 +53,23 @@ export default function AdminNpcsPage() {
     await load()
   }
 
-  async function save(payload: NpcRequest) {
+  async function save(payload: NpcRequest, image: File | null) {
     setSaving(true)
     setFormError("")
     try {
-      if (editing && editing !== "new")
-        await npcService.update(editing.id, payload)
-      else await npcService.create(payload)
+      const saved = editing && editing !== "new"
+        ? await npcService.update(editing.id, payload)
+        : await npcService.create(payload)
+      setError("")
+      let imageError = ""
+      if (image) {
+        try { await npcService.uploadImage(saved.id, image) }
+        catch (err) { imageError = `Scheda salvata. Immagine non caricata: ${err instanceof Error ? err.message : "riprova dalla scheda"}` }
+      }
       setEditing(null)
       setSuccess("NPC salvato correttamente.")
       await reload()
+      if (imageError) setError(imageError)
       return true
     } catch (e) {
       setFormError(e instanceof Error ? e.message : "Errore nel salvataggio")
@@ -137,7 +145,7 @@ export default function AdminNpcsPage() {
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
               Backoffice
             </p>
-            <h1 className="mt-2 text-3xl font-black">NPC</h1>
+            <h1 className="mt-2 text-3xl font-black">Gestione nemici e aiutanti</h1>
             <p className="mt-2 text-[var(--text-soft)]">
               Crea nemici e alleati da riutilizzare negli incontri delle tue
               campagne.
@@ -151,7 +159,7 @@ export default function AdminNpcsPage() {
               setSuccess("")
             }}
           >
-            Nuovo NPC
+            <FiPlus className="mr-2" aria-hidden="true" /> Nuovo NPC
           </AppButton>
         </div>
         {error && (
@@ -180,69 +188,24 @@ export default function AdminNpcsPage() {
             Nessun NPC. Crea il primo nemico per configurare un incontro.
           </AppCard>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {npcs.map((npc) => (
-              <AppCard key={npc.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-black">{npc.name}</h2>
-                    <p className="mt-1 text-sm text-[var(--accent-soft)]">
-                      {npc.enemy ? "Nemico" : "Alleato"}
-                    </p>
-                  </div>
-                  <p className="text-sm font-bold">
-                    HP {npc.maxHp} · CA {npc.armorClass}
-                  </p>
-                </div>
-                <div className="mt-3 flex items-center gap-4">
-                  {npc.imageUrl && <Image unoptimized src={npc.imageUrl} alt={npc.name} width={80} height={80} className="h-20 w-20 rounded-xl object-cover" />}
-                  <label className="text-sm font-bold">
+          <div className="space-y-6">
+            {npcs.map(npc => <section key={npc.id} aria-label={npc.name} className="space-y-3">
+              <NpcCard npc={npc} />
+              <AppCard className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div><p className="font-bold">Azioni Master</p><p className="mt-1 text-xs text-[var(--text-muted)]">Gestisci la scheda e il ritratto di {npc.name}.</p></div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className={`rounded-xl border border-[var(--border-teal-soft)] px-5 py-3 text-sm font-bold focus-within:ring-2 focus-within:ring-[var(--accent)] ${saving ? "cursor-wait opacity-60" : "cursor-pointer hover:bg-[var(--surface-muted)]"}`}>
                     {npc.imageUrl ? "Cambia immagine" : "Aggiungi immagine"}
-                    <input type="file" accept="image/jpeg,image/png,image/webp" disabled={saving}
-                      className="mt-2 block max-w-full text-sm"
-                      onChange={event => {
-                        const file = event.target.files?.[0]
-                        event.target.value = ""
-                        if (file) void uploadImage(npc, file)
-                      }} />
-                    <span className="text-xs text-[var(--text-soft)]">JPG, PNG o WEBP · massimo 5 MB</span>
+                    <input type="file" aria-label={`Immagine di ${npc.name}`} accept="image/jpeg,image/png,image/webp" disabled={saving} className="sr-only" onChange={event => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void uploadImage(npc, file) }} />
                   </label>
-                </div>
-                {npc.description && (
-                  <p className="mt-3 text-sm text-[var(--text-soft)]">
-                    {npc.description}
-                  </p>
-                )}
-                <p className="mt-3 text-sm text-[var(--text-soft)]">
-                  DES {npc.dexterity} · Attacco{" "}
-                  {npc.attackModifier >= 0 ? "+" : ""}
-                  {npc.attackModifier} · Danno d{npc.damageDie}
-                  {npc.damageModifier >= 0 ? "+" : ""}
-                  {npc.damageModifier}
-                </p>
-                <div className="mt-4 flex gap-3">
-                  <AppButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      setEditing(npc)
-                      setFormError("")
-                    }}
-                  >
-                    Modifica
-                  </AppButton>
-                  <AppButton
-                    type="button"
-                    variant="danger"
-                    onClick={() => setDeleting(npc)}
-                  >
-                    Elimina
-                  </AppButton>
+                  <AppButton type="button" disabled={saving} variant="secondary" onClick={() => { setEditing(npc); setFormError("") }}><FiEdit2 className="mr-2" aria-hidden="true" /> Modifica</AppButton>
+                  <AppButton type="button" disabled={saving} variant="danger" onClick={() => setDeleting(npc)}><FiTrash2 className="mr-2" aria-hidden="true" /> Elimina</AppButton>
                 </div>
               </AppCard>
-            ))}
+            </section>)}
           </div>
         )}
+
         <AppModal
           isOpen={editing !== null}
           title={editing === "new" ? "Nuovo NPC" : "Modifica NPC"}
@@ -250,7 +213,7 @@ export default function AdminNpcsPage() {
           onClose={() => {
             if (!saving) setEditing(null)
           }}
-          size="lg"
+          size="xl"
         >
           {editing !== null && (
             <NpcForm
