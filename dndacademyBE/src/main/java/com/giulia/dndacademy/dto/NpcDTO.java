@@ -30,4 +30,9 @@ public class NpcDTO {
     private int damageModifier;
 
     private boolean enemy;
+
+    private boolean healer;
+    private int healingDie;
+    private int healingModifier;
+    private int healingUses;
 }

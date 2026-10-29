@@ -25,6 +25,8 @@ export interface CombatFighter {
   armorClass: number
   alive: boolean
   enemy: boolean
+  healer?: boolean
+  healingUsesRemaining?: number
   currentTurn: boolean
   initiative: number
   spellcaster: boolean
@@ -80,6 +82,10 @@ export interface AttackResult {
 }
 
 export interface CombatEvent {
+  actionType?: "ATTACK" | "HEAL" | null
+  healing?: number
+  healingRoll?: number
+  healingDie?: number
   attackerId: number
   attackerName: string
   targetId: number

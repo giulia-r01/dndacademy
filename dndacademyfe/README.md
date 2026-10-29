@@ -110,7 +110,7 @@ npx tsc --noEmit --incremental false
 npm run lint
 ```
 
-Sono presenti trentasei test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
+Sono presenti quarantatre test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
 
 Con il frontend avviato in un altro terminale:
 
@@ -123,7 +123,7 @@ npm run test:ui
 
 Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
 
-I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 36 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
+I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 43 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
 
 ## Limiti attuali e prossimi sviluppi
 
@@ -143,3 +143,14 @@ La gestione incontri mostra campagna e titolo del capitolo, uno stato iniziale c
 
 
 Il modulo NPC usa un pulsante Carica immagine / Cambia immagine accessibile da tastiera, con nome del file selezionato visibile e anteprima. Il selettore nativo viene azzerato per consentire di riselezionare lo stesso file, mentre il nome resta nello stato del modulo. I test di creazione e recupero da errore upload verificano apertura da tastiera, selezione e sostituzione del file.
+
+
+### Guaritori
+
+Nel modulo NPC, selezionare Aiutante e ruolo Guaritore, quindi dado cura, bonus (0-30) e utilizzi per combattimento (1-20). La scheda, il riepilogo incontro e l’anteprima espongono le cure. Nell’arena sono visibili ruolo, cure rimaste, dado e HP recuperati in verde; un recupero da 0 HP segnala il ritorno in combattimento. Il registro e il dettaglio storico distinguono gli eventi HEAL dalle azioni ATTACK. La vittoria con il personaggio a 0 HP viene presentata come vittoria del gruppo con personaggio fuori combattimento. Cinque nuovi scenari browser coprono configurazione, cura desktop/mobile, esito di gruppo e storico. Gli NPC già usati non vengono convertiti: crearne uno nuovo per collaudare le cure.
+
+
+La sequenza di iniziativa usa uno scorrimento orizzontale con barra sottile, pista scura e cursore nel colore primario. La lista è raggiungibile da tastiera con indicatore di focus; in modalità contrasto forzato mantiene i colori di sistema.
+
+
+Lo storico raggruppa gli scontri della pagina corrente in accordion per campagna chiusi inizialmente, con sezioni per capitolo e conteggio dei tentativi. Le identità usano gli ID per non confondere nomi uguali; i dati storici senza collegamenti restano consultabili in gruppi di ripiego. Le campagne aperte restano aperte cambiando pagina. I conteggi sono esplicitamente limitati alla pagina quando lo storico è paginato; Precedenti/Successivi consentono di consultare gli altri scontri. Due nuove regressioni coprono gruppi chiusi, tastiera, nomi uguali con ID distinti e metadati mancanti; quelle esistenti verificano paginazione, dettagli, cure e resa mobile.

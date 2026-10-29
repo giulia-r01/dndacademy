@@ -45,6 +45,16 @@ public class Npc {
     @Column(nullable = false)
     private boolean enemy;
 
+
+    @Column(nullable = false)
+    private boolean healer;
+    @Column(nullable = false)
+    private int healingDie;
+    @Column(nullable = false)
+    private int healingModifier;
+    @Column(nullable = false)
+    private int healingUses;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
     private User owner;

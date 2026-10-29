@@ -36,4 +36,6 @@ public class CombatFighterDTO {
     private int damageDie;
     private String spellName;
     private int spellDamageDie;
+    private boolean healer;
+    private int healingUsesRemaining;
 }

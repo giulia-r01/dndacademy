@@ -16,7 +16,24 @@
 .actionBody { padding: 1rem; }
 .dice { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1rem; border-radius: .9rem; padding: .75rem; background: var(--surface-muted); }
 .controls { padding: 1rem; border-top: 1px solid var(--border-teal-soft); background: var(--surface-muted); border-radius: 0 0 1rem 1rem; }
-.initiative { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; }
+.initiative {
+  display: flex;
+  gap: .5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: .15rem .1rem .65rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) var(--surface-muted);
+  color-scheme: dark;
+  border-radius: .6rem;
+}
+.initiative::-webkit-scrollbar { height: 7px; }
+.initiative::-webkit-scrollbar-track { background: var(--surface-muted); border-radius: 999px; }
+.initiative::-webkit-scrollbar-thumb { background: var(--primary); border: 1px solid var(--surface-muted); border-radius: 999px; }
+.initiative::-webkit-scrollbar-thumb:hover { background: var(--accent-soft); }
+.initiative::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+.initiative:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+@media (forced-colors: active) { .initiative { scrollbar-color: auto; } }
 .initiative button { max-width: 210px; }
 @container (min-width: 600px) {
   .portrait { height: 380px; }

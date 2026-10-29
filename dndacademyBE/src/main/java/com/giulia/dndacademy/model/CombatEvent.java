@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.model;
 
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.Column;
 import lombok.*;
 
 @Embeddable
@@ -19,4 +20,13 @@ public class CombatEvent {
     private int damage;
     private int targetHpBefore;
     private int targetRemainingHp;
+    @Builder.Default
+    @Column(nullable = false)
+    private String actionType = "ATTACK";
+    @Column(nullable = false)
+    private int healing;
+    @Column(nullable = false)
+    private int healingRoll;
+    @Column(nullable = false)
+    private int healingDie;
 }

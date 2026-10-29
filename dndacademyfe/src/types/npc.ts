@@ -9,6 +9,10 @@ export interface Npc {
   attackModifier: number
   damageDie: number
   damageModifier: number
+  healer?: boolean
+  healingDie?: number
+  healingModifier?: number
+  healingUses?: number
   enemy: boolean
 }
 

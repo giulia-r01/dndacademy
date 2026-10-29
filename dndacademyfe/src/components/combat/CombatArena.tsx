@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { FiCrosshair, FiHeart, FiShield } from "react-icons/fi"
 import AppButton from "@/components/common/AppButton"
 import EntityPortrait from "@/components/common/EntityPortrait"
+import CombatEventLog from "@/components/combat/CombatEventLog"
+import HealingResult from "@/components/combat/HealingResult"
 import FantasyDie from "@/components/combat/FantasyDie"
 import type { AttackResult, CombatActionType, CombatFighter, CombatStatus } from "@/types/combat"
 import styles from "./CombatArena.module.css"
@@ -53,12 +55,12 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
     return fighter ? name(fighter) : fallback
   }
   function portrait(fighter: CombatFighter, own: boolean) {
-    const damaged = event?.hit && event.targetId === fighter.participantId
+    const damaged = event?.actionType !== "HEAL" && event?.hit && event.targetId === fighter.participantId
     return <article aria-label={`Scheda di ${name(fighter)}`} key={`${fighter.participantId}-${damaged ? status.events.length : "idle"}`}
       className={`${styles.fighter} min-w-0 rounded-2xl border bg-[var(--surface)] ${damaged ? `border-red-500 ${styles.impact}` : fighter.currentTurn && !status.completed ? "border-[var(--border-gold)]" : "border-[var(--border-teal-soft)]"}`}>
       <EntityPortrait name={name(fighter)} imageUrl={fighter.imageUrl} className={styles.portrait} />
       <div className={`${styles.fighterInfo} space-y-2`}>
-        <div><p className="text-xs font-bold uppercase tracking-wider text-[var(--accent-soft)]">{own ? "Il tuo personaggio" : fighter.enemy ? "Nemico" : "Aiutante"}</p>
+        <div><p className="text-xs font-bold uppercase tracking-wider text-[var(--accent-soft)]">{own ? "Il tuo personaggio" : fighter.enemy ? "Nemico" : fighter.healer ? "Guaritore" : "Aiutante"}</p>
           <h3 className="mt-1 break-words font-black">{name(fighter)}</h3></div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold">
           <span className={`flex items-center gap-1 ${fighter.currentHp <= fighter.maxHp / 3 ? "text-red-400" : ""}`}><FiHeart aria-hidden="true" /> {fighter.currentHp}/{fighter.maxHp} HP</span>
@@ -67,6 +69,7 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
         <div role="progressbar" aria-label={`HP di ${name(fighter)}`} aria-valuemin={0} aria-valuemax={fighter.maxHp} aria-valuenow={fighter.currentHp} className="h-2 overflow-hidden rounded-full bg-[var(--bg-app-deep)]">
           <div className={`h-full transition-[width] duration-700 motion-reduce:transition-none ${fighter.currentHp <= fighter.maxHp / 3 ? "bg-red-500" : "bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]"}`} style={{ width: `${Math.max(0, Math.min(100, fighter.currentHp / Math.max(1, fighter.maxHp) * 100))}%` }} />
         </div>
+        {fighter.healer && <p className="text-sm font-bold text-emerald-300">Cure rimaste: {fighter.healingUsesRemaining ?? 0}</p>}
         {!fighter.alive && <p className="text-sm font-bold text-red-400">Sconfitto</p>}
         {damaged && <p className="text-sm font-bold text-red-400">Ultimo colpo: −{event.damage} HP</p>}
       </div>
@@ -77,7 +80,7 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
     <div className={styles.toolbar}>
     <nav aria-label="Ordine di iniziativa" className="rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] p-3">
       <h3 className="mb-2 text-xs font-bold uppercase tracking-widest text-[var(--accent-soft)]">Ordine di iniziativa</h3>
-      <ol className={styles.initiative}>{status.fighters.map(f => <li key={f.participantId} className="shrink-0">
+      <ol className={styles.initiative} tabIndex={0} aria-label="Sequenza dei turni">{status.fighters.map(f => <li key={f.participantId} className="shrink-0">
         <button type="button" disabled={controlsBusy} aria-current={f.currentTurn && !status.completed ? "step" : undefined}
           onClick={() => {
             if (canAct && f.enemy && f.alive) onSelectTarget(f.participantId)
@@ -91,7 +94,7 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
 
         <div className={styles.turn}>
           <div><p className="text-xs font-bold uppercase tracking-widest text-[var(--accent-soft)]">{status.completed ? "Combattimento concluso" : "Turno corrente"}</p>
-          <h3 className="mt-1 text-xl font-black" aria-live="polite">{status.completed ? status.outcome === "PLAYER_VICTORY" ? "Vittoria!" : "Sconfitta" : canAct ? `È il tuo turno, ${current ? name(current) : ""}` : `Tocca a ${current ? name(current) : "..."}`}</h3></div>
+          <h3 className="mt-1 text-xl font-black" aria-live="polite">{status.completed ? status.outcome === "PLAYER_VICTORY" ? player && !player.alive ? "Vittoria del gruppo" : "Vittoria!" : "Sconfitta" : canAct ? `È il tuo turno, ${current ? name(current) : ""}` : `Tocca a ${current ? name(current) : "..."}`}</h3></div>
         </div>
 
     </div>
@@ -99,7 +102,7 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
       <div className={styles.player}>{player && portrait(player, true)}</div>
       <section aria-label="Arena e comandi di combattimento" className={`${styles.stage} flex min-w-0 flex-col rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)]`}>
         <div className={styles.actionBody}>
-          {event ? <div key={status.events.length} className={`${styles.result} space-y-4 ${styles.arrival}`}>
+          {event?.actionType === "HEAL" ? <HealingResult event={event} attacker={eventName(event.attackerId, event.attackerName)} target={eventName(event.targetId, event.targetName)} /> : event ? <div key={status.events.length} className={`${styles.result} space-y-4 ${styles.arrival}`}>
             <div role="status" aria-live="polite" aria-atomic="true">
               <p className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Ultima azione</p>
               <h4 className={`mt-1 text-2xl font-black ${event.hit && event.targetId === player?.participantId ? "text-red-400" : "text-[var(--accent-soft)]"}`}>
@@ -121,8 +124,9 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
           </div> : <div className="space-y-4 text-center text-[var(--text-soft)]"><FiCrosshair size={56} className="mx-auto text-[var(--accent-soft)]" aria-hidden="true" /><p className="font-bold">Lo scontro sta per iniziare</p><p className="text-sm">{canAct ? "Scegli un nemico e prepara il tuo attacco." : "Prosegui per vedere la prima azione."}</p></div>}
         </div>
         <div className={`${styles.controls} space-y-3`}>
-          {presentingAction && <p role="status" className="text-xs font-bold text-[var(--accent-soft)]">{focused ? `Azione su ${name(focused)}` : "Azione in corso"} · prossimo turno tra poco…</p>}
+          {presentingAction && <p role="status" className="text-xs font-bold text-[var(--accent-soft)]">{event?.actionType === "HEAL" ? `Cura su ${eventName(event.targetId, event.targetName)}` : focused ? `Azione su ${name(focused)}` : "Azione in corso"} · prossimo turno tra poco…</p>}
           {status.completed ? <>
+            {status.outcome === "PLAYER_VICTORY" && player && !player.alive && <p className="text-sm font-bold text-[var(--accent-soft)]">{player.name} è fuori combattimento. Gli alleati hanno sconfitto tutti i nemici.</p>}
             <p className="text-sm">{status.outcome === "PLAYER_VICTORY" ? "Torna al capitolo per completarlo e ottenere la ricompensa." : "Puoi tentare un nuovo combattimento."}</p>
             {status.outcome === "ENEMY_VICTORY" && <AppButton type="button" disabled={isBusy} onClick={onRestart}>Riprova</AppButton>}
           </> : canAct && current ? <>
@@ -160,8 +164,7 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
       <summary className="cursor-pointer font-bold">Registro del combattimento · {status.events.length} {status.events.length === 1 ? "azione" : "azioni"}</summary>
       {status.events.length === 0 ? <p className="mt-3 text-sm text-[var(--text-soft)]">Nessuna azione ancora eseguita.</p> : <ol reversed className="mt-3 max-h-72 space-y-2 overflow-y-auto">{status.events.map((item, index) => ({ item, index })).reverse().map(({ item, index }) => <li key={index} className="rounded-xl bg-[var(--surface-muted)] p-3 text-sm">
         <p className="font-bold">{index + 1}. {eventName(item.attackerId, item.attackerName)} → {eventName(item.targetId, item.targetName)}</p>
-        <p>{item.critical ? "Critico! " : ""}{item.hit ? `${item.damage} danni` : "Mancato"} · HP {item.targetHpBefore} → {item.targetRemainingHp}</p>
-        <p className="text-xs text-[var(--text-muted)]">d20 {item.attackRoll} · Totale {item.totalAttack} · CA {item.targetArmorClass}</p>
+        <CombatEventLog event={item} />
       </li>)}</ol>}
     </details>
   </div>

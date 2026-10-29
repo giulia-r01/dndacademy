@@ -30,6 +30,7 @@ export default function EncounterOverview({ encounter, npcs, onConfigure, onDele
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold uppercase tracking-wider text-[var(--accent-soft)]">{item.enemy ? "Nemico" : "Alleato"} · {item.quantity} in campo</p>
                   <h3 className="mt-2 break-words text-lg font-black">{item.npcName}</h3>
+                  {npc?.healer && <p className="mt-3 text-sm font-bold text-emerald-300">Guaritore: cura d{npc.healingDie} +{npc.healingModifier}, {npc.healingUses} utilizzi</p>}
                   {npc && <><p className="mt-3 text-sm font-bold">HP {npc.maxHp} · CA {npc.armorClass}</p><p className="mt-2 text-sm text-[var(--text-soft)]">Danno d{npc.damageDie} {npc.damageModifier >= 0 ? "+" : ""}{npc.damageModifier}</p>{npc.description && <p className="mt-3 break-words text-sm text-[var(--text-muted)]">{npc.description}</p>}</>}
                 </div>
               </div>

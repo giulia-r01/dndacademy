@@ -369,7 +369,9 @@ public class CharacterServiceImpl implements CharacterService {
         character.setMaxHp(request.getMaxHp());
         character.setArmorClass(request.getArmorClass());
 
-        if (character.getCurrentHp() > request.getMaxHp()) {
+        // Unclaimed characters are templates ready to be chosen at full health.
+        // Editing an assigned character must not heal existing damage.
+        if (character.getPlayer() == null || character.getCurrentHp() > request.getMaxHp()) {
             character.setCurrentHp(request.getMaxHp());
         }
 

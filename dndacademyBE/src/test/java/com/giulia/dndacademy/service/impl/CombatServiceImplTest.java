@@ -144,4 +144,96 @@ class CombatServiceImplTest {
                 () -> service.advanceNpcTurn(1L, 0, "player"));
         assertEquals(403, error.getStatusCode().value());
     }
+
+    private void healer() {
+        combat.setCurrentTurnIndex(2);
+        helper.getNpc().setHealer(true);
+        helper.getNpc().setHealingDie(6);
+        helper.getNpc().setHealingModifier(2);
+        helper.getNpc().setHealingUses(2);
+    }
+
+    private void withHealingRoll(Runnable action) {
+        ThreadLocalRandom random = mock(ThreadLocalRandom.class);
+        try (MockedStatic<ThreadLocalRandom> mocked = mockStatic(ThreadLocalRandom.class)) {
+            mocked.when(ThreadLocalRandom::current).thenReturn(random);
+            when(random.nextInt(1, 7)).thenReturn(4);
+            action.run();
+        }
+    }
+
+    @Test void healerRestoresHpRecordsActualHealingAndConsumesOneUse() {
+        healer(); player.setCurrentHp(10);
+        withHealingRoll(() -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(16, player.getCurrentHp());
+        assertEquals(1, helper.getHealingUsed());
+        assertEquals(0, combat.getCurrentTurnIndex());
+        CombatEvent event = combat.getEvents().get(0);
+        assertEquals("HEAL", event.getActionType());
+        assertEquals(6, event.getHealing());
+        assertEquals(0, event.getDamage());
+        assertEquals(10, event.getTargetHpBefore());
+        assertEquals(16, event.getTargetRemainingHp());
+        assertEquals(4, event.getHealingRoll());
+        assertEquals(6, event.getHealingDie());
+        assertEquals(30, goblin.getCurrentHp());
+    }
+
+    @Test void healerRescuesFallenPlayerBeforeWoundedHelperAndReturnsTheirTurn() {
+        healer(); player.setCurrentHp(0); player.setAlive(false); helper.setCurrentHp(1);
+        withHealingRoll(() -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(6, player.getCurrentHp());
+        assertTrue(player.isAlive());
+        assertEquals(1, helper.getCurrentHp());
+        assertEquals(0, combat.getCurrentTurnIndex());
+        assertFalse(combat.isCompleted());
+    }
+
+    @Test void healingIsClampedAtMaxHpAndNotAppliedToAnEnemy() {
+        healer(); player.setCurrentHp(19); goblin.setCurrentHp(1);
+        withHealingRoll(() -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(20, player.getCurrentHp());
+        assertEquals(1, combat.getEvents().get(0).getHealing());
+        assertEquals(1, goblin.getCurrentHp());
+    }
+
+    @Test void healerCanHealItselfWhenItHasLowestHpRatio() {
+        healer(); helper.setCurrentHp(2); player.setCurrentHp(19);
+        withHealingRoll(() -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(8, helper.getCurrentHp());
+        assertEquals(helper.getId(), combat.getEvents().get(0).getTargetId());
+    }
+
+    @Test void exhaustedHealerAttacksAndDoesNotRescueOrConsumeMoreUses() {
+        healer(); helper.setHealingUsed(2); player.setCurrentHp(0); player.setAlive(false);
+        withRolls(15, () -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(0, player.getCurrentHp());
+        assertEquals(25, goblin.getCurrentHp());
+        assertEquals(2, helper.getHealingUsed());
+        assertNotEquals("HEAL", combat.getEvents().get(0).getActionType());
+    }
+
+    @Test void healerAttacksWithoutConsumingUsesIfEveryoneIsHealthy() {
+        healer();
+        withRolls(15, () -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(25, goblin.getCurrentHp());
+        assertEquals(0, helper.getHealingUsed());
+    }
+
+    @Test void replayingHealingRequestCannotHealOrSpendASecondUse() {
+        healer(); player.setCurrentHp(10);
+        withHealingRoll(() -> service.advanceNpcTurn(1L, 0, "player"));
+        assertThrows(ResponseStatusException.class, () -> service.advanceNpcTurn(1L, 0, "player"));
+        assertEquals(16, player.getCurrentHp());
+        assertEquals(1, helper.getHealingUsed());
+        assertEquals(1, combat.getEvents().size());
+    }
+
+    @Test void livingHelperCanWinForGroupWithPlayerStillAtZeroHp() {
+        combat.setCurrentTurnIndex(2); player.setCurrentHp(0); player.setAlive(false); goblin.setCurrentHp(1);
+        withRolls(15, () -> service.advanceNpcTurn(1L, 0, "player"));
+        assertTrue(combat.isCompleted());
+        assertEquals(CombatOutcome.PLAYER_VICTORY, combat.getOutcome());
+        assertEquals(0, player.getCurrentHp());
+    }
 }

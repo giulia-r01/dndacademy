@@ -48,7 +48,7 @@ Da questa cartella, su Windows:
 
 Su macOS/Linux usare `./mvnw spring-boot:run`. L'API locale ascolta sulla porta **8080**. Il frontend usa `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 
-Lo schema usa `spring.jpa.hibernate.ddl-auto: update`: riavviare il backend dopo gli aggiornamenti alle entità, inclusi immagine NPC e registro `combat_events`. Le migrazioni versionate sono ancora da introdurre.
+Lo schema di sviluppo usa `spring.jpa.hibernate.ddl-auto: update`. Per una partenza pulita, configurare in `DB_URL` un database PostgreSQL vuoto: al primo avvio Hibernate crea lo schema dalle entità. L’avvio non svuota il database e non va usato come migrazione automatica di vecchi dati di collaudo. Le migrazioni versionate sono ancora da introdurre.
 
 ## API principali
 
@@ -138,12 +138,12 @@ Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. Le a
 .\mvnw.cmd -DskipTests compile
 
 # Test mirati senza avviare Spring o collegarsi al database
-.\mvnw.cmd "-Dtest=CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
+.\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-I trentacinque test coprono turni separati, danni, mancati, critici, sconfitta, aiutanti, richieste ripetute, autorizzazioni, immagini NPC, gestione degli errori e coerenza della progressione delle campagne e stato individuale dei requisiti del capitolo. `DndacademyApplicationTests` carica invece il contesto Spring e richiede la configurazione e i servizi necessari all'avvio.
+I sessantacinque test coprono aggiornamento HP dei personaggi assegnati e non assegnati, turni separati, danni, mancati, critici, sconfitta, aiutanti, richieste ripetute, autorizzazioni, immagini NPC, gestione degli errori e coerenza della progressione delle campagne e stato individuale dei requisiti del capitolo. `DndacademyApplicationTests` carica invece il contesto Spring e richiede la configurazione e i servizi necessari all'avvio.
 
-Il frontend include anche trentasei test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
+Il frontend include anche quarantatre test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
 
 ## Struttura e prossimi sviluppi
 
@@ -152,3 +152,24 @@ Il codice si trova in `src/main/java/com/giulia/dndacademy/`, suddiviso in `cont
 Prossimi sviluppi: migrazioni e profili per ambiente, ripresa degli scontri dalla UI, strategie NPC più articolate, magie e condizioni avanzate, test di integrazione e preparazione al deploy.
 
 Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
+
+
+### Modifica HP dei personaggi
+
+Per i personaggi non ancora assegnati, il salvataggio della scheda riallinea gli HP attuali al massimo configurato, anche quando il massimo resta invariato: questo corregge le schede precedenti mostrando subito gli HP pieni. Per i personaggi assegnati gli HP attuali restano invariati, limitati al nuovo massimo in caso di riduzione; modificare la scheda non cura danni e non rianima un personaggio. Nessuna migrazione o correzione massiva dei dati: le schede non assegnate vengono riallineate al successivo salvataggio.
+
+
+### Sincronizzazione degli sblocchi delle campagne
+
+La lettura della progressione personale crea gli eventuali record mancanti, verifica i completamenti rispetto ai capitoli attuali e sblocca le campagne del livello successivo quando l’utente ha già completato almeno una campagna della difficoltà precedente. Vale anche per campagne create dopo il completamento e per record già presenti ma rimasti bloccati. Non assegna iscrizioni, completamenti, date o badge, non salta livelli e non revoca gli sblocchi già ottenuti. Il livello didattico dell’utente resta distinto da questi requisiti.
+
+
+### Aiutanti guaritori e vittoria del gruppo
+
+Gli NPC aiutanti possono avere healer=true, healingDie (4/6/8/10/12), healingModifier (0-30) e healingUses (1-20). I nemici non possono essere guaritori. Per i combattenti healer=false e i valori cura sono normalizzati a zero dall’applicazione. Le statistiche di NPC già usati restano protette: per cambiare la configurazione creare un nuovo NPC da aggiungere a un nuovo incontro.
+
+Ogni turno cura un solo alleato ferito, incluso se stesso: priorità a 0 HP e poi alla percentuale di HP più bassa, con ID come spareggio. La cura vale un tiro del dado più bonus, limitato al massimo del bersaglio; recuperare HP da zero riabilita il partecipante ai turni. Consuma un utilizzo per quel partecipante e combattimento, persistito in healingUsed. Se tutti sono sani o gli utilizzi sono esauriti, il guaritore attacca. Non può agire da sconfitto; se tutti gli alleati sono a zero lo scontro termina. La protezione sulle richieste ripetute e il lock del combattimento valgono anche per le cure.
+
+Gli eventi HEAL registrano healing effettivo, healingRoll, healingDie e HP prima/dopo; gli attacchi usano ATTACK. actionType è obbligatorio nel database e viene inizializzato a ATTACK nell’entità Java; le cure lo impostano a HEAL. Lo stato fighters espone healer e healingUsesRemaining; l’anteprima espone la configurazione delle cure. Non vengono modificati gli HP permanenti del personaggio o gli scontri precedenti. PLAYER_VICTORY resta la vittoria dello schieramento alleato: il frontend chiarisce quando il personaggio del Player è fuori combattimento.
+
+I campi di configurazione delle cure, il contatore degli utilizzi e i valori numerici degli eventi sono colonne NOT NULL. I valori iniziali sono gestiti in Java (false e zero per i primitivi) e dal servizio NPC, senza default SQL o script di transizione. La rimozione delle annotazioni non elimina i default già presenti in un database esistente: per ottenere lo schema pulito serve ricrearlo separatamente. Non viene eseguito alcun reset o modifica diretta dei dati.

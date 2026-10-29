@@ -12,6 +12,7 @@ export default function NpcCard({ npc }: { npc: Npc }) {
       <div className="min-w-0 flex-1">
         <h2 className="text-xl font-black text-[var(--text-main)]">{npc.name}</h2>
         <p className="mt-1 text-sm font-bold text-[var(--accent-soft)]">{npc.enemy ? "Nemico" : "Aiutante"} · NPC</p>
+        {npc.healer && <p className="mt-3 text-sm font-bold text-emerald-300">Guaritore: cura d{npc.healingDie} +{npc.healingModifier}, {npc.healingUses} utilizzi per combattimento</p>}
         {npc.description && <p className="mt-3 text-sm leading-6 text-[var(--text-soft)]">{npc.description}</p>}
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">

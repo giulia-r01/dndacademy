@@ -44,6 +44,7 @@ public class NpcServiceImpl implements NpcService {
         User master = userService.getByUsername(username);
 
         validateDamageDie(request.getDamageDie());
+        validateHealing(request);
 
         Npc npc = Npc.builder()
                 .name(request.getName().trim())
@@ -54,6 +55,9 @@ public class NpcServiceImpl implements NpcService {
                 .attackModifier(request.getAttackModifier())
                 .damageDie(request.getDamageDie())
                 .damageModifier(request.getDamageModifier())
+                .healer(request.isHealer()).healingDie(request.isHealer() ? request.getHealingDie() : 0)
+                .healingModifier(request.isHealer() ? request.getHealingModifier() : 0)
+                .healingUses(request.isHealer() ? request.getHealingUses() : 0)
                 .enemy(request.getEnemy())
                 .owner(master)
                 .build();
@@ -98,6 +102,7 @@ public class NpcServiceImpl implements NpcService {
         Npc npc = getOwnedNpc(npcId, master);
 
         validateDamageDie(request.getDamageDie());
+        validateHealing(request);
 
         // Evitiamo di modificare le statistiche di NPC già usati
         // in combattimenti, perché altererebbe le sessioni salvate.
@@ -117,6 +122,10 @@ public class NpcServiceImpl implements NpcService {
         npc.setDamageDie(request.getDamageDie());
         npc.setDamageModifier(request.getDamageModifier());
         npc.setEnemy(request.getEnemy());
+        npc.setHealer(request.isHealer());
+        npc.setHealingDie(request.isHealer() ? request.getHealingDie() : 0);
+        npc.setHealingModifier(request.isHealer() ? request.getHealingModifier() : 0);
+        npc.setHealingUses(request.isHealer() ? request.getHealingUses() : 0);
 
         return mapToDTO(npcRepository.save(npc));
     }
@@ -165,6 +174,16 @@ public class NpcServiceImpl implements NpcService {
         return npc;
     }
 
+    private void validateHealing(NpcRequest request) {
+        if (!request.isHealer()) return;
+        if (!Boolean.FALSE.equals(request.getEnemy())
+                || !List.of(4, 6, 8, 10, 12).contains(request.getHealingDie())
+                || request.getHealingModifier() < 0 || request.getHealingModifier() > 30
+                || request.getHealingUses() < 1 || request.getHealingUses() > 20)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Un guaritore deve essere un aiutante: cura d4/d6/d8/d10/d12, bonus 0-30 e utilizzi 1-20.");
+    }
+
     private void validateDamageDie(Integer damageDie) {
 
         if (damageDie == null ||
@@ -190,6 +209,8 @@ public class NpcServiceImpl implements NpcService {
                 .attackModifier(npc.getAttackModifier())
                 .damageDie(npc.getDamageDie())
                 .damageModifier(npc.getDamageModifier())
+                .healer(npc.isHealer()).healingDie(npc.getHealingDie())
+                .healingModifier(npc.getHealingModifier()).healingUses(npc.getHealingUses())
                 .enemy(npc.isEnemy())
                 .build();
     }

@@ -14,7 +14,7 @@ Gli ultimi aggiornamenti comprendono:
 - Requisiti del capitolo con stato individuale: lezione completata, quiz superato e vittoria ottenuta, con pulsanti per rivedere o ripetere le attività.
 - Turni NPC visibili e risolti una singola azione alla volta.
 - Avvisi dei danni subiti, HP prima/dopo e registro persistente degli attacchi.
-- Storico personale dei combattimenti in un accordion chiuso inizialmente, con campagna, capitolo, personaggio, esito e data di conclusione, paginazione e dettaglio del registro in sola lettura.
+- Storico personale dei combattimenti in un accordion chiuso inizialmente, con gruppi richiudibili per campagna e sezioni per capitolo, oltre a campagna, capitolo, personaggio, esito e data di conclusione, paginazione e dettaglio del registro in sola lettura.
 - Immagini caricabili per nemici e aiutanti, schede uniformate ai personaggi e anteprima nel modulo NPC.
 - Arena di combattimento con comandi centrali, ritratti ai lati e NPC mostrato automaticamente secondo turni e colpi, iniziativa compatta e registro espandibile.
 - Errori HTTP espliciti preservati e messaggi di ripiego al posto dei messaggi nulli.
@@ -67,7 +67,7 @@ Per provare lo scontro, il Master prepara campagna, capitolo con combattimento, 
 
 ## Verifiche e limiti attuali
 
-Le modifiche recenti hanno superato compilazione backend, trentacinque test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti trentasei test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
+Le modifiche recenti hanno superato compilazione backend, sessantacinque test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti quarantatre test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
 
 - I combattimenti sono individuali contro NPC; il party della campagna non implica uno scontro multiplayer in tempo reale.
 - La UI non ripristina ancora il combattimento al ricaricamento della pagina, anche se stato e registro sono persistiti.
@@ -84,3 +84,6 @@ Le modifiche recenti hanno superato compilazione backend, trentacinque test unit
 - Preparazione e verifica del deploy.
 
 Il progetto ha finalità educative e di portfolio.
+
+
+Gli aiutanti possono essere configurati come guaritori con dado, bonus e utilizzi per combattimento: soccorrono gli alleati a 0 HP e curano i feriti, con eventi e utilizzi persistiti e feedback distinto dagli attacchi. La vittoria resta del gruppo; l’interfaccia segnala esplicitamente il personaggio fuori combattimento. Lo schema di riferimento viene creato dalle entità su un database vuoto, con colonne obbligatorie e valori iniziali gestiti in Java, senza script di transizione o default SQL. Il database esistente non viene svuotato automaticamente; dettagli nel README backend.

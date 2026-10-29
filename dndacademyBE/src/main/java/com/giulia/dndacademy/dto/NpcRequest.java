@@ -41,4 +41,9 @@ public class NpcRequest {
 
     @NotNull(message = "Specificare se l'NPC è nemico")
     private Boolean enemy;
+
+    private boolean healer;
+    private int healingDie;
+    private int healingModifier;
+    private int healingUses;
 }

@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,12 +39,26 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
 
         ensureProgressExistsForUser(user, campaigns);
 
-        return campaignProgressRepository.findByUserIdOrderByCampaignIdAsc(user.getId())
-                .stream()
-                .map(progress -> {
-                    reopenIfCurrentChaptersIncomplete(progress);
-                    return mapToDTO(progress);
-                })
+        List<CampaignProgress> progresses = campaignProgressRepository
+                .findByUserIdOrderByCampaignIdAsc(user.getId());
+        // Validate all completions before deriving eligibility: a newly added chapter
+        // can invalidate an old completion even if its campaign appears later in the list.
+        progresses.forEach(this::reopenIfCurrentChaptersIncomplete);
+        Set<CampaignDifficulty> completedDifficulties = progresses.stream()
+                .filter(CampaignProgress::isCompleted)
+                .map(progress -> progress.getCampaign().getDifficulty())
+                .collect(Collectors.toSet());
+        for (CampaignProgress progress : progresses) {
+            CampaignDifficulty difficulty = progress.getCampaign().getDifficulty();
+            boolean eligible = difficulty == CampaignDifficulty.BEGINNER
+                    || completedDifficulties.stream().anyMatch(completed -> getNextDifficulty(completed) == difficulty);
+            if (!progress.isUnlocked() && eligible) {
+                progress.setUnlocked(true);
+                campaignProgressRepository.save(progress);
+            }
+        }
+
+        return progresses.stream().map(this::mapToDTO)
                 .toList();
     }
 

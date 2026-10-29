@@ -70,6 +70,7 @@ public class CombatServiceImpl implements CombatService {
                     .id(n.getId()).name(n.getName()).description(n.getDescription()).imageUrl(n.getImageUrl())
                     .maxHp(n.getMaxHp()).armorClass(n.getArmorClass()).dexterity(n.getDexterity())
                     .attackModifier(n.getAttackModifier()).damageDie(n.getDamageDie())
+                    .healer(n.isHealer()).healingDie(n.getHealingDie()).healingModifier(n.getHealingModifier()).healingUses(n.getHealingUses())
                     .damageModifier(n.getDamageModifier()).enemy(n.isEnemy()).build()).build();
         }).toList();
         return CombatPreviewDTO.builder().chapterId(chapterId).campaignId(chapter.getCampaign().getId())
@@ -169,6 +170,7 @@ public class CombatServiceImpl implements CombatService {
                     .characterClass(c == null ? "NPC" : c.getCharacterClass())
                     .currentHp(p.getCurrentHp()).maxHp(p.getMaxHp())
                     .armorClass(c == null ? n.getArmorClass() : c.getArmorClass())
+                    .healer(n != null && n.isHealer()).healingUsesRemaining(n == null ? 0 : Math.max(0, n.getHealingUses() - p.getHealingUsed()))
                     .alive(p.isAlive()).enemy(p.isEnemy())
                     .currentTurn(Objects.equals(current, p.getId())).initiative(p.getInitiative())
                     .spellcaster(c != null && c.isSpellcaster())
@@ -255,6 +257,12 @@ public class CombatServiceImpl implements CombatService {
         CombatParticipant actor = current(combat);
         if (actor.getNpc() == null)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "È il turno del tuo personaggio");
+        if (healIfNeeded(combat, actor)) {
+            finishIfOver(combat);
+            if (!combat.isCompleted()) nextAlive(combat);
+            combatRepository.save(combat);
+            return getCombatStatus(combatId, username);
+        }
         List<CombatParticipant> targets = combatParticipantRepository.findByCombatId(combatId)
                 .stream().filter(p -> p.isAlive() && p.isEnemy() != actor.isEnemy())
                 .sorted(Comparator.comparing(CombatParticipant::getId)).toList();
@@ -278,9 +286,33 @@ public class CombatServiceImpl implements CombatService {
         return getCombatStatus(combatId, username);
     }
 
+    private boolean healIfNeeded(Combat combat, CombatParticipant actor) {
+        Npc npc = actor.getNpc();
+        if (actor.isEnemy() || !npc.isHealer() || actor.getHealingUsed() >= npc.getHealingUses()) return false;
+        // Rescue fallen allies first, then the lowest HP ratio; ID resolves ties deterministically.
+        CombatParticipant target = combatParticipantRepository.findByCombatId(combat.getId()).stream()
+                .filter(p -> !p.isEnemy() && p.getCurrentHp() < p.getMaxHp())
+                .min(Comparator.comparingDouble((CombatParticipant p) -> (double) p.getCurrentHp() / p.getMaxHp())
+                        .thenComparing(CombatParticipant::getId)).orElse(null);
+        if (target == null) return false;
+        int before = target.getCurrentHp();
+        int rolled = roll(npc.getHealingDie());
+        int restored = Math.min(target.getMaxHp() - before, rolled + npc.getHealingModifier());
+        target.setCurrentHp(before + restored);
+        target.setAlive(true);
+        actor.setHealingUsed(actor.getHealingUsed() + 1);
+        combatParticipantRepository.save(target);
+        combatParticipantRepository.save(actor);
+        combat.getEvents().add(CombatEvent.builder().actionType("HEAL")
+                .attackerId(actor.getId()).attackerName(name(actor)).targetId(target.getId()).targetName(name(target))
+                .healing(restored).healingRoll(rolled).healingDie(npc.getHealingDie())
+                .targetHpBefore(before).targetRemainingHp(target.getCurrentHp()).build());
+        return true;
+    }
+
     private void recordEvent(Combat combat, CombatParticipant actor, CombatParticipant target,
                              int roll, int total, int ac, boolean hit, boolean critical, int amount, int hpBefore) {
-        combat.getEvents().add(CombatEvent.builder()
+        combat.getEvents().add(CombatEvent.builder().actionType("ATTACK")
                 .attackerId(actor.getId()).attackerName(name(actor)).enemy(actor.isEnemy())
                 .targetId(target.getId()).targetName(name(target)).attackRoll(roll).totalAttack(total)
                 .targetArmorClass(ac).hit(hit).critical(critical).damage(amount)

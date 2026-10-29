@@ -163,3 +163,58 @@ Verifica finale: TypeScript ed ESLint superati; 36 test browser con API simulate
 L’utente conferma la creazione riuscita di Aria, esploratrice della torre come aiutante; lo screenshot mostra l’anteprima del ritratto selezionato. Persistenza dell’immagine dopo ricaricamento ancora da confermare esplicitamente. Segnalata scarsa visibilità del controllo file e dicitura nativa Nessun file selezionato anche dopo l’anteprima: il selettore viene azzerato intenzionalmente per consentire la riselezione. Sostituito con pulsante Carica/Cambia immagine e nome file mantenuto visibile nello stato del modulo. Aggiornati i test esistenti per tastiera, selezione e sostituzione.
 
 Verificati pulsante e nome file nello screenshot del modulo di prova; TypeScript ed ESLint superati. Le regressioni NPC coprono apertura da tastiera, selezione e sostituzione prima del salvataggio.
+
+
+## Personaggi Master: HP attuali dopo modifica del massimo
+
+Confermata creazione di Thorin Stonebeard nella campagna di collaudo con ritratto, HP 14/14, CA 16 e ascia d10 su Forza. Dopo aumento del massimo a 15, lo screenshot mostrava 14/15: la logica aggiornata conservava sempre gli HP attuali. Corretto il salvataggio dei personaggi non assegnati per riallineare HP attuali e massimi; per quelli assegnati restano conservati gli HP attuali entro il nuovo massimo, senza cure o rianimazioni implicite.
+
+Aggiunti sette casi CharacterHpUpdateTest: aumento, riduzione, massimo invariato e riparazione di una scheda non assegnata, aumento/riduzione per un personaggio assegnato e conservazione di HP zero. Superati tutti i 42 test backend mirati. Conferma reale dopo riavvio backend e nuovo salvataggio di Thorin pendente.
+
+
+## Campagna intermedia creata dopo il completamento della principiante
+
+L’utente conferma la correzione HP di Thorin. Durante il passaggio al Player giur92!, lo screenshot mostra la campagna principiante completata e quella intermedia di collaudo bloccata. Causa: lo sblocco al completamento aggiornava soltanto le campagne esistenti in quel momento; le campagne successive venivano inizializzate bloccate.
+
+Corretto getMyCampaignProgress: prima riconcilia tutti i completamenti con i capitoli correnti, poi sblocca le campagne eleggibili in base ai completamenti personali della difficoltà precedente. Recupera anche i record già bloccati. Conserva date di completamento valide e sblocchi acquisiti; nessuna iscrizione automatica. Sei nuovi test coprono creazione successiva, riparazione idempotente, assenza prerequisiti, divieto di salto livello, passaggio intermedio/avanzato e completamenti obsoleti a prescindere dall’ordine di lettura. Superati tutti i 48 test backend mirati. Verifica reale dopo riavvio backend pendente.
+
+
+## Aiutanti guaritori e risultato del gruppo
+
+Il registro reale inviato dall’utente contiene 21 azioni: Thorin arriva a 0 HP all’azione 14 e Aria termina il combattimento all’azione 21, con vittoria alleata. Confermato funzionamento degli attacchi aiutante e bersagli nemici/alleati, ma mancavano cure e chiarezza della vittoria di gruppo.
+
+Implementati guaritori configurabili solo tra gli aiutanti, cure con dado/bonus e riserva per singolo partecipante e scontro. Priorità a bersagli a 0 HP, poi percentuale HP più bassa; possono curarsi da soli, non superano il massimo e attaccano quando non curano. Eventi HEAL e utilizzi sono persistiti; i dati precedenti restano compatibili. Nuova presentazione verde, contatori, descrizione in anteprima e storico; vittoria di gruppo esplicita quando il Player resta fuori combattimento.
+
+Superati 65 test backend mirati, TypeScript, ESLint e 41 test browser con API simulate. Screenshot cura desktop/mobile controllati. La prima implementazione prevedeva aggiornamento locale e uno script di transizione, successivamente rimossi nella pulizia descritta in fondo al documento. Verifica reale dello schema e di un nuovo NPC guaritore pendente. Aria già usata resta combattente: creare una guaritrice distinta per la prossima prova.
+
+
+## Stile dello scorrimento iniziativa
+
+Lo screenshot del terzo capitolo mostra tutti i cinque partecipanti (Aria, due goblin, Mira e Thorin), ma una scrollbar orizzontale nativa bianca poco coerente con il tema. Applicati pista scura, cursore primario sottile, bordi arrotondati e compatibilità con contrasto forzato. Lista raggiungibile da tastiera con focus visibile; contenuto e ordine dei turni invariati.
+
+Verifica: TypeScript, ESLint e le due regressioni dell'arena desktop/mobile superati. Screenshot mobile controllato.
+
+
+## Conferma reale dei guaritori: combattimento di 27 azioni
+
+L’utente ha creato un nuovo capitolo e un nuovo incontro dopo il rifiuto della modifica di un incontro già utilizzato. La precedente indicazione di aggiungere Mira all’incontro usato era errata: la protezione backend è corretta e resta attiva; Ripeti combattimento usa la configurazione originale.
+
+Registro reale del nuovo scontro con Aria, due goblin, Mira e Thorin: Mira cura Thorin all’azione 4 (d6=4 +2, HP 9→15), 14 (d6=4 +2, HP 7→13) e 19 (d6=3 +2, HP 9→14). Totale 17 HP recuperati, tre utilizzi esauriti. All’azione 9, con tutti gli alleati sani, Mira attacca senza consumare una cura. Dopo l’esaurimento attacca alle azioni 23 e 27; l’ultimo attacco infligge 6 danni al goblin con 5 HP, limitando il risultato a zero e chiudendo in vittoria.
+
+Thorin subisce 23 danni complessivi e termina a 9/15 HP (15 +17 -23), coerente con screenshot e registro. Confermati con backend reale: caricamento del nuovo schema, configurazione/lettura del guaritore, eventi di cura distinti dagli attacchi, contatore fino a zero, ritorno agli attacchi e vittoria. Screenshot conferma anche il nuovo stile della scrollbar. Restano da confermare sui dati reali il recupero da 0 HP, il completamento del nuovo capitolo e la rilettura di queste cure dallo storico dopo ricaricamento.
+
+
+## Storico: conferma reale e raggruppamento per campagna/capitolo
+
+L’utente conferma completamento del capitolo e rilettura dello scontro con cure nello storico dopo ricaricamento. Lo screenshot mostra la vittoria con Thorin a 9/15 e il precedente esito di gruppo con personaggio a 0/15. Richiesta di ridurre l’ingombro dello storico: aggiunti accordion per campagna, chiusi inizialmente, con sezioni interne per capitolo. Rimossi i metadati ripetuti nelle singole schede. Raggruppamento per ID, gestione dei collegamenti mancanti e conservazione dei gruppi aperti tra pagine. I conteggi e una nota chiariscono che il raggruppamento riguarda la pagina corrente dello storico paginato.
+
+Verifica: TypeScript, ESLint e tutti i 43 test browser con API simulate superati. Confermati gruppi chiusi inizialmente, apertura da tastiera, identità distinte per ID, dati storici incompleti, paginazione con gruppi aperti e mobile. Screenshot desktop controllato.
+
+
+## Pulizia dello schema prima della produzione
+
+Su richiesta dell’utente, rimossi i default Hibernate introdotti per conservare i dati di prova e lo script SQL manuale delle cure. I nuovi campi booleani e numerici di NPC, partecipanti ed eventi sono mappati NOT NULL; i primitivi sono inizializzati da Java e normalizzati dal servizio. actionType è obbligatorio con valore iniziale ATTACK nell’entità e HEAL per le cure.
+
+Allineati README backend, frontend e generale alla creazione dello schema su database vuoto. La pulizia riguarda codice e documentazione: nessun collegamento amministrativo, reset del database o cancellazione di dati. I default e i dati già presenti nel database restano fino alla sua ricreazione separata.
+
+Verifica della pulizia: compilazione e tutti i 65 test backend mirati superati. Nessuna annotazione ColumnDefault o riferimento operativo allo script rimosso rimasto nei sorgenti e nei README. Nessun reset o test su un database reale eseguito in questa fase.

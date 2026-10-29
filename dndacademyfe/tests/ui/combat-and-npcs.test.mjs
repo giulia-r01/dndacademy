@@ -338,10 +338,11 @@ test("storico: campagne, personaggi, vittorie, sconfitte e scontri aperti", asyn
     await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
     await page.getByRole("heading", { name: "I tuoi combattimenti", exact: true }).waitFor()
     await page.getByText("3 scontri salvati", { exact: true }).waitFor()
+    await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByText("Vittoria", { exact: true }).waitFor()
     await page.getByRole("article", { name: "Combattimento 112", exact: true }).getByText("Sconfitta", { exact: true }).waitFor()
     await page.getByRole("article", { name: "Combattimento 111", exact: true }).getByText("Non concluso", { exact: true }).waitFor()
-    await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByText("Miniere", { exact: true }).waitFor()
+    await page.getByRole("region", { name: "Capitolo: Il Sentiero degli Agguati", exact: true }).waitFor()
     assert.equal(starts(), 0)
     await screenshot(page, "combat-history-desktop")
   } finally { await context.close() }
@@ -352,6 +353,7 @@ test("storico: dettagli e registro leggibili senza azioni di combattimento", asy
   try {
     await page.goto(`${baseURL}/combat`)
     await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByRole("button", { name: "Vedi dettagli e registro", exact: true }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByText("Riepilogo di sola lettura", { exact: true }).waitFor()
@@ -381,6 +383,7 @@ test("storico: paginazione avanti e indietro", async () => {
     await page.goto(`${baseURL}/combat`)
     await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
     await page.getByText("Pagina 1 di 2", { exact: true }).waitFor()
+    await openHistoryCampaign(page)
     await page.getByRole("button", { name: "Successivi", exact: true }).click()
     await page.getByRole("article", { name: "Combattimento 101", exact: true }).waitFor()
     assert.equal(await page.getByRole("article", { name: "Combattimento 113", exact: true }).count(), 0)
@@ -398,6 +401,7 @@ test("storico: errore di caricamento e riprova", async () => {
     await page.getByRole("alert").filter({ hasText: "Storico temporaneamente non disponibile" }).waitFor()
     allowHistory()
     await page.getByRole("button", { name: "Riprova", exact: true }).click()
+    await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).waitFor()
   } finally { await context.close() }
 })
@@ -407,6 +411,7 @@ test("storico: dettaglio non autorizzato non mostra il registro", async () => {
   try {
     await page.goto(`${baseURL}/combat`)
     await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByRole("button", { name: "Vedi dettagli e registro", exact: true }).click()
     const dialog = page.getByRole("dialog")
     await dialog.getByRole("alert").filter({ hasText: "Combattimento non tuo" }).waitFor()
@@ -419,6 +424,7 @@ test("storico mobile: elenco e dettaglio senza overflow", async () => {
   try {
     await page.goto(`${baseURL}/combat`)
     await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistoryCampaign(page)
     const item = page.getByRole("article", { name: "Combattimento 113", exact: true })
     await item.waitFor()
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
@@ -440,6 +446,7 @@ test("storico: accordion chiuso inizialmente e richiudibile", async () => {
     assert.equal(await page.getByRole("article", { name: "Combattimento 113", exact: true }).count(), 0)
     await summary.focus()
     await page.keyboard.press("Enter")
+    await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).waitFor()
     await page.getByText(/Ogni tentativo ha un proprio risultato/).waitFor()
     await summary.click()
@@ -592,5 +599,127 @@ test("incontro mobile: pannelli e modulo senza overflow", async () => {
     await page.getByRole("button", { name: "Crea incontro", exact: true }).click()
     await page.getByRole("dialog").waitFor()
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  } finally { await context.close() }
+})
+
+
+const healingEvent = { actionType: "HEAL", attackerId: 4, attackerName: "Mira", targetId: 1, targetName: player.name, healing: 6, healingRoll: 4, healingDie: 6, targetHpBefore: 0, targetRemainingHp: 6, hit: false, critical: false, damage: 0, enemy: false, attackRoll: 0, totalAttack: 0, targetArmorClass: 0 }
+async function setupHealing(viewport, victory = false) {
+  const session = await setup(viewport, { withAlly: true, historyShort: true })
+  let healed = false
+  const state = () => ({ combatId: 1, campaignId: 1, chapterId: 3, encounterId: 1, currentTurnParticipantId: victory ? null : healed ? 1 : 4, completed: victory, combatOver: victory, outcome: victory ? "PLAYER_VICTORY" : null, completedAt: null,
+    fighters: [{ ...player, currentHp: healed ? 6 : 0, alive: healed, currentTurn: healed && !victory }, { ...goblin, currentHp: victory ? 0 : 15, alive: !victory, currentTurn: false }, { ...goblin, participantId: 4, npcId: 30, name: "Mira", enemy: false, healer: true, healingUsesRemaining: healed ? 2 : 3, currentTurn: !healed && !victory }],
+    events: healed ? [healingEvent] : [],
+  })
+  await session.page.route("**/api/combat/1/status", route => route.fulfill({ contentType: "application/json", body: JSON.stringify(state()) }))
+  await session.page.route("**/api/combat/1/npc-turn?**", route => {
+    healed = true
+    return route.fulfill({ contentType: "application/json", body: JSON.stringify(state()) })
+  })
+  await session.page.route("**/api/combat/113/status", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ ...state(), events: [healingEvent] }) }))
+  return session
+}
+
+test("guaritore Master: configura ruolo, dado, bonus e cure limitate", async () => {
+  const { context, page } = await setup()
+  try {
+    await page.goto(`${baseURL}/admin/npcs`)
+    await page.getByRole("button", { name: "Nuovo NPC", exact: true }).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByLabel("Nome", { exact: true }).fill("Mira guaritrice")
+    await dialog.getByLabel("Schieramento", { exact: true }).selectOption("ally")
+    await dialog.getByLabel("Ruolo aiutante", { exact: true }).selectOption("healer")
+    await dialog.getByLabel("Dado cura", { exact: true }).selectOption("8")
+    await dialog.getByLabel("Bonus cura", { exact: true }).fill("2")
+    await dialog.getByLabel("Cure per combattimento", { exact: true }).fill("2")
+    const [request] = await Promise.all([page.waitForRequest(req => req.url().endsWith("/api/npcs") && req.method() === "POST"), dialog.getByRole("button", { name: "Crea NPC", exact: true }).click()])
+    const body = request.postDataJSON()
+    assert.equal(body.healer, true); assert.equal(body.enemy, false)
+    assert.equal(body.healingDie, 8); assert.equal(body.healingModifier, 2); assert.equal(body.healingUses, 2)
+    await page.getByRole("heading", { name: "Mira guaritrice", exact: true }).waitFor()
+    await page.getByText("Guaritore: cura d8 +2, 2 utilizzi per combattimento", { exact: true }).waitFor()
+  } finally { await context.close() }
+})
+
+for (const mobile of [false, true]) test(`cura in arena: recupero da zero HP, verde e registro, mobile=${mobile}`, async () => {
+  const { context, page } = await setupHealing(mobile ? { width: 390, height: 844 } : undefined)
+  try {
+    await page.goto(`${baseURL}/combat?chapterId=3&campaignId=1`)
+    await page.getByRole("button", { name: "Inizia il combattimento", exact: true }).click()
+    await page.getByRole("button", { name: "Mostra l'azione di Mira", exact: true }).click()
+    await page.getByRole("heading", { name: "Cura effettuata! +6 HP", exact: true }).waitFor()
+    assert.equal(await page.getByRole("progressbar", { name: "HP di Valen Moonsong", exact: true }).getAttribute("aria-valuenow"), "6")
+    await page.getByText("Cure rimaste: 2", { exact: true }).waitFor()
+    await page.locator("summary").filter({ hasText: "Registro del combattimento" }).click()
+    await page.getByText("Cura: +6 HP \u00b7 HP 0 \u2192 6 \u00b7 Torna in combattimento", { exact: true }).waitFor()
+    assert.equal(await page.getByText(/Sei stato colpito/).count(), 0)
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    await screenshot(page, mobile ? "healing-mobile" : "healing-desktop")
+  } finally { await context.close() }
+})
+
+test("vittoria del gruppo: personaggio fuori combattimento esplicito", async () => {
+  const { context, page } = await setupHealing(undefined, true)
+  try {
+    await page.goto(`${baseURL}/combat?chapterId=3&campaignId=1`)
+    await page.getByRole("button", { name: "Inizia il combattimento", exact: true }).click()
+    await page.getByRole("heading", { name: "Vittoria del gruppo", exact: true }).waitFor()
+    await page.getByText("Valen Moonsong \u00e8 fuori combattimento. Gli alleati hanno sconfitto tutti i nemici.", { exact: true }).waitFor()
+    assert.equal(await page.getByRole("button", { name: "Attacca", exact: true }).count(), 0)
+  } finally { await context.close() }
+})
+
+test("storico: una cura non viene presentata come attacco mancato", async () => {
+  const { context, page } = await setupHealing()
+  try {
+    await page.goto(`${baseURL}/combat`)
+    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistoryCampaign(page)
+    await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByRole("button", { name: "Vedi dettagli e registro", exact: true }).click()
+    const dialog = page.getByRole("dialog")
+    await dialog.getByText("Cura: +6 HP \u00b7 HP 0 \u2192 6 \u00b7 Torna in combattimento", { exact: true }).waitFor()
+    assert.equal(await dialog.getByText(/Mancato/).count(), 0)
+  } finally { await context.close() }
+})
+
+
+async function openHistoryCampaign(page) {
+  const campaign = page.locator("details[data-campaign-key]").first()
+  await campaign.waitFor()
+  if (await campaign.getAttribute("open") === null) await campaign.locator(":scope > summary").click()
+}
+
+test("storico raggruppato: campagne chiuse, capitoli e identita distinte", async () => {
+  const { context, page } = await setup(undefined, { historyShort: true })
+  try {
+    const entry = (id, campaignId, chapterId, extra = {}) => ({ combatId: id, campaignId, chapterId, campaignName: "Stesso nome", chapterTitle: "Stesso capitolo", encounterTitle: `Scontro ${id}`, characterName: "Thorin", characterImageUrl: null, characterCurrentHp: 15, characterMaxHp: 15, completed: true, outcome: "PLAYER_VICTORY", completedAt: null, ...extra })
+    await page.route("**/api/combat/history?**", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [entry(10, 2, 5), entry(9, 1, 3), entry(8, 2, 6)], page: 0, size: 12, totalPages: 1, totalElements: 3 }) }))
+    await page.goto(`${baseURL}/combat`)
+    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    const groups = page.locator("details[data-campaign-key]")
+    await groups.first().waitFor()
+    assert.equal(await groups.count(), 2)
+    for (const group of await groups.all()) assert.equal(await group.getAttribute("open"), null)
+    assert.equal(await page.getByRole("article").count(), 0)
+    const campaign = page.locator('details[data-campaign-key="campaign-2"]')
+    await campaign.locator(":scope > summary").focus()
+    await page.keyboard.press("Enter")
+    await page.getByRole("article", { name: "Combattimento 10", exact: true }).waitFor()
+    assert.equal(await campaign.getByRole("region", { name: "Capitolo: Stesso capitolo", exact: true }).count(), 2)
+    assert.equal(await page.getByRole("article", { name: "Combattimento 9", exact: true }).count(), 0)
+    await campaign.locator(":scope > summary").click()
+    await page.getByRole("article", { name: "Combattimento 10", exact: true }).waitFor({ state: "hidden" })
+  } finally { await context.close() }
+})
+
+test("storico raggruppato: metadati storici mancanti restano consultabili", async () => {
+  const { context, page } = await setup()
+  try {
+    await page.route("**/api/combat/history?**", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [{ combatId: 10, campaignId: null, chapterId: null, campaignName: "Campagna non disponibile", chapterTitle: "Capitolo non disponibile", encounterTitle: "Combattimento", characterName: null, characterImageUrl: null, characterCurrentHp: null, characterMaxHp: null, completed: true, outcome: null, completedAt: null }], page: 0, size: 12, totalPages: 1, totalElements: 1 }) }))
+    await page.goto(`${baseURL}/combat`)
+    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistoryCampaign(page)
+    await page.getByRole("region", { name: "Capitolo: Capitolo non disponibile", exact: true }).waitFor()
+    await page.getByRole("article", { name: "Combattimento 10", exact: true }).getByText("Concluso", { exact: true }).waitFor()
   } finally { await context.close() }
 })

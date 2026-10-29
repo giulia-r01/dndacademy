@@ -28,6 +28,7 @@ function NpcPreview({ participant }: { participant: CombatPreviewNpc }) {
         <p className="text-xs text-[var(--text-muted)]">Iniziativa: d20 {signed(Math.floor((npc.dexterity - 10) / 2))}</p>
       </div>
     </div>
+    {npc.healer && <p className="p-3 text-sm font-bold text-emerald-300">Guaritore: cura d{npc.healingDie} +{npc.healingModifier}, {npc.healingUses} utilizzi per combattimento</p>}
     {npc.description && <p className="border-t border-[var(--border-teal-soft)] p-3 text-sm leading-6 text-[var(--text-muted)]">{npc.description}</p>}
   </article>
 }

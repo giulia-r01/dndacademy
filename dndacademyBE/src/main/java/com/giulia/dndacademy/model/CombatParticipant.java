@@ -42,4 +42,6 @@ public class CombatParticipant {
 
     @Column(nullable = false)
     private boolean enemy;
+    @Column(nullable = false)
+    private int healingUsed;
 }
