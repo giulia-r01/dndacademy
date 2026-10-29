@@ -110,7 +110,7 @@ npx tsc --noEmit --incremental false
 npm run lint
 ```
 
-Sono presenti trentadue test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
+Sono presenti trentasei test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
 
 Con il frontend avviato in un altro terminale:
 
@@ -123,7 +123,7 @@ npm run test:ui
 
 Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
 
-I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 32 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
+I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 36 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
 
 ## Limiti attuali e prossimi sviluppi
 
@@ -137,3 +137,9 @@ Per regole, requisiti, configurazione dei servizi e persistenza consultare il RE
 
 
 La pagina Personaggi consente una sola scelta per campagna: le altre schede restano consultabili con pulsanti disabilitati e spiegazione visibile. Il blocco si applica subito dopo una scelta riuscita, senza impedire la scelta in altre campagne. Durante la richiesta sono disabilitate anche le altre scelte e il cambio campagna. Tre regressioni browser verificano scelta esistente, prima assegnazione e campagne distinte.
+
+
+La gestione incontri mostra campagna e titolo del capitolo, uno stato iniziale con i passaggi di configurazione e una libreria NPC con conteggi di nemici e alleati. Se manca un nemico, propone la creazione nella libreria. Gli incontri configurati mostrano ritratti, ruoli, quantità, HP, CA e danni dei partecipanti. L’eliminazione resta in una sezione richiudibile con conferma. Quattro regressioni browser verificano creazione e riapertura del modulo, libreria vuota, riepilogo con statistiche e resa mobile.
+
+
+Il modulo NPC usa un pulsante Carica immagine / Cambia immagine accessibile da tastiera, con nome del file selezionato visibile e anteprima. Il selettore nativo viene azzerato per consentire di riselezionare lo stesso file, mentre il nome resta nello stato del modulo. I test di creazione e recupero da errore upload verificano apertura da tastiera, selezione e sostituzione del file.

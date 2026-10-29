@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
+import { FiUpload } from "react-icons/fi"
 import AppButton from "@/components/common/AppButton"
 import EntityPortrait from "@/components/common/EntityPortrait"
 import FormInput from "@/components/common/FormInput"
@@ -16,6 +17,7 @@ export default function NpcForm({ initial, isSaving, error, onSave, onCancel }: 
     armorClass: initial.armorClass, dexterity: initial.dexterity, attackModifier: initial.attackModifier,
     damageDie: initial.damageDie, damageModifier: initial.damageModifier, enemy: initial.enemy,
   } : EMPTY)
+  const imageInput = useRef<HTMLInputElement>(null)
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(initial?.imageUrl ?? null)
   const [validationError, setValidationError] = useState("")
@@ -49,8 +51,15 @@ export default function NpcForm({ initial, isSaving, error, onSave, onCancel }: 
         <h3 className="text-lg font-black">Ritratto</h3>
         <EntityPortrait name={values.name || "NPC"} imageUrl={preview} className="h-[380px] w-full" />
         <label className="block text-sm font-bold" htmlFor="npc-image">Immagine del nemico o aiutante</label>
-        <input id="npc-image" type="file" accept="image/jpeg,image/png,image/webp" className="block w-full text-sm" onChange={e => { selectImage(e.target.files?.[0]); e.target.value = "" }} />
-        <p className="text-xs text-[var(--text-muted)]">JPG, PNG o WEBP · massimo 5 MB. Il ritratto viene salvato insieme alla scheda.</p>
+        <input ref={imageInput} id="npc-image" type="file" accept="image/jpeg,image/png,image/webp" className="hidden" aria-describedby="npc-image-help" onChange={e => { selectImage(e.target.files?.[0]); e.target.value = "" }} />
+        <AppButton type="button" variant="secondary" className="w-full gap-2" disabled={isSaving} onClick={() => imageInput.current?.click()}>
+          <FiUpload size={18} aria-hidden="true" />
+          {preview ? "Cambia immagine" : "Carica immagine"}
+        </AppButton>
+        <p role="status" className="break-all rounded-xl bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--text-soft)]">
+          {image ? `File selezionato: ${image.name}` : initial?.imageUrl ? "Ritratto attuale salvato. Puoi sostituirlo scegliendo un nuovo file." : "Nessuna immagine selezionata."}
+        </p>
+        <p id="npc-image-help" className="text-xs text-[var(--text-muted)]">JPG, PNG o WEBP · massimo 5 MB. Il ritratto viene salvato insieme alla scheda.</p>
       </section>
       <div className="min-w-0 space-y-6">
         <section className="space-y-4">

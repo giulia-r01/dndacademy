@@ -166,7 +166,15 @@ for (const failUpload of [false, true]) test(`NPC: creazione con ritratto e ${fa
     const dialog = page.getByRole("dialog")
     await dialog.getByLabel("Nome", { exact: true }).fill("Guida delle miniere")
     await dialog.getByLabel("Schieramento", { exact: true }).selectOption("ally")
-    await dialog.locator('input[type="file"]').setInputFiles({ name: "ritratto.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a52kAAAAASUVORK5CYII=", "base64") })
+    const uploadButton = dialog.getByRole("button", { name: "Carica immagine", exact: true })
+    await uploadButton.focus()
+    const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.keyboard.press("Enter")])
+    await chooser.setFiles({ name: "ritratto.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a52kAAAAASUVORK5CYII=", "base64") })
+    await dialog.getByText("File selezionato: ritratto.png", { exact: true }).waitFor()
+    await dialog.getByRole("button", { name: "Cambia immagine", exact: true }).waitFor()
+    const [replacement] = await Promise.all([page.waitForEvent("filechooser"), dialog.getByRole("button", { name: "Cambia immagine", exact: true }).click()])
+    await replacement.setFiles({ name: "nuovo-ritratto.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a52kAAAAASUVORK5CYII=", "base64") })
+    await dialog.getByText("File selezionato: nuovo-ritratto.png", { exact: true }).waitFor()
     if (!failUpload) await screenshot(page, "npc-form")
     await dialog.getByRole("button", { name: "Crea NPC", exact: true }).click()
     await page.getByRole("heading", { name: "Guida delle miniere", exact: true }).waitFor()
@@ -511,5 +519,78 @@ test("personaggi: la scelta resta disponibile nelle altre campagne", async () =>
     await page.getByLabel("Scegli campagna", { exact: true }).selectOption("1")
     await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).first().waitFor()
     assert.equal(claims(), 1)
+  } finally { await context.close() }
+})
+
+
+async function setupEncounter(viewport, { configured = false, emptyNpcs = false } = {}) {
+  const session = await setup(viewport)
+  let saved = configured ? { id: 50, title: "Guardiani della torre", description: "La porta della torre", campaignId: 2, chapterId: 5, npcs: [{ npcId: 20, npcName: npc.name, enemy: true, quantity: 2 }] } : null
+  await session.page.route("**/api/campaigns/2/chapters", route => route.fulfill({ contentType: "application/json", body: JSON.stringify([{ id: 5, campaignId: 2, campaignName: "Campagna di collaudo", title: "La torre abbandonata", orderIndex: 2, hasCombat: true }]) }))
+  await session.page.route("**/api/encounters/**", route => route.fulfill({ contentType: "application/json", body: JSON.stringify(route.request().url().includes("/chapter/") ? saved ? [saved] : [] : saved) }))
+  await session.page.route("**/api/encounters", async route => {
+    saved = { ...route.request().postDataJSON(), id: 50, campaignId: 2, npcs: [{ npcId: 20, npcName: npc.name, enemy: true, quantity: 2 }] }
+    return route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify(saved) })
+  })
+  if (emptyNpcs) await session.page.route("**/api/npcs", route => route.fulfill({ contentType: "application/json", body: "[]" }))
+  return session
+}
+
+test("incontro: contesto del capitolo, stato vuoto e creazione", async () => {
+  const { context, page } = await setupEncounter()
+  try {
+    await page.goto(`${baseURL}/admin/encounters?chapterId=5&campaignId=2`)
+    await page.getByRole("heading", { name: "Prepara l\u2019incontro del capitolo", exact: true }).waitFor()
+    await page.getByText("Campagna di collaudo \u00b7 Capitolo 2: La torre abbandonata", { exact: true }).waitFor()
+    await screenshot(page, "encounter-empty-desktop")
+    await page.getByRole("button", { name: "Crea incontro", exact: true }).click()
+    const modal = page.getByRole("dialog")
+    await modal.getByLabel("Titolo incontro *", { exact: true }).fill("Guardiani della torre")
+    await modal.getByRole("spinbutton").fill("2")
+    await modal.getByRole("button", { name: "Crea incontro", exact: true }).click()
+    await page.getByRole("heading", { name: "Guardiani della torre", exact: true }).waitFor()
+    await page.reload()
+    await page.getByRole("heading", { name: "Guardiani della torre", exact: true }).waitFor()
+    await page.getByRole("button", { name: "Modifica incontro", exact: true }).click()
+    assert.equal(await page.getByRole("dialog").getByLabel("Titolo incontro *", { exact: true }).inputValue(), "Guardiani della torre")
+  } finally { await context.close() }
+})
+
+test("incontro: senza nemici guida alla libreria NPC", async () => {
+  const { context, page } = await setupEncounter(undefined, { emptyNpcs: true })
+  try {
+    await page.goto(`${baseURL}/admin/encounters?chapterId=5&campaignId=2`)
+    const link = page.getByRole("link", { name: "Crea il primo nemico", exact: true })
+    await link.waitFor()
+    assert.equal(await link.getAttribute("href"), "/admin/npcs")
+    assert.equal(await page.getByRole("button", { name: "Crea incontro", exact: true }).count(), 0)
+  } finally { await context.close() }
+})
+
+test("incontro configurato: ritratti, statistiche e quantita dei partecipanti", async () => {
+  const { context, page } = await setupEncounter(undefined, { configured: true })
+  try {
+    await page.goto(`${baseURL}/admin/encounters?chapterId=5&campaignId=2`)
+    const fighter = page.getByRole("article", { name: npc.name, exact: true })
+    await fighter.getByText("HP 15 \u00b7 CA 13", { exact: true }).waitFor()
+    await fighter.getByText("Nemico \u00b7 2 in campo", { exact: true }).waitFor()
+    const portrait = await fighter.getByAltText(`Ritratto di ${npc.name}`).locator("..").boundingBox()
+    assert.ok(portrait.height >= 180)
+    await page.getByText("Nemici: 2", { exact: true }).waitFor()
+    await screenshot(page, "encounter-configured-desktop")
+    assert.equal(await page.getByRole("button", { name: "Elimina incontro", exact: true }).isVisible(), false)
+  } finally { await context.close() }
+})
+
+test("incontro mobile: pannelli e modulo senza overflow", async () => {
+  const { context, page } = await setupEncounter({ width: 390, height: 844 })
+  try {
+    await page.goto(`${baseURL}/admin/encounters?chapterId=5&campaignId=2`)
+    await page.getByRole("button", { name: "Crea incontro", exact: true }).waitFor()
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+    await screenshot(page, "encounter-empty-mobile")
+    await page.getByRole("button", { name: "Crea incontro", exact: true }).click()
+    await page.getByRole("dialog").waitFor()
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   } finally { await context.close() }
 })

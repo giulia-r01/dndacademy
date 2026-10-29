@@ -7,6 +7,9 @@ import AppShell from "@/components/layout/AppShell"
 import AppCard from "@/components/common/AppCard"
 import AppButton from "@/components/common/AppButton"
 import AppModal from "@/components/common/AppModal"
+import EncounterOverview from "@/components/admin/encounters/EncounterOverview"
+import { campaignService } from "@/services/campaign.service"
+import type { CampaignChapter } from "@/types/campaign-chapter"
 import EncounterForm from "@/components/admin/encounters/EncounterForm"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { npcService } from "@/services/npc.service"
@@ -40,7 +43,7 @@ function Content() {
       : null
   return (
     <EncounterContent
-      key={chapterId ?? "no-chapter"}
+      key={`${campaignId}-${chapterId}`}
       chapterId={chapterId}
       campaignId={campaignId}
     />
@@ -55,6 +58,7 @@ function EncounterContent({
   campaignId: number | null
 }) {
   const { user, isLoading: userLoading, error: userError } = useCurrentUser()
+  const [chapter, setChapter] = useState<CampaignChapter | null>(null)
   const [encounter, setEncounter] = useState<Encounter | null>(null)
   const [npcs, setNpcs] = useState<Npc[]>([])
   const [loading, setLoading] = useState(true)
@@ -70,9 +74,13 @@ function EncounterContent({
     return Promise.all([
       encounterService.getByChapter(chapterId),
       npcService.getAll(),
+      campaignId ? campaignService.getChaptersByCampaign(campaignId) : Promise.resolve([]),
     ])
-      .then(([found, available]) => {
+      .then(([found, available, chapters]) => {
         if (!isActive()) return
+        const selectedChapter = chapters.find(item => item.id === chapterId)
+        if (campaignId && !selectedChapter) throw new Error("Capitolo non disponibile per questa campagna.")
+        setChapter(selectedChapter ?? null)
         setEncounter(found[0] ?? null)
         setNpcs(available)
         setError("")
@@ -86,7 +94,7 @@ function EncounterContent({
       .finally(() => {
         if (isActive()) setLoading(false)
       })
-  }, [chapterId])
+  }, [chapterId, campaignId])
 
   useEffect(() => {
     let active = true
@@ -176,11 +184,11 @@ function EncounterContent({
             <h1 className="mt-2 text-3xl font-black">Gestione incontro</h1>
             <p className="mt-2 text-[var(--text-soft)]">
               {chapterId
-                ? `Configurazione combattimento del capitolo #${chapterId}`
+                ? chapter ? `${chapter.campaignName} · Capitolo ${chapter.orderIndex}: ${chapter.title}` : "Prepara i partecipanti e la storia dello scontro."
                 : "Seleziona prima un capitolo."}
             </p>
           </div>
-          {chapterId && !loading && !error && (
+          {chapterId && encounter && !loading && !error && (
             <AppButton
               type="button"
               onClick={() => {
@@ -221,49 +229,8 @@ function EncounterContent({
               <AppCard>Caricamento incontro...</AppCard>
             ) : (
               !error &&
-              (encounter ? (
-                <AppCard>
-                  <h2 className="text-xl font-black">{encounter.title}</h2>
-                  {encounter.description && (
-                    <p className="mt-2 text-[var(--text-soft)]">
-                      {encounter.description}
-                    </p>
-                  )}
-                  <h3 className="mt-5 font-bold">Partecipanti</h3>
-                  <ul className="mt-2 space-y-2">
-                    {encounter.npcs.map((n) => (
-                      <li
-                        key={n.npcId}
-                        className="rounded-xl bg-[var(--surface-muted)] p-3 text-sm"
-                      >
-                        {n.npcName} · {n.enemy ? "Nemico" : "Alleato"} ·
-                        Quantità: {n.quantity}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-5">
-                    <AppButton
-                      type="button"
-                      variant="danger"
-                      onClick={() => setDeleteOpen(true)}
-                    >
-                      Elimina incontro
-                    </AppButton>
-                  </div>
-                </AppCard>
-              ) : (
-                <AppCard>
-                  Questo capitolo non ha ancora un incontro. Crea degli NPC e
-                  poi configura il combattimento.
-                </AppCard>
-              ))
+              <EncounterOverview encounter={encounter} npcs={npcs} onConfigure={() => { setFormError(""); setFormOpen(true) }} onDelete={() => setDeleteOpen(true)} />
             )}
-            <Link
-              href="/admin/npcs"
-              className="inline-block text-sm font-bold text-[var(--accent-soft)] underline"
-            >
-              Gestisci la libreria NPC
-            </Link>
             <AppModal
               isOpen={formOpen}
               title={encounter ? "Modifica incontro" : "Nuovo incontro"}

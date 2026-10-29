@@ -147,3 +147,19 @@ Verifica finale: superati tutti i 29 test browser con API simulate, TypeScript e
 Segnalazione reale: dopo aver scelto Seraphina, le altre schede mostravano ancora pulsanti attivi, con errore dal server al clic. Corretto il frontend: avviso con il nome del personaggio scelto, schede in sola consultazione e pulsanti disabilitati per quella campagna; le altre campagne restano selezionabili. La prima scelta riuscita aggiorna immediatamente il blocco. Durante la richiesta sono disabilitate le altre scelte e il cambio campagna. La protezione backend esistente resta attiva. Aggiunti tre scenari browser con API simulate.
 
 Verifica: TypeScript ed ESLint superati; tutti i 32 test browser con API simulate passano, inclusi i tre nuovi casi della pagina Personaggi. Conferma visuale sui dati reali dopo ricaricamento della pagina pendente.
+
+
+## Collaudo Master: campagne, capitoli e incontri
+
+Confermati dall’utente creazione e persistenza della campagna di collaudo dopo ricaricamento, modifica di nome/descrizione/difficoltà, creazione del primo capitolo narrativo e modifica persistente. Lo screenshot del secondo capitolo conferma ordine 1/2 e accesso a Configura incontro solo per il capitolo con combattimento. Il nome della campagna compare correttamente nell’intestazione dopo la creazione dei capitoli.
+
+Segnalazione: gestione incontro troppo spoglia. Riorganizzata con contesto campagna/capitolo, invito alla creazione, passaggi di configurazione e pannello libreria NPC. Gli incontri configurati mostrano ritratti, quantità e statistiche; eliminazione in sezione richiudibile. Nessuna modifica alle API o alle regole di combattimento. Quattro nuove regressioni browser con dati simulati.
+
+Verifica finale: TypeScript ed ESLint superati; 36 test browser con API simulate superati, inclusi i quattro nuovi scenari incontri. Screenshot desktop/mobile controllati. Conferma sulla campagna reale dopo ricaricamento pendente.
+
+
+## NPC: creazione alleato e scelta immagine
+
+L’utente conferma la creazione riuscita di Aria, esploratrice della torre come aiutante; lo screenshot mostra l’anteprima del ritratto selezionato. Persistenza dell’immagine dopo ricaricamento ancora da confermare esplicitamente. Segnalata scarsa visibilità del controllo file e dicitura nativa Nessun file selezionato anche dopo l’anteprima: il selettore viene azzerato intenzionalmente per consentire la riselezione. Sostituito con pulsante Carica/Cambia immagine e nome file mantenuto visibile nello stato del modulo. Aggiornati i test esistenti per tastiera, selezione e sostituzione.
+
+Verificati pulsante e nome file nello screenshot del modulo di prova; TypeScript ed ESLint superati. Le regressioni NPC coprono apertura da tastiera, selezione e sostituzione prima del salvataggio.
