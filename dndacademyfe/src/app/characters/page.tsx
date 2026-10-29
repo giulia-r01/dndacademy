@@ -93,7 +93,11 @@ export default function CharactersPage() {
     }
   }
 
+  const selectedCharacter = myCharacters.find(character => character.campaignId === selectedCampaignId)
+
   async function handleClaim(characterId: number) {
+    const character = availableCharacters.find(item => item.id === characterId)
+    if (!character || claimingCharacterId !== null || myCharacters.some(item => item.campaignId === character.campaignId)) return
     setError("")
     setSuccessMessage("")
     setClaimingCharacterId(characterId)
@@ -244,6 +248,7 @@ export default function CharactersPage() {
 
                   <select
                     id="campaign"
+                    disabled={claimingCharacterId !== null}
                     value={selectedCampaignId ?? ""}
                     onChange={(event) =>
                       handleCampaignChange(Number(event.target.value))
@@ -260,6 +265,15 @@ export default function CharactersPage() {
                       </option>
                     ))}
                   </select>
+                </AppCard>
+              )}
+
+              {selectedCharacter && (
+                <AppCard>
+                  <p role="status" className="text-sm text-[var(--text-soft)]">
+                    Per questa campagna hai già scelto <strong>{selectedCharacter.name}</strong>.
+                    Puoi consultare gli altri personaggi, ma puoi sceglierne solo uno per campagna.
+                  </p>
                 </AppCard>
               )}
 
@@ -280,8 +294,7 @@ export default function CharactersPage() {
                     </p>
 
                     <p className="mt-2 text-sm text-[var(--text-muted)]">
-                      Quando il Master ne creerà di nuovi dal backoffice, potrai
-                      sceglierli da qui.
+                      {selectedCharacter ? "Hai già scelto il tuo personaggio per questa campagna." : "Quando saranno disponibili nuovi personaggi, potrai sceglierli da qui."}
                     </p>
                   </AppCard>
                 )}
@@ -295,6 +308,9 @@ export default function CharactersPage() {
                       campaignName={getCampaignName(character.campaignId)}
                       mode="available"
                       isClaiming={claimingCharacterId === character.id}
+                      claimDisabledReason={myCharacters.some(item => item.campaignId === character.campaignId)
+                        ? "Hai già scelto un personaggio per questa campagna."
+                        : claimingCharacterId !== null && claimingCharacterId !== character.id ? "Attendi la scelta in corso." : undefined}
                       onClaim={handleClaim}
                     />
                   ))}

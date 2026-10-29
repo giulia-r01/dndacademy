@@ -11,6 +11,7 @@ type CharacterCardProps = {
   character: Character
   campaignName?: string
   mode?: CharacterCardMode
+  claimDisabledReason?: string
   isClaiming?: boolean
   onClaim?: (characterId: number) => void
 }
@@ -28,6 +29,7 @@ export default function CharacterCard({
   campaignName,
   mode = "owned",
   isClaiming = false,
+  claimDisabledReason,
   onClaim,
 }: CharacterCardProps) {
   const hpPercentage =
@@ -58,7 +60,7 @@ export default function CharacterCard({
 
             {mode === "available" && (
               <span className="w-fit rounded-xl border border-[var(--border-gold)]/40 bg-[rgba(245,158,11,0.12)] px-3 py-1 text-xs font-bold text-[var(--accent-soft)]">
-                Disponibile
+                {claimDisabledReason ? "Solo consultazione" : "Disponibile"}
               </span>
             )}
           </div>
@@ -148,10 +150,10 @@ export default function CharacterCard({
             {canClaim && (
               <AppButton
                 type="button"
-                disabled={isClaiming}
+                disabled={isClaiming || !!claimDisabledReason}
                 onClick={() => onClaim(character.id)}
               >
-                {isClaiming ? "Scelta in corso..." : "Scegli personaggio"}
+                {isClaiming ? "Scelta in corso..." : claimDisabledReason ? "Scelta non disponibile" : "Scegli personaggio"}
               </AppButton>
             )}
           </div>

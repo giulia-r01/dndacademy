@@ -110,7 +110,7 @@ npx tsc --noEmit --incremental false
 npm run lint
 ```
 
-Sono presenti ventotto test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
+Sono presenti trentadue test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
 
 Con il frontend avviato in un altro terminale:
 
@@ -123,7 +123,7 @@ npm run test:ui
 
 Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
 
-I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 29 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
+I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 32 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
 
 ## Limiti attuali e prossimi sviluppi
 
@@ -134,3 +134,6 @@ I nove test UI di combattimento e NPC sono stati verificati nella sessione prece
 - Restano da ampliare presentazione delle azioni, ripresa delle sessioni e verifiche automatiche dei flussi.
 
 Per regole, requisiti, configurazione dei servizi e persistenza consultare il README backend.
+
+
+La pagina Personaggi consente una sola scelta per campagna: le altre schede restano consultabili con pulsanti disabilitati e spiegazione visibile. Il blocco si applica subito dopo una scelta riuscita, senza impedire la scelta in altre campagne. Durante la richiesta sono disabilitate anche le altre scelte e il cambio campagna. Tre regressioni browser verificano scelta esistente, prima assegnazione e campagne distinte.

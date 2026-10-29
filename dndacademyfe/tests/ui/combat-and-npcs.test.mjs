@@ -439,3 +439,77 @@ test("storico: accordion chiuso inizialmente e richiudibile", async () => {
     assert.equal(starts(), 0)
   } finally { await context.close() }
 })
+
+
+async function setupCharacters({ owned = true, multipleCampaigns = false } = {}) {
+  const session = await setup(undefined, { role: "PLAYER" })
+  let mine = owned ? [{ ...ownCharacter }] : [], claims = 0
+  await session.page.route("**/api/campaigns", route => route.fulfill({ contentType: "application/json", body: JSON.stringify([
+    { id: 1, name: "Miniere", description: "La prima campagna" },
+    ...(multipleCampaigns ? [{ id: 2, name: "Foresta", description: "La seconda campagna" }] : []),
+  ]) }))
+  await session.page.route("**/api/characters/**", route => {
+    const path = new URL(route.request().url()).pathname
+    const reply = value => route.fulfill({ contentType: "application/json", body: JSON.stringify(value) })
+    if (path.endsWith("/me")) return reply(mine)
+    const available = path.match(/campaign\/(\d+)\/available$/)
+    if (available) return reply([11, 12].map(id => ({ ...ownCharacter, id, campaignId: Number(available[1]), name: id === 11 ? "Kael" : "Elion", playerUsername: null })))
+    if (path.endsWith("/claim")) {
+      claims++
+      const id = Number(path.split("/").at(-2))
+      const character = { ...ownCharacter, id, campaignId: multipleCampaigns ? 2 : 1, name: id === 11 ? "Kael" : "Elion" }
+      mine = [...mine, character]
+      return reply(character)
+    }
+    return route.fallback()
+  })
+  return { ...session, claims: () => claims }
+}
+
+test("personaggi: scelta disabilitata se esiste un personaggio per la campagna", async () => {
+  const { context, page, claims } = await setupCharacters()
+  try {
+    await page.goto(`${baseURL}/characters`)
+    const buttons = page.getByRole("button", { name: "Scelta non disponibile", exact: true })
+    await buttons.first().waitFor()
+    assert.equal(await buttons.count(), 2)
+    for (const button of await buttons.all()) assert.ok(await button.isDisabled())
+    await page.getByRole("status").filter({ hasText: "Per questa campagna" }).waitFor()
+    assert.equal(await page.getByRole("alert").filter({ hasText: "Hai gi\u00e0 scelto un personaggio per questa campagna" }).count(), 0)
+    assert.equal(claims(), 0)
+    await screenshot(page, "characters-already-selected")
+  } finally { await context.close() }
+})
+
+test("personaggi: dopo la prima scelta blocca subito le altre schede", async () => {
+  const { context, page, claims } = await setupCharacters({ owned: false })
+  try {
+    await page.goto(`${baseURL}/characters`)
+    await page.getByRole("button", { name: "Scegli personaggio", exact: true }).first().click()
+    await page.getByText("Personaggio scelto correttamente.", { exact: true }).waitFor()
+    const remaining = page.getByRole("button", { name: "Scelta non disponibile", exact: true })
+    assert.equal(await remaining.count(), 1)
+    assert.ok(await remaining.isDisabled())
+    assert.equal(claims(), 1)
+  } finally { await context.close() }
+})
+
+test("personaggi: la scelta resta disponibile nelle altre campagne", async () => {
+  const { context, page, claims } = await setupCharacters({ multipleCampaigns: true })
+  try {
+    await page.goto(`${baseURL}/characters`)
+    await page.getByLabel("Scegli campagna", { exact: true }).selectOption("1")
+    await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).first().waitFor()
+    await page.getByLabel("Scegli campagna", { exact: true }).selectOption("2")
+    const choice = page.getByRole("button", { name: "Scegli personaggio", exact: true }).first()
+    await choice.waitFor()
+    assert.equal(await choice.isDisabled(), false)
+    await choice.click()
+    await page.getByText("Personaggio scelto correttamente.", { exact: true }).waitFor()
+    assert.ok(await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).isDisabled())
+    assert.equal(claims(), 1)
+    await page.getByLabel("Scegli campagna", { exact: true }).selectOption("1")
+    await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).first().waitFor()
+    assert.equal(claims(), 1)
+  } finally { await context.close() }
+})

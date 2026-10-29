@@ -143,7 +143,7 @@ Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. Le a
 
 I trentacinque test coprono turni separati, danni, mancati, critici, sconfitta, aiutanti, richieste ripetute, autorizzazioni, immagini NPC, gestione degli errori e coerenza della progressione delle campagne e stato individuale dei requisiti del capitolo. `DndacademyApplicationTests` carica invece il contesto Spring e richiede la configurazione e i servizi necessari all'avvio.
 
-Il frontend include anche ventinove test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
+Il frontend include anche trentadue test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
 
 ## Struttura e prossimi sviluppi
 

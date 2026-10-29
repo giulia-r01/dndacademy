@@ -140,3 +140,10 @@ L’etichetta “In corso” diventa “Non concluso” sia nelle schede sia nel
 Regressioni aggiornate per apertura manuale, tastiera, chiusura, paginazione senza richiudere lo storico e distinzione degli esiti.
 
 Verifica finale: superati tutti i 29 test browser con API simulate, TypeScript ed ESLint. Coperti accordion, esiti e regressioni dell'arena desktop/mobile. Backend invariato rispetto ai 35 test precedentemente superati.
+
+
+## Scelta personaggio per campagna
+
+Segnalazione reale: dopo aver scelto Seraphina, le altre schede mostravano ancora pulsanti attivi, con errore dal server al clic. Corretto il frontend: avviso con il nome del personaggio scelto, schede in sola consultazione e pulsanti disabilitati per quella campagna; le altre campagne restano selezionabili. La prima scelta riuscita aggiorna immediatamente il blocco. Durante la richiesta sono disabilitate le altre scelte e il cambio campagna. La protezione backend esistente resta attiva. Aggiunti tre scenari browser con API simulate.
+
+Verifica: TypeScript ed ESLint superati; tutti i 32 test browser con API simulate passano, inclusi i tre nuovi casi della pagina Personaggi. Conferma visuale sui dati reali dopo ricaricamento della pagina pendente.
