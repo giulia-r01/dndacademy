@@ -9,8 +9,12 @@ export type CampaignChapterPlayer = {
   hasCombat: boolean
   lessonId: number | null
   lessonTitle: string | null
+  lessonCompleted: boolean
   quizId: number | null
   quizTitle: string | null
+  quizLessonId: number | null
+  quizPassed: boolean
+  combatWon: boolean
   rewardBadgeId: number | null
   rewardBadgeName: string | null
   unlocked: boolean

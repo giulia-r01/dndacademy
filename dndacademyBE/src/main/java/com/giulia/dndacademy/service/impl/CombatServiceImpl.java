@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @Service @RequiredArgsConstructor
 public class CombatServiceImpl implements CombatService {
@@ -26,33 +28,66 @@ public class CombatServiceImpl implements CombatService {
     private final EncounterNpcRepository encounterNpcRepository;
     private final CombatParticipantRepository combatParticipantRepository;
 
+    @Override @Transactional(readOnly = true)
+    public CombatHistoryDTO getMyHistory(String username, int page, int size) {
+        if (page < 0 || size < 1 || size > 50)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Paginazione non valida");
+        User user = userService.getByUsername(username);
+        var combats = combatRepository.findByUserId(user.getId(), PageRequest.of(page, size, Sort.by("id").descending()));
+        List<Long> ids = combats.getContent().stream().map(Combat::getId).toList();
+        Map<Long, CombatParticipant> characters = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (CombatParticipant participant : combatParticipantRepository.findByCombatIdInAndCharacterIsNotNull(ids))
+                characters.putIfAbsent(participant.getCombat().getId(), participant);
+        }
+        List<CombatHistoryEntryDTO> items = combats.getContent().stream().map(combat -> {
+            CombatParticipant participant = characters.get(combat.getId());
+            Character character = participant == null ? null : participant.getCharacter();
+            return CombatHistoryEntryDTO.builder().combatId(combat.getId())
+                    .campaignId(combat.getCampaign() == null ? null : combat.getCampaign().getId())
+                    .campaignName(combat.getCampaign() == null ? "Campagna non disponibile" : combat.getCampaign().getName())
+                    .chapterId(combat.getChapter() == null ? null : combat.getChapter().getId())
+                    .chapterTitle(combat.getChapter() == null ? "Capitolo non disponibile" : combat.getChapter().getTitle())
+                    .encounterTitle(combat.getEncounter() == null ? "Combattimento" : combat.getEncounter().getTitle())
+                    .characterName(character == null ? null : character.getName())
+                    .characterImageUrl(character == null ? null : character.getImageUrl())
+                    .characterCurrentHp(participant == null ? null : participant.getCurrentHp())
+                    .characterMaxHp(participant == null ? null : participant.getMaxHp())
+                    .completed(combat.isCompleted()).outcome(combat.getOutcome()).completedAt(combat.getCompletedAt()).build();
+        }).toList();
+        return CombatHistoryDTO.builder().items(items).page(combats.getNumber()).size(combats.getSize())
+                .totalPages(combats.getTotalPages()).totalElements(combats.getTotalElements()).build();
+    }
+
+    @Override @Transactional(readOnly = true)
+    public CombatPreviewDTO getChapterPreview(Long chapterId, String username) {
+        User user = userService.getByUsername(username);
+        CampaignChapter chapter = accessibleCombatChapter(chapterId, user);
+        Encounter encounter = chapterEncounter(chapterId);
+        List<CombatPreviewNpcDTO> participants = configuredNpcs(encounter).stream().map(en -> {
+            Npc n = en.getNpc();
+            return CombatPreviewNpcDTO.builder().quantity(en.getQuantity()).npc(NpcDTO.builder()
+                    .id(n.getId()).name(n.getName()).description(n.getDescription()).imageUrl(n.getImageUrl())
+                    .maxHp(n.getMaxHp()).armorClass(n.getArmorClass()).dexterity(n.getDexterity())
+                    .attackModifier(n.getAttackModifier()).damageDie(n.getDamageDie())
+                    .damageModifier(n.getDamageModifier()).enemy(n.isEnemy()).build()).build();
+        }).toList();
+        return CombatPreviewDTO.builder().chapterId(chapterId).campaignId(chapter.getCampaign().getId())
+                .campaignName(chapter.getCampaign().getName()).chapterTitle(chapter.getTitle())
+                .title(encounter.getTitle()).description(encounter.getDescription()).participants(participants).build();
+    }
+
     @Override @Transactional
     public CombatDTO startChapterCombat(Long chapterId, String username) {
         User user = userService.getByUsername(username);
-        CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Capitolo non trovato"));
+        CampaignChapter chapter = accessibleCombatChapter(chapterId, user);
         Campaign campaign = chapter.getCampaign();
-        boolean joined = campaign.getPlayers().stream().anyMatch(p -> p.getId().equals(user.getId()));
-        if (!joined) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Non sei iscritto alla campagna");
-        if (!chapter.isHasCombat()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Capitolo senza combattimento");
-        boolean unlocked = campaignChapterProgressRepository.findByUserIdAndChapterId(user.getId(), chapterId)
-                .map(CampaignChapterProgress::isUnlocked).orElse(false);
-        if (!unlocked) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Capitolo bloccato");
-        Encounter encounter = encounterRepository.findFirstByChapterIdOrderByIdAsc(chapterId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Il Master deve configurare l'incontro"));
+        Encounter encounter = chapterEncounter(chapterId);
         Character character = characterRepository.findByCampaignIdAndPlayerId(campaign.getId(), user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Scegli prima un personaggio"));
         if (character.getStats() == null || !character.isAlive() || character.getCurrentHp() <= 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personaggio non pronto al combattimento");
-        List<EncounterNpc> configured = encounterNpcRepository.findByEncounterId(encounter.getId());
-        if (configured.isEmpty() || configured.stream().noneMatch(en -> en.getNpc().isEnemy()))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Configura almeno un nemico nell'incontro");
-        for (EncounterNpc en : configured) {
-            Npc npc = en.getNpc();
-            if (en.getQuantity() < 1 || npc.getMaxHp() < 1 || npc.getArmorClass() < 1 ||
-                    npc.getDamageDie() < 1)
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "NPC non valido: " + npc.getName());
-        }
+        List<EncounterNpc> configured = configuredNpcs(encounter);
         Combat combat = combatRepository.save(Combat.builder()
                 .campaign(campaign).chapter(chapter).encounter(encounter).user(user)
                 .currentTurnIndex(0).completed(false).build());
@@ -80,6 +115,35 @@ public class CombatServiceImpl implements CombatService {
         return mapToDTO(combat);
     }
 
+    private CampaignChapter accessibleCombatChapter(Long chapterId, User user) {
+        CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Capitolo non trovato"));
+        boolean joined = chapter.getCampaign().getPlayers().stream().anyMatch(p -> p.getId().equals(user.getId()));
+        if (!joined) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Non sei iscritto alla campagna");
+        if (!chapter.isHasCombat()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Capitolo senza combattimento");
+        boolean unlocked = campaignChapterProgressRepository.findByUserIdAndChapterId(user.getId(), chapterId)
+                .map(CampaignChapterProgress::isUnlocked).orElse(false);
+        if (!unlocked) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Capitolo bloccato");
+        return chapter;
+    }
+
+    private Encounter chapterEncounter(Long chapterId) {
+        return encounterRepository.findFirstByChapterIdOrderByIdAsc(chapterId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Questo incontro non è ancora disponibile"));
+    }
+
+    private List<EncounterNpc> configuredNpcs(Encounter encounter) {
+        List<EncounterNpc> configured = encounterNpcRepository.findByEncounterId(encounter.getId());
+        if (configured.isEmpty() || configured.stream().noneMatch(en -> en.getNpc().isEnemy()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Questo incontro non è ancora disponibile");
+        for (EncounterNpc en : configured) {
+            Npc npc = en.getNpc();
+            if (en.getQuantity() < 1 || npc.getMaxHp() < 1 || npc.getArmorClass() < 1 || npc.getDamageDie() < 1)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Questo incontro non è ancora pronto");
+        }
+        return configured;
+    }
+
     @Override @Transactional(readOnly = true)
     public Long getCurrentTurn(Long combatId, String username) {
         Combat combat = authorized(combatRepository.findById(combatId)
@@ -91,8 +155,10 @@ public class CombatServiceImpl implements CombatService {
     public CombatStatusDTO getCombatStatus(Long combatId, String username) {
         Combat combat = authorized(combatRepository.findById(combatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Combattimento non trovato")), username);
-        Long current = combat.isCompleted() ? null : combat.getTurnOrder().get(combat.getCurrentTurnIndex());
-        List<CombatFighterDTO> fighters = combat.getTurnOrder().stream().map(id -> {
+        List<Long> order = combat.getTurnOrder() == null ? List.of() : combat.getTurnOrder();
+        Long current = combat.isCompleted() || combat.getCurrentTurnIndex() < 0 || combat.getCurrentTurnIndex() >= order.size()
+                ? null : order.get(combat.getCurrentTurnIndex());
+        List<CombatFighterDTO> fighters = order.stream().map(id -> {
             CombatParticipant p = participant(id, combat);
             Character c = p.getCharacter();
             Npc n = p.getNpc();
@@ -111,8 +177,10 @@ public class CombatServiceImpl implements CombatService {
                     .spellName(c == null ? null : c.getSpellName())
                     .spellDamageDie(c == null ? 0 : c.getSpellDamageDie()).build();
         }).toList();
-        return CombatStatusDTO.builder().combatId(combat.getId()).campaignId(combat.getCampaign().getId())
-                .chapterId(combat.getChapter().getId()).encounterId(combat.getEncounter().getId())
+        return CombatStatusDTO.builder().combatId(combat.getId())
+                .campaignId(combat.getCampaign() == null ? null : combat.getCampaign().getId())
+                .chapterId(combat.getChapter() == null ? null : combat.getChapter().getId())
+                .encounterId(combat.getEncounter() == null ? null : combat.getEncounter().getId())
                 .currentTurnParticipantId(current).combatOver(combat.isCompleted())
                 .completed(combat.isCompleted()).outcome(combat.getOutcome())
                 .completedAt(combat.getCompletedAt()).fighters(fighters).events(combat.getEvents()).build();

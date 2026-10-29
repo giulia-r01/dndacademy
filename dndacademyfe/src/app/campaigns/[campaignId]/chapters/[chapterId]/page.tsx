@@ -164,7 +164,10 @@ export default function CampaignChapterDetailPage() {
                     chapter.lessonTitle ?? "Completa la lezione collegata."
                   }
                   href={`/lessons/${chapter.lessonId}`}
-                  label="Vai alla lezione"
+                  label={chapter.lessonCompleted ? "Rivedi lezione" : "Vai alla lezione"}
+                  completed={chapter.lessonCompleted}
+                  statusLabel={chapter.lessonCompleted ? "Lezione completata" : "Da completare"}
+                  hint={chapter.lessonCompleted ? "Puoi rivedere la lezione: il completamento resta salvato." : "Completa la lezione per soddisfare questo requisito."}
                 />
               )}
 
@@ -173,8 +176,11 @@ export default function CampaignChapterDetailPage() {
                   icon={<FiHelpCircle aria-hidden="true" />}
                   title="Quiz"
                   description={chapter.quizTitle ?? "Supera il quiz collegato."}
-                  href={`/lessons/${chapter.lessonId}/quiz`}
-                  label="Vai al quiz"
+                  href={`/lessons/${chapter.quizLessonId ?? chapter.lessonId}/quiz`}
+                  label={chapter.quizPassed ? "Ripeti quiz" : "Vai al quiz"}
+                  completed={chapter.quizPassed}
+                  statusLabel={chapter.quizPassed ? "Quiz superato" : "Da superare"}
+                  hint={chapter.quizPassed ? "Puoi ripeterlo per esercitarti: il superamento resta valido." : "Supera il quiz per soddisfare questo requisito."}
                 />
               )}
 
@@ -184,7 +190,10 @@ export default function CampaignChapterDetailPage() {
                   title="Combattimento"
                   description="Affronta il combattimento previsto da questo capitolo."
                   href={`/combat?chapterId=${chapter.chapterId}&campaignId=${chapter.campaignId}`}
-                  label="Avvia combattimento"
+                  label={chapter.combatWon ? "Ripeti combattimento" : "Avvia combattimento"}
+                  completed={chapter.combatWon}
+                  statusLabel={chapter.combatWon ? "Combattimento vinto" : "Da vincere"}
+                  hint={chapter.combatWon ? "Hai già ottenuto una vittoria per questo capitolo." : "Vinci lo scontro per soddisfare questo requisito."}
                 />
               )}
 
@@ -241,6 +250,9 @@ type ActionCardProps = {
   description: string
   href: string
   label: string
+  completed: boolean
+  statusLabel: string
+  hint: string
 }
 
 function ActionCard({
@@ -249,9 +261,12 @@ function ActionCard({
   description,
   href,
   label,
+  completed,
+  statusLabel,
+  hint,
 }: ActionCardProps) {
   return (
-    <AppCard>
+    <AppCard role="region" aria-label={title} className={completed ? "border-[var(--primary)]/60" : ""}>
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--accent)]">
           {icon}
@@ -262,14 +277,16 @@ function ActionCard({
             {title}
           </h3>
 
+          <p className={`mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${completed ? "bg-emerald-500/10 text-emerald-300" : "bg-[var(--surface-muted)] text-[var(--accent-soft)]"}`}>
+            {completed && <FiCheckCircle aria-hidden="true" />}{statusLabel}
+          </p>
           <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
             {description}
           </p>
 
+          <p className="mt-2 text-sm text-[var(--text-soft)]">{hint}</p>
           <div className="mt-4">
-            <Link href={href}>
-              <AppButton type="button">{label}</AppButton>
-            </Link>
+            <AppButton href={href} variant={completed ? "secondary" : "primary"}>{label}</AppButton>
           </div>
         </div>
       </div>

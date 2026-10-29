@@ -36,9 +36,9 @@ export interface CombatFighter {
 
 export interface CombatStatus {
   combatId: number
-  campaignId: number
-  chapterId: number
-  encounterId: number
+  campaignId: number | null
+  chapterId: number | null
+  encounterId: number | null
   currentTurnParticipantId: number | null
   combatOver: boolean
   completed: boolean
@@ -93,4 +93,43 @@ export interface CombatEvent {
   damage: number
   targetHpBefore: number
   targetRemainingHp: number
+}
+
+export interface CombatPreviewNpc {
+  npc: import("@/types/npc").Npc
+  quantity: number
+}
+
+export interface CombatPreview {
+  chapterId: number
+  campaignId: number
+  campaignName: string
+  chapterTitle: string
+  title: string
+  description: string | null
+  participants: CombatPreviewNpc[]
+}
+
+export interface CombatHistoryEntry {
+  combatId: number
+  campaignId: number | null
+  campaignName: string
+  chapterId: number | null
+  chapterTitle: string
+  encounterTitle: string
+  characterName: string | null
+  characterImageUrl: string | null
+  characterCurrentHp: number | null
+  characterMaxHp: number | null
+  completed: boolean
+  outcome: CombatOutcome | null
+  completedAt: string | null
+}
+
+export interface CombatHistoryPage {
+  items: CombatHistoryEntry[]
+  page: number
+  size: number
+  totalPages: number
+  totalElements: number
 }

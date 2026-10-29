@@ -13,6 +13,18 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class CombatController {
     private final CombatService combatService;
+
+    @GetMapping("/history")
+    public CombatHistoryDTO history(@RequestParam(defaultValue = "0") int page,
+                                    @RequestParam(defaultValue = "12") int size,
+                                    Authentication authentication) {
+        return combatService.getMyHistory(authentication.getName(), page, size);
+    }
+
+    @GetMapping("/chapter/{chapterId}/preview")
+    public CombatPreviewDTO previewChapterCombat(@PathVariable Long chapterId, Authentication authentication) {
+        return combatService.getChapterPreview(chapterId, authentication.getName());
+    }
     @PostMapping("/chapter/{chapterId}/start")
     public CombatDTO startChapterCombat(@PathVariable Long chapterId, Authentication authentication) {
         return combatService.startChapterCombat(chapterId, authentication.getName());

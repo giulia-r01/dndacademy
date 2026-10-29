@@ -9,6 +9,7 @@ import AppButton from "@/components/common/AppButton"
 import AppShell from "@/components/layout/AppShell"
 import CombatArena from "@/components/combat/CombatArena"
 import CombatPreparation from "@/components/combat/CombatPreparation"
+import CombatHistory from "@/components/combat/CombatHistory"
 import { combatService } from "@/services/combat.service"
 import type {
   AttackResult,
@@ -140,10 +141,10 @@ function CombatContent() {
             </Link>
           )}
           <h2 className="mt-3 text-2xl font-black sm:text-3xl text-[var(--text-main)]">
-            Combattimento narrativo
+            {chapterId === null ? "I tuoi combattimenti" : "Combattimento narrativo"}
           </h2>
           <p className={`mt-2 text-[var(--text-soft)] ${status ? "hidden sm:block" : ""}`}>
-            Affronta i nemici del capitolo con il personaggio che hai scelto.
+            {chapterId === null ? "Ritrova le tue battaglie, le campagne e i risultati ottenuti." : "Affronta i nemici del capitolo con il personaggio che hai scelto."}
           </p>
         </div>
 
@@ -156,27 +157,11 @@ function CombatContent() {
         )}
 
         {chapterId === null ? (
-          <AppCard>
-            <p className="text-[var(--text-soft)]">
-              Apri il combattimento dal capitolo di una campagna.
-            </p>
-            <Link
-              href="/campaigns"
-              className="mt-3 inline-block text-[var(--accent-soft)] underline"
-            >
-              Vai alle campagne
-            </Link>
-          </AppCard>
+          <CombatHistory />
         ) : combatId === null ? (
-          <AppCard>
-            <p className="mb-4 text-[var(--text-soft)]">
-              Capitolo {chapterId}. Il Master deve aver configurato almeno un
-              incontro e un nemico.
-            </p>
-            {campaignId !== null
-              ? <CombatPreparation key={campaignId} campaignId={campaignId} isBusy={isBusy} onStart={startCombat} />
-              : <p>Apri il combattimento dal capitolo della campagna per scegliere il tuo personaggio.</p>}
-          </AppCard>
+          campaignId !== null
+            ? <CombatPreparation key={`${campaignId}-${chapterId}`} campaignId={campaignId} chapterId={chapterId} isBusy={isBusy} onStart={startCombat} />
+            : <AppCard>Apri il combattimento dal capitolo della campagna.</AppCard>
         ) : status ? (
           <CombatArena key={status.combatId} status={status} attackResult={attackResult} selectedTargetId={selectedTargetId}
             actionType={actionType} isBusy={isBusy} onSelectTarget={setSelectedTargetId}

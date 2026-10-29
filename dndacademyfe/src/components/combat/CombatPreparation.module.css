@@ -1,0 +1,5 @@
+﻿.preparation { container-type: inline-size; }
+.grid { display: grid; gap: 1.5rem; align-items: start; }
+@container (min-width: 1100px) {
+  .grid { grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr); }
+}

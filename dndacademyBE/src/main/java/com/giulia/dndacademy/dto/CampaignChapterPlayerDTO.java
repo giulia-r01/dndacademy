@@ -31,9 +31,17 @@ public class CampaignChapterPlayerDTO {
 
     private String lessonTitle;
 
+    private boolean lessonCompleted;
+
     private Long quizId;
 
     private String quizTitle;
+
+    private Long quizLessonId;
+
+    private boolean quizPassed;
+
+    private boolean combatWon;
 
     private Long rewardBadgeId;
 

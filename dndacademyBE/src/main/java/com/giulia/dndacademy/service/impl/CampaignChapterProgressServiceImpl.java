@@ -266,6 +266,7 @@ public class CampaignChapterProgressServiceImpl
 
     private CampaignChapterPlayerDTO mapToPlayerDTO(CampaignChapterProgress progress) {
         CampaignChapter chapter = progress.getChapter();
+        String username = progress.getUser().getUsername();
 
         return CampaignChapterPlayerDTO.builder()
                 .chapterId(chapter.getId())
@@ -278,8 +279,16 @@ public class CampaignChapterProgressServiceImpl
                 .hasCombat(chapter.isHasCombat())
                 .lessonId(chapter.getLesson() != null ? chapter.getLesson().getId() : null)
                 .lessonTitle(chapter.getLesson() != null ? chapter.getLesson().getTitle() : null)
+                .lessonCompleted(chapter.getLesson() != null && userLessonProgressRepository
+                        .existsByUserUsernameAndLessonIdAndCompletedTrue(username, chapter.getLesson().getId()))
                 .quizId(chapter.getQuiz() != null ? chapter.getQuiz().getId() : null)
                 .quizTitle(chapter.getQuiz() != null ? chapter.getQuiz().getTitle() : null)
+                .quizLessonId(chapter.getQuiz() != null ? chapter.getQuiz().getLesson().getId() : null)
+                .quizPassed(chapter.getQuiz() != null && userQuizResultRepository
+                        .existsByUserUsernameAndQuizIdAndPassedTrue(username, chapter.getQuiz().getId()))
+                .combatWon(chapter.isHasCombat() && combatRepository
+                        .existsByChapterIdAndUserIdAndCompletedTrueAndOutcome(chapter.getId(),
+                                progress.getUser().getId(), CombatOutcome.PLAYER_VICTORY))
                 .rewardBadgeId(chapter.getRewardBadge() != null ? chapter.getRewardBadge().getId() : null)
                 .rewardBadgeName(chapter.getRewardBadge() != null ? chapter.getRewardBadge().getName() : null)
                 .unlocked(progress.isUnlocked())

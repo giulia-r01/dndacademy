@@ -63,6 +63,7 @@ const navigationItems = [
     label: "Backoffice",
     href: "/admin",
     icon: FiSettings,
+    masterOnly: true,
   },
 ]
 
@@ -102,7 +103,7 @@ export default function Sidebar({
 
         <nav aria-label="Navigazione principale" className="flex-1">
           <ul className="space-y-2">
-            {navigationItems.map((item) => {
+            {navigationItems.filter(item => !item.masterOnly || user?.role === "MASTER").map((item) => {
               const Icon = item.icon
               const isActive =
                 pathname === item.href || pathname.startsWith(`${item.href}/`)

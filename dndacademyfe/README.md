@@ -44,6 +44,7 @@ npm run start
 | Campagne | `/campaigns`, `/campaigns/[campaignId]` | Iscrizione, capitoli e progressi |
 | Capitolo | `/campaigns/[campaignId]/chapters/[chapterId]` | Narrazione, requisiti e completamento |
 | Personaggi | `/characters` | Personaggi assegnati e scelta tra quelli disponibili |
+| Storico | `/combat` | Combattimenti personali, esiti, campagna, personaggio e registro di sola lettura |
 | Combattimento | `/combat?chapterId=...&campaignId=...` | Preparazione, iniziativa, azioni e registro |
 | Backoffice | `/admin` | Accesso alle sezioni Master |
 | Contenuti | `/admin/lessons`, `/admin/quizzes`, `/admin/badges` | Didattica e ricompense |
@@ -54,10 +55,20 @@ npm run start
 
 Il backoffice richiede un account MASTER già predisposto. La registrazione pubblica crea PLAYER. I controlli nell'interfaccia accompagnano quelli effettuati dalle API.
 
+## Requisiti del capitolo
+
+Le schede mostrano i progressi reali separatamente dal completamento del capitolo: **Lezione completata**, **Quiz superato** e **Combattimento vinto** per i requisiti acquisiti; **Da completare**, **Da superare** e **Da vincere** per quelli ancora mancanti. I pulsanti diventano **Rivedi lezione**, **Ripeti quiz** e **Ripeti combattimento** quando il requisito ? già soddisfatto. La revisione ? facoltativa e non azzera il progresso già salvato. Gli stati vengono letti dall'API dei capitoli del Player e sono verificati anche dopo il ricaricamento della pagina.
+
+## I tuoi combattimenti
+
+La voce Combat senza un capitolo mostra un collegamento alle campagne e lo storico personale paginato in un accordion chiuso inizialmente, apribile anche da tastiera. Gli incontri aperti dal capitolo mantengono la preparazione e l’arena con personaggio, nemico e comandi centrali. Le schede mostrano campagna, capitolo, incontro, personaggio e ritratto, HP salvati, esito e data di conclusione quando disponibile. Gli esiti sono Vittoria, Sconfitta e Non concluso; ogni tentativo conserva il proprio risultato: Non concluso indica l’assenza di un esito salvato, anche per tentativi precedenti a una vittoria successiva. I dati più vecchi completati ma privi di un esito preciso sono indicati come Concluso.
+
+Il pulsante **Vedi dettagli e registro** apre una finestra di sola lettura con partecipanti e cronologia delle azioni. I registri assenti vengono segnalati senza inventare eventi; la lettura non avvia sessioni e non consente nuove azioni. Precedenti/Successivi permettono di consultare anche gli scontri più vecchi. In assenza di scontri viene proposto l’accesso alle campagne. La ripresa dei combattimenti attivi resta uno sviluppo distinto dallo storico.
+
 ## Flusso del combattimento
 
 1. Il Player apre lo scontro dal capitolo della campagna.
-2. La pagina verifica il personaggio assegnato; se manca, permette di sceglierlo tra quelli disponibili senza lasciare il contesto del capitolo.
+2. La preparazione mostra il personaggio con ritratto grande, razza, classe, livello, HP, CA, arma, incantesimo e caratteristiche. Se manca, permette di sceglierlo tra quelli disponibili senza lasciare il capitolo. L’anteprima dello stesso incontro mostra immagini, quantità, statistiche e descrizioni dei nemici e degli eventuali aiutanti. Non viene avviata alcuna sessione finché non si preme il pulsante dedicato.
 3. L'avvio carica i partecipanti in ordine di iniziativa, con schieramento, immagini, CA e HP. Il combattente in turno è evidenziato.
 4. Nel proprio turno il Player sceglie un nemico e usa l'arma o, quando configurato, l'incantesimo.
 5. Per nemici e aiutanti viene mostrato il turno e il pulsante **“Mostra l'azione di…”**. Ogni richiesta risolve una sola azione; bersaglio e tiri NPC sono decisi dal backend.
@@ -99,7 +110,7 @@ npx tsc --noEmit --incremental false
 npm run lint
 ```
 
-Sono presenti nove test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
+Sono presenti ventotto test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
 
 Con il frontend avviato in un altro terminale:
 
@@ -112,7 +123,7 @@ npm run test:ui
 
 Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
 
-Passati i nove test UI, TypeScript ed ESLint sui file interessati. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
+I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 29 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
 
 ## Limiti attuali e prossimi sviluppi
 

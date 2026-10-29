@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface CampaignChapterProgressRepository
         extends JpaRepository<CampaignChapterProgress, Long> {
 
+    long countByUserIdAndChapterCampaignIdAndCompletedTrue(Long userId, Long campaignId);
+
     List<CampaignChapterProgress> findByUserIdAndChapterCampaignIdOrderByChapterOrderIndexAsc(
             Long userId,
             Long campaignId

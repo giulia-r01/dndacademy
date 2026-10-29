@@ -157,7 +157,7 @@ export default function CombatArena({ status, attackResult, selectedTargetId, ac
     </div>
 
     <details className="rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] p-4">
-      <summary className="cursor-pointer font-bold">Registro del combattimento · {status.events.length} azioni</summary>
+      <summary className="cursor-pointer font-bold">Registro del combattimento · {status.events.length} {status.events.length === 1 ? "azione" : "azioni"}</summary>
       {status.events.length === 0 ? <p className="mt-3 text-sm text-[var(--text-soft)]">Nessuna azione ancora eseguita.</p> : <ol reversed className="mt-3 max-h-72 space-y-2 overflow-y-auto">{status.events.map((item, index) => ({ item, index })).reverse().map(({ item, index }) => <li key={index} className="rounded-xl bg-[var(--surface-muted)] p-3 text-sm">
         <p className="font-bold">{index + 1}. {eventName(item.attackerId, item.attackerName)} → {eventName(item.targetId, item.targetName)}</p>
         <p>{item.critical ? "Critico! " : ""}{item.hit ? `${item.damage} danni` : "Mancato"} · HP {item.targetHpBefore} → {item.targetRemainingHp}</p>

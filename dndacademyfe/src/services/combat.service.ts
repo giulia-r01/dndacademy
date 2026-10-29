@@ -4,9 +4,17 @@ import type {
   AttackResult,
   Combat,
   CombatStatus,
+  CombatPreview,
+  CombatHistoryPage,
 } from "@/types/combat"
 
 export const combatService = {
+  getHistory(page = 0) {
+    return apiFetch<CombatHistoryPage>(`/api/combat/history?page=${page}&size=12`, { method: "GET", auth: true })
+  },
+  getChapterPreview(chapterId: number) {
+    return apiFetch<CombatPreview>(`/api/combat/chapter/${chapterId}/preview`, { method: "GET", auth: true })
+  },
   startChapter(chapterId: number) {
     return apiFetch<Combat>(`/api/combat/chapter/${chapterId}/start`, {
       method: "POST",

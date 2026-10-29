@@ -9,10 +9,12 @@ Backend Spring Boot e frontend Next.js sono integrati. Sono presenti il percorso
 Gli ultimi aggiornamenti comprendono:
 
 - Gestione di NPC e incontri, con quantità di nemici e aiutanti per capitolo.
-- Sincronizzazione dei progressi anche quando vengono aggiunti nuovi capitoli.
-- Verifica e scelta del personaggio nella pagina prima di avviare lo scontro.
+- Sincronizzazione dei progressi e riapertura delle campagne già completate quando vengono aggiunti capitoli ancora da completare, conservando badge e sblocchi acquisiti.
+- Preparazione dello scontro con scheda completa e ritratto grande del personaggio, selezione se necessaria e anteprima autorizzata dei nemici e aiutanti con immagini, quantità e statistiche.
+- Requisiti del capitolo con stato individuale: lezione completata, quiz superato e vittoria ottenuta, con pulsanti per rivedere o ripetere le attività.
 - Turni NPC visibili e risolti una singola azione alla volta.
 - Avvisi dei danni subiti, HP prima/dopo e registro persistente degli attacchi.
+- Storico personale dei combattimenti in un accordion chiuso inizialmente, con campagna, capitolo, personaggio, esito e data di conclusione, paginazione e dettaglio del registro in sola lettura.
 - Immagini caricabili per nemici e aiutanti, schede uniformate ai personaggi e anteprima nel modulo NPC.
 - Arena di combattimento con comandi centrali, ritratti ai lati e NPC mostrato automaticamente secondo turni e colpi, iniziativa compatta e registro espandibile.
 - Errori HTTP espliciti preservati e messaggi di ripiego al posto dei messaggi nulli.
@@ -65,7 +67,7 @@ Per provare lo scontro, il Master prepara campagna, capitolo con combattimento, 
 
 ## Verifiche e limiti attuali
 
-Le modifiche recenti hanno superato compilazione backend, nove test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti nove test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
+Le modifiche recenti hanno superato compilazione backend, trentacinque test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti ventinove test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
 
 - I combattimenti sono individuali contro NPC; il party della campagna non implica uno scontro multiplayer in tempo reale.
 - La UI non ripristina ancora il combattimento al ricaricamento della pagina, anche se stato e registro sono persistiti.

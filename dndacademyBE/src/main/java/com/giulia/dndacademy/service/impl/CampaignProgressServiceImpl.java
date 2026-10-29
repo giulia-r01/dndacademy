@@ -2,17 +2,18 @@ package com.giulia.dndacademy.service.impl;
 
 import com.giulia.dndacademy.dto.CampaignProgressDTO;
 import com.giulia.dndacademy.model.Campaign;
-import com.giulia.dndacademy.model.CampaignChapterProgress;
 import com.giulia.dndacademy.model.CampaignProgress;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.model.enumerations.CampaignDifficulty;
 import com.giulia.dndacademy.repository.CampaignChapterProgressRepository;
+import com.giulia.dndacademy.repository.CampaignChapterRepository;
 import com.giulia.dndacademy.repository.CampaignProgressRepository;
 import com.giulia.dndacademy.repository.CampaignRepository;
 import com.giulia.dndacademy.service.CampaignProgressService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,9 +25,11 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
     private final CampaignRepository campaignRepository;
     private final CampaignProgressRepository campaignProgressRepository;
     private final CampaignChapterProgressRepository campaignChapterProgressRepository;
+    private final CampaignChapterRepository campaignChapterRepository;
     private final UserService userService;
 
     @Override
+    @Transactional
     public List<CampaignProgressDTO> getMyCampaignProgress(String username) {
         User user = userService.getByUsername(username);
 
@@ -36,11 +39,15 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
 
         return campaignProgressRepository.findByUserIdOrderByCampaignIdAsc(user.getId())
                 .stream()
-                .map(this::mapToDTO)
+                .map(progress -> {
+                    reopenIfCurrentChaptersIncomplete(progress);
+                    return mapToDTO(progress);
+                })
                 .toList();
     }
 
     @Override
+    @Transactional
     public void completeCampaignIfAllChaptersCompleted(Long campaignId, String username) {
         User user = userService.getByUsername(username);
 
@@ -55,27 +62,19 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
             throw new RuntimeException("Questa campagna non è ancora sbloccata");
         }
 
-        if (progress.isCompleted()) {
-            return;
-        }
-
-        List<CampaignChapterProgress> chapterProgresses =
-                campaignChapterProgressRepository
-                        .findByUserIdAndChapterCampaignIdOrderByChapterOrderIndexAsc(
-                                user.getId(),
-                                campaignId
-                        );
-
-        if (chapterProgresses.isEmpty()) {
+        long chapterCount = campaignChapterRepository.countByCampaignId(campaignId);
+        if (chapterCount == 0) {
             throw new RuntimeException("La campagna non ha capitoli completabili");
         }
 
-        boolean allChaptersCompleted = chapterProgresses.stream()
-                .allMatch(CampaignChapterProgress::isCompleted);
+        boolean allChaptersCompleted = completedChapterCount(progress) == chapterCount;
 
         if (!allChaptersCompleted) {
+            reopen(progress);
             return;
         }
+
+        if (progress.isCompleted()) return;
 
         progress.setCompleted(true);
         progress.setCompletedAt(LocalDateTime.now());
@@ -83,6 +82,25 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
         campaignProgressRepository.save(progress);
 
         unlockNextDifficultyCampaigns(user, campaign.getDifficulty());
+    }
+
+    private long completedChapterCount(CampaignProgress progress) {
+        return campaignChapterProgressRepository.countByUserIdAndChapterCampaignIdAndCompletedTrue(
+                progress.getUser().getId(), progress.getCampaign().getId());
+    }
+
+    private void reopenIfCurrentChaptersIncomplete(CampaignProgress progress) {
+        if (!progress.isCompleted()) return;
+        long chapterCount = campaignChapterRepository.countByCampaignId(progress.getCampaign().getId());
+        // Compare against current chapters, including those without a progress row yet.
+        if (chapterCount == 0 || completedChapterCount(progress) != chapterCount) reopen(progress);
+    }
+
+    private void reopen(CampaignProgress progress) {
+        if (!progress.isCompleted()) return;
+        progress.setCompleted(false);
+        progress.setCompletedAt(null);
+        campaignProgressRepository.save(progress);
     }
 
     private void ensureProgressExistsForUser(User user, List<Campaign> campaigns) {
