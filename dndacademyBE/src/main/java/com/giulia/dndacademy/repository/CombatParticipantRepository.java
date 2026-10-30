@@ -16,5 +16,7 @@ public interface CombatParticipantRepository
 
     List<CombatParticipant> findByCombatIdOrderByInitiativeDesc(Long combatId);
 
+    boolean existsByCharacterId(Long characterId);
+
     boolean existsByNpcId(Long npcId);
 }

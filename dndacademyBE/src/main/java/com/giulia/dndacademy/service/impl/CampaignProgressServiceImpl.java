@@ -31,6 +31,27 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
     private final UserService userService;
 
     @Override
+    @Transactional(readOnly = true)
+    public void requireUnlocked(Long campaignId, String username) {
+        User user = userService.getByUsername(username);
+        Campaign campaign = campaignRepository.findById(campaignId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Campagna non trovata"));
+        if (campaign.getDifficulty() == CampaignDifficulty.BEGINNER) return;
+        boolean unlocked = campaignProgressRepository.findByUserIdAndCampaignId(user.getId(), campaignId)
+                .map(CampaignProgress::isUnlocked).orElse(false);
+        if (!unlocked) {
+            unlocked = campaignProgressRepository.findByUserIdOrderByCampaignIdAsc(user.getId()).stream()
+                    .filter(CampaignProgress::isCompleted)
+                    .filter(p -> getNextDifficulty(p.getCampaign().getDifficulty()) == campaign.getDifficulty())
+                    .anyMatch(p -> campaignChapterRepository.countByCampaignId(p.getCampaign().getId()) > 0
+                            && completedChapterCount(p) == campaignChapterRepository.countByCampaignId(p.getCampaign().getId()));
+        }
+        if (!unlocked) throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.FORBIDDEN, "Questa campagna non e ancora sbloccata");
+    }
+
+    @Override
     @Transactional
     public List<CampaignProgressDTO> getMyCampaignProgress(String username) {
         User user = userService.getByUsername(username);

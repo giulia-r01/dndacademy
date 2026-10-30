@@ -11,6 +11,7 @@ import lombok.*;
 public class CharacterDTO {
 
     private Long id;
+    private boolean usedInCombat;
     private String name;
     private String race;
     private String characterClass;

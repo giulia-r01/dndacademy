@@ -65,18 +65,20 @@ public class CharacterController {
     @PatchMapping("/{id}/damage")
     public CharacterDTO damage(
             @PathVariable Long id,
-            @RequestParam int amount
+            @RequestParam int amount,
+            Authentication authentication
     ) {
-        return characterService.damageCharacter(id, amount);
+        return characterService.damageCharacter(id, amount, authentication.getName());
     }
 
     @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{id}/heal")
     public CharacterDTO heal(
             @PathVariable Long id,
-            @RequestParam int amount
+            @RequestParam int amount,
+            Authentication authentication
     ) {
-        return characterService.healCharacter(id, amount);
+        return characterService.healCharacter(id, amount, authentication.getName());
     }
 
     @PostMapping("/attack")

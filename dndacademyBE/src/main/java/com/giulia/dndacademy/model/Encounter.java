@@ -23,6 +23,6 @@ public class Encounter {
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chapter_id", nullable = false)
+    @JoinColumn(name = "chapter_id", nullable = false, unique = true)
     private CampaignChapter chapter;
 }

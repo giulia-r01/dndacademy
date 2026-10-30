@@ -723,3 +723,29 @@ test("storico raggruppato: metadati storici mancanti restano consultabili", asyn
     await page.getByRole("article", { name: "Combattimento 10", exact: true }).getByText("Concluso", { exact: true }).waitFor()
   } finally { await context.close() }
 })
+
+
+test("modal keeps keyboard focus inside and restores it to the opener", async () => {
+  const { page, context } = await setup()
+  try {
+    await page.goto(`${baseURL}/admin/npcs`)
+    const opener = page.getByRole("button", { name: "Nuovo NPC", exact: true })
+    await opener.click()
+    const dialog = page.getByRole("dialog")
+    await dialog.waitFor()
+    await page.waitForFunction(() => document.querySelector('[role="dialog"]')?.contains(document.activeElement))
+    assert.equal(await dialog.evaluate(el => el.contains(document.activeElement)), true)
+    for (let i = 0; i < 35; i++) {
+      await page.keyboard.press("Tab")
+      assert.equal(await dialog.evaluate(el => el.contains(document.activeElement)), true)
+    }
+    for (let i = 0; i < 35; i++) {
+      await page.keyboard.press("Shift+Tab")
+      assert.equal(await dialog.evaluate(el => el.contains(document.activeElement)), true)
+    }
+    assert.equal(await dialog.evaluate(el => el.contains(document.activeElement)), true)
+    await page.keyboard.press("Escape")
+    await dialog.waitFor({ state: "detached" })
+    assert.equal(await opener.evaluate(el => el === document.activeElement), true)
+  } finally { await context.close() }
+})

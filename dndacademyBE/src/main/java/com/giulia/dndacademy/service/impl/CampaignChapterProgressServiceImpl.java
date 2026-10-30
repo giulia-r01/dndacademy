@@ -244,6 +244,8 @@ public class CampaignChapterProgressServiceImpl
     private void checkCampaignAccess(Campaign campaign, User user) {
         boolean isMaster = campaign.getMaster().getId().equals(user.getId());
 
+        if (!isMaster) campaignProgressService.requireUnlocked(campaign.getId(), user.getUsername());
+
         boolean isPlayer = campaign.getPlayers()
                 .stream()
                 .anyMatch(player -> player.getId().equals(user.getId()));

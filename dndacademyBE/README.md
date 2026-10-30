@@ -129,7 +129,7 @@ Gli endpoint immagini accettano `multipart/form-data`, campo `file`: JPG, PNG o 
 
 Il proprietario può cambiare l'immagine di un NPC già usato in combattimento; la modifica delle statistiche resta bloccata. Gli NPC usati in incontri o combattimenti non possono essere eliminati.
 
-Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. Le altre `RuntimeException` sono restituite come 400 con messaggio di ripiego se assente. La classificazione completa degli errori resta da uniformare.
+Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. I divieti Spring Security restituiscono 403; i conflitti di integrita dati restituiscono 409 con un messaggio pubblico, senza SQL o dettagli del database. Le altre `RuntimeException` sono restituite come 400 con messaggio di ripiego se assente. La classificazione completa degli errori resta da uniformare.
 
 ## Verifiche
 
@@ -141,15 +141,15 @@ Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. Le a
 .\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-I sessantacinque test coprono aggiornamento HP dei personaggi assegnati e non assegnati, turni separati, danni, mancati, critici, sconfitta, aiutanti, richieste ripetute, autorizzazioni, immagini NPC, gestione degli errori e coerenza della progressione delle campagne e stato individuale dei requisiti del capitolo. `DndacademyApplicationTests` carica invece il contesto Spring e richiede la configurazione e i servizi necessari all'avvio.
+I sessantacinque test coprono aggiornamento HP dei personaggi assegnati e non assegnati, turni separati, danni, mancati, critici, sconfitta, aiutanti, richieste ripetute, autorizzazioni, immagini NPC, gestione degli errori e coerenza della progressione delle campagne e stato individuale dei requisiti del capitolo. La suite completa aggiunge 12 regressioni di integrazione (`PreMergeIntegrationTest`) e `DndacademyApplicationTests`: 78 test totali. Spring Security, repository, transazioni e vincoli vengono esercitati senza mock dei repository.
 
-Il frontend include anche quarantatre test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
+Il frontend include anche quarantaquattro test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
 
 ## Struttura e prossimi sviluppi
 
 Il codice si trova in `src/main/java/com/giulia/dndacademy/`, suddiviso in `controllers`, `service`, `repository`, `model`, `dto`, `security`, `exceptions` e `config`. Configurazione in `src/main/resources/`, test in `src/test/java/`.
 
-Prossimi sviluppi: migrazioni e profili per ambiente, ripresa degli scontri dalla UI, strategie NPC più articolate, magie e condizioni avanzate, test di integrazione e preparazione al deploy.
+Prossimi sviluppi: migrazioni e profili per ambiente, ripresa degli scontri dalla UI, strategie NPC più articolate, magie e condizioni avanzate, ulteriori test di integrazione e preparazione al deploy.
 
 Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
 
@@ -173,3 +173,24 @@ Ogni turno cura un solo alleato ferito, incluso se stesso: priorità a 0 HP e po
 Gli eventi HEAL registrano healing effettivo, healingRoll, healingDie e HP prima/dopo; gli attacchi usano ATTACK. actionType è obbligatorio nel database e viene inizializzato a ATTACK nell’entità Java; le cure lo impostano a HEAL. Lo stato fighters espone healer e healingUsesRemaining; l’anteprima espone la configurazione delle cure. Non vengono modificati gli HP permanenti del personaggio o gli scontri precedenti. PLAYER_VICTORY resta la vittoria dello schieramento alleato: il frontend chiarisce quando il personaggio del Player è fuori combattimento.
 
 I campi di configurazione delle cure, il contatore degli utilizzi e i valori numerici degli eventi sono colonne NOT NULL. I valori iniziali sono gestiti in Java (false e zero per i primitivi) e dal servizio NPC, senza default SQL o script di transizione. La rimozione delle annotazioni non elimina i default già presenti in un database esistente: per ottenere lo schema pulito serve ricrearlo separatamente. Non viene eseguito alcun reset o modifica diretta dei dati.
+
+## Correzioni della revisione pre merge
+
+Gli endpoint danni/cure verificano il Master proprietario, accettano soltanto importi positivi e limitano gli HP tra zero e il massimo anche con importi estremi. Lo sblocco delle campagne viene verificato nel backend per iscrizione, accesso ai capitoli, scelta del personaggio e preparazione/avvio dello scontro; non dipende dall'apertura preventiva della pagina progressi.
+
+La scelta dei personaggi usa transazioni e lock, con unicita database della coppia campagna/player; gli incontri hanno un solo record per capitolo, protetto da lock e vincolo univoco. Le scelte in conflitto restituiscono 409. I personaggi gia usati in combattimento non possono cambiare scheda, cosi i riferimenti dello storico rimangono coerenti; il ritratto conserva il proprio endpoint separato. Il DTO espone usedInCombat e il frontend disabilita la modifica. I capitoli con progressi o incontri non sono eliminabili.
+
+### Suite completa isolata
+
+```powershell
+.\mvnw.cmd test
+.\mvnw.cmd package
+```
+
+Surefire carica src/test/resources/application-test.properties, con H2 in modalita PostgreSQL e credenziali fittizie. Non importa env.properties e non usa il database dell'app. Per verificare anche PostgreSQL, indicare esclusivamente un database dedicato e sacrificabile: lo schema di test usa create-drop.
+
+```powershell
+.\mvnw.cmd "-DTEST_DATABASE_URL=jdbc:postgresql://127.0.0.1:55432/dndacademy_review" "-DTEST_DATABASE_USER=review" test
+```
+
+TEST_DATABASE_PASSWORD puo essere passato allo stesso modo quando necessario. I vincoli nuovi sono stati verificati su schema pulito H2 e PostgreSQL; su database preesistenti controllare eventuali duplicati prima di aggiornare lo schema, senza cancellare automaticamente dati storici. Nessun reset del database dell'utente e incluso in queste modifiche. Dettagli e limiti: [revisione pre merge](docs/REVISIONE_PRE_MERGE_2026-10-30.md).

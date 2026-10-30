@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CampaignServiceImpl implements CampaignService {
 
+    private final com.giulia.dndacademy.service.CampaignProgressService campaignProgressService;
     private final CampaignRepository campaignRepository;
     private final UserService userService;
     private final CharacterRepository characterRepository;
@@ -30,6 +31,7 @@ public class CampaignServiceImpl implements CampaignService {
     @Override
     public CampaignDTO createCampaign(CreateCampaignRequest request, String username) {
 
+        validateCampaignRequest(request);
         User master = userService.getByUsername(username);
 
         Campaign campaign = Campaign.builder()
@@ -53,12 +55,15 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public CampaignDTO joinCampaign(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
 
         User player = userService.getByUsername(username);
+
+        campaignProgressService.requireUnlocked(campaignId, username);
 
         if (!campaign.getPlayers().contains(player)) {
             campaign.getPlayers().add(player);
@@ -100,6 +105,15 @@ public class CampaignServiceImpl implements CampaignService {
                         .level(c.getLevel())
                         .build())
                 .toList();
+    }
+
+    private void validateCampaignRequest(CreateCampaignRequest request) {
+        if (request.getName() == null || request.getName().isBlank() || request.getName().length() > 255
+                || request.getDifficulty() == null
+                || (request.getDescription() != null && request.getDescription().length() > 2000)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Dati della campagna non validi");
+        }
     }
 
     private CampaignDTO mapToDTO(Campaign campaign) {

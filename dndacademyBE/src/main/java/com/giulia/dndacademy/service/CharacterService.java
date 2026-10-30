@@ -17,9 +17,9 @@ public interface CharacterService {
 
     List<CharacterDTO> getMyCharacters(String username);
 
-    CharacterDTO damageCharacter(Long characterId, int damage);
+    CharacterDTO damageCharacter(Long characterId, int damage, String username);
 
-    CharacterDTO healCharacter(Long characterId, int heal);
+    CharacterDTO healCharacter(Long characterId, int heal, String username);
 
     AttackResultDTO attack(AttackRequest request, String username);
 

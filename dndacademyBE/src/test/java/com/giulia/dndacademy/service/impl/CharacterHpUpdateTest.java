@@ -36,7 +36,9 @@ class CharacterHpUpdateTest {
         UserService users = mock(UserService.class);
         CharacterServiceImpl service = new CharacterServiceImpl(characters,
                 mock(CharacterStatsRepository.class), mock(CampaignRepository.class), users,
-                mock(CombatService.class), mock(ImageUploadService.class));
+                mock(CombatService.class), mock(ImageUploadService.class),
+                mock(com.giulia.dndacademy.repository.CombatParticipantRepository.class),
+                mock(com.giulia.dndacademy.service.CampaignProgressService.class));
         User master = User.builder().id(1L).username("master").build();
         Character character = Character.builder().id(10L).name("Thorin")
                 .campaign(Campaign.builder().id(2L).master(master).build())
@@ -44,7 +46,7 @@ class CharacterHpUpdateTest {
                 .maxHp(14).currentHp(currentHp).imageUrl("https://example.test/thorin.png")
                 .build();
         when(users.getByUsername("master")).thenReturn(master);
-        when(characters.findById(10L)).thenReturn(Optional.of(character));
+        when(characters.findLockedById(10L)).thenReturn(Optional.of(character));
         when(characters.save(character)).thenReturn(character);
         UpdateCharacterRequest request = new UpdateCharacterRequest();
         request.setName("Thorin");

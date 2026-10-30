@@ -7,6 +7,10 @@ import java.util.List;
 
 public interface CampaignChapterRepository extends JpaRepository<CampaignChapter, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select c from CampaignChapter c where c.id = :id")
+    java.util.Optional<CampaignChapter> findLockedById(@org.springframework.data.repository.query.Param("id") Long id);
+
     List<CampaignChapter> findByCampaignIdOrderByOrderIndexAsc(Long campaignId);
 
     boolean existsByCampaignIdAndOrderIndex(Long campaignId, int orderIndex);

@@ -23,6 +23,7 @@ class CombatPreviewTest {
     @Mock EncounterRepository encounters;
     @Mock EncounterNpcRepository encounterNpcs;
     @Mock CombatParticipantRepository participants;
+    @Mock com.giulia.dndacademy.service.CampaignProgressService campaignProgressService;
     @InjectMocks CombatServiceImpl service;
     CampaignChapter chapter;
     User player;

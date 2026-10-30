@@ -5,6 +5,7 @@ import com.giulia.dndacademy.dto.CreateCampaignRequest;
 import com.giulia.dndacademy.dto.PartyMemberDTO;
 import com.giulia.dndacademy.service.CampaignService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class CampaignController {
     @PreAuthorize("hasRole('MASTER')")
     @PostMapping
     public CampaignDTO createCampaign(
-            @RequestBody CreateCampaignRequest request,
+            @RequestBody @Valid CreateCampaignRequest request,
             Authentication authentication
     ) {
 

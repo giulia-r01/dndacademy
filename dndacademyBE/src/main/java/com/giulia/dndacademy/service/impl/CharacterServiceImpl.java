@@ -23,6 +23,10 @@ import com.giulia.dndacademy.dto.UpdateCharacterRequest;
 
 
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import com.giulia.dndacademy.repository.CombatParticipantRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,8 @@ public class CharacterServiceImpl implements CharacterService {
     private final UserService userService;
     private final CombatService combatService;
     private final ImageUploadService imageUploadService;
+    private final CombatParticipantRepository participants;
+    private final com.giulia.dndacademy.service.CampaignProgressService campaignProgressService;
 
 
     @Override
@@ -91,13 +97,18 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
+    @Transactional
     public CharacterDTO claimCharacter(Long characterId, String username) {
         User player = userService.getByUsername(username);
 
-        Character character = characterRepository.findById(characterId)
-                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
-
-        Campaign campaign = character.getCampaign();
+        // Serialize all choices within a campaign before loading the character.
+        Long campaignId = characterRepository.findCampaignIdById(characterId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personaggio non trovato"));
+        campaignProgressService.requireUnlocked(campaignId, username);
+        Campaign campaign = campaignRepository.findLockedById(campaignId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Campagna non trovata"));
+        Character character = characterRepository.findLockedById(characterId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personaggio non trovato"));
 
         boolean isPlayerInCampaign = campaign.getPlayers()
                 .stream()
@@ -108,7 +119,7 @@ public class CharacterServiceImpl implements CharacterService {
         }
 
         if (character.getPlayer() != null) {
-            throw new RuntimeException("Questo personaggio è già stato scelto");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Questo personaggio è già stato scelto");
         }
 
         boolean alreadyHasCharacter = characterRepository
@@ -116,7 +127,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .isPresent();
 
         if (alreadyHasCharacter) {
-            throw new RuntimeException(
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Hai già scelto un personaggio per questa campagna"
             );
         }
@@ -165,39 +176,32 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
-    public CharacterDTO damageCharacter(Long characterId, int damage) {
-        Character character = characterRepository.findById(characterId)
-                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
-
-        int newHp = Math.max(character.getCurrentHp() - damage, 0);
-
-        character.setCurrentHp(newHp);
-
-        if (newHp == 0) {
-            character.setAlive(false);
-        }
-
-        Character saved = characterRepository.save(character);
-
-        return mapToDTO(saved);
+    @Transactional
+    public CharacterDTO damageCharacter(Long characterId, int damage, String username) {
+        return changeHp(characterId, damage, username, false);
     }
 
     @Override
-    public CharacterDTO healCharacter(Long characterId, int heal) {
-        Character character = characterRepository.findById(characterId)
-                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+    @Transactional
+    public CharacterDTO healCharacter(Long characterId, int heal, String username) {
+        return changeHp(characterId, heal, username, true);
+    }
 
-        int newHp = Math.min(character.getCurrentHp() + heal, character.getMaxHp());
-
-        character.setCurrentHp(newHp);
-
-        if (newHp > 0) {
-            character.setAlive(true);
+    private CharacterDTO changeHp(Long id, int amount, String username, boolean healing) {
+        Character character = characterRepository.findLockedById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personaggio non trovato"));
+        User master = userService.getByUsername(username);
+        if (!character.getCampaign().getMaster().getId().equals(master.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Puoi modificare solo personaggi delle tue campagne");
         }
-
-        Character saved = characterRepository.save(character);
-
-        return mapToDTO(saved);
+        if (amount <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'importo deve essere positivo");
+        }
+        long hp = (long) character.getCurrentHp() + (healing ? (long) amount : -(long) amount);
+        int bounded = (int) Math.max(0L, Math.min((long) character.getMaxHp(), hp));
+        character.setCurrentHp(bounded);
+        character.setAlive(bounded > 0);
+        return mapToDTO(characterRepository.save(character));
     }
 
     @Override
@@ -240,6 +244,7 @@ public class CharacterServiceImpl implements CharacterService {
     private CharacterDTO mapToDTO(Character c) {
         return CharacterDTO.builder()
                 .id(c.getId())
+                .usedInCombat(participants.existsByCharacterId(c.getId()))
                 .name(c.getName())
                 .race(c.getRace())
                 .characterClass(c.getCharacterClass())
@@ -276,6 +281,8 @@ public class CharacterServiceImpl implements CharacterService {
         User user = userService.getByUsername(username);
 
         boolean isMaster = campaign.getMaster().getId().equals(user.getId());
+
+        if (!isMaster) campaignProgressService.requireUnlocked(campaign.getId(), username);
 
         boolean isPlayer = campaign.getPlayers()
                 .stream()
@@ -345,10 +352,11 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
+    @Transactional
     public CharacterDTO updateCharacter(Long characterId, UpdateCharacterRequest request, String username) {
         User master = userService.getByUsername(username);
 
-        Character character = characterRepository.findById(characterId)
+        Character character = characterRepository.findLockedById(characterId)
                 .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
 
         boolean isCampaignMaster = character.getCampaign()
@@ -360,6 +368,10 @@ public class CharacterServiceImpl implements CharacterService {
             throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
         }
 
+        if (participants.existsByCharacterId(characterId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Non puoi modificare un personaggio gia utilizzato in un combattimento");
+        }
         validateUpdateCharacterRequest(request);
 
         character.setName(request.getName().trim());
@@ -408,6 +420,7 @@ public class CharacterServiceImpl implements CharacterService {
         stats.setWisdom(statsDTO.getWisdom());
         stats.setCharisma(statsDTO.getCharisma());
 
+        character.setAlive(character.getCurrentHp() > 0);
         character.setStats(stats);
 
         Character saved = characterRepository.save(character);

@@ -21,6 +21,9 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
     private final QuizRepository quizRepository;
     private final BadgeRepository badgeRepository;
     private final UserService userService;
+    private final com.giulia.dndacademy.service.CampaignProgressService campaignProgressService;
+    private final CampaignChapterProgressRepository progressRepository;
+    private final EncounterRepository encounterRepository;
 
     @Override
     public CampaignChapterDTO createChapter(
@@ -129,6 +132,11 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
 
         checkCampaignMaster(chapter.getCampaign(), username);
 
+        if (progressRepository.existsByChapterId(chapterId) || encounterRepository.existsByChapterId(chapterId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Non puoi eliminare un capitolo con progressi o incontri. I dati dello storico devono essere conservati.");
+        }
         campaignChapterRepository.delete(chapter);
     }
 
@@ -160,6 +168,8 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
         User user = userService.getByUsername(username);
 
         boolean isMaster = campaign.getMaster().getId().equals(user.getId());
+
+        if (!isMaster) campaignProgressService.requireUnlocked(campaign.getId(), username);
 
         boolean isPlayer = campaign.getPlayers()
                 .stream()

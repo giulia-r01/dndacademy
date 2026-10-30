@@ -32,7 +32,7 @@ Nel combattimento il Player sceglie bersaglio e azione con arma o incantesimo. Q
 | Cartella | Contenuto | Stack |
 | --- | --- | --- |
 | [dndacademyBE](dndacademyBE/README.md) | API, sicurezza, regole e persistenza | Java 17, Spring Boot 3.5.11, JPA, PostgreSQL, Maven |
-| [dndacademyfe](dndacademyfe/README.md) | Interfaccia Player e Master | Next.js 16.2.7, React 19.2.4, TypeScript, Tailwind CSS 4 |
+| [dndacademyfe](dndacademyfe/README.md) | Interfaccia Player e Master | Next.js 16.4.3, React 19.2.4, TypeScript, Tailwind CSS 4 |
 
 JWT e BCrypt gestiscono l'autenticazione. Cloudinary ospita le immagini di personaggi e NPC; SMTP supporta le email di benvenuto e recupero password. Il frontend usa stato React e servizi TypeScript per comunicare con le API.
 
@@ -67,7 +67,7 @@ Per provare lo scontro, il Master prepara campagna, capitolo con combattimento, 
 
 ## Verifiche e limiti attuali
 
-Le modifiche recenti hanno superato compilazione backend, sessantacinque test unitari mirati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti quarantatre test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
+Le modifiche recenti hanno superato compilazione backend, 78 test backend, inclusi 12 test di integrazione e il caricamento del contesto Spring, su H2 e PostgreSQL isolati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti quarantaquattro test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
 
 - I combattimenti sono individuali contro NPC; il party della campagna non implica uno scontro multiplayer in tempo reale.
 - La UI non ripristina ancora il combattimento al ricaricamento della pagina, anche se stato e registro sono persistiti.
@@ -87,3 +87,9 @@ Il progetto ha finalità educative e di portfolio.
 
 
 Gli aiutanti possono essere configurati come guaritori con dado, bonus e utilizzi per combattimento: soccorrono gli alleati a 0 HP e curano i feriti, con eventi e utilizzi persistiti e feedback distinto dagli attacchi. La vittoria resta del gruppo; l’interfaccia segnala esplicitamente il personaggio fuori combattimento. Lo schema di riferimento viene creato dalle entità su un database vuoto, con colonne obbligatorie e valori iniziali gestiti in Java, senza script di transizione o default SQL. Il database esistente non viene svuotato automaticamente; dettagli nel README backend.
+
+## Revisione prima del merge
+
+La revisione del 30 ottobre 2026 corregge permessi sugli HP, accesso alle campagne bloccate, assegnazioni e incontri concorrenti, protezione delle schede usate nello storico, validazioni e risposte di errore. Le modali gestiscono focus iniziale, confinamento e ripristino. Le dipendenze frontend sono aggiornate e npm audit non segnala vulnerabilita alla data della verifica.
+
+Il backend dispone di una configurazione di test isolata che non usa il database dell'app. I nuovi vincoli univoci richiedono dati coerenti: nessuna eliminazione o riparazione automatica dei dati storici e inclusa. Consultare la [revisione pre merge](dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) per prove, esito e limiti.

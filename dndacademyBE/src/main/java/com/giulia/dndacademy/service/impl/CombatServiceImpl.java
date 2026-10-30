@@ -22,6 +22,7 @@ public class CombatServiceImpl implements CombatService {
     private final CharacterRepository characterRepository;
     private final CombatRepository combatRepository;
     private final UserService userService;
+    private final com.giulia.dndacademy.service.CampaignProgressService campaignProgressService;
     private final CampaignChapterRepository campaignChapterRepository;
     private final CampaignChapterProgressRepository campaignChapterProgressRepository;
     private final EncounterRepository encounterRepository;
@@ -84,7 +85,7 @@ public class CombatServiceImpl implements CombatService {
         CampaignChapter chapter = accessibleCombatChapter(chapterId, user);
         Campaign campaign = chapter.getCampaign();
         Encounter encounter = chapterEncounter(chapterId);
-        Character character = characterRepository.findByCampaignIdAndPlayerId(campaign.getId(), user.getId())
+        Character character = characterRepository.findLockedByCampaignIdAndPlayerId(campaign.getId(), user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Scegli prima un personaggio"));
         if (character.getStats() == null || !character.isAlive() || character.getCurrentHp() <= 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personaggio non pronto al combattimento");
@@ -121,6 +122,7 @@ public class CombatServiceImpl implements CombatService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Capitolo non trovato"));
         boolean joined = chapter.getCampaign().getPlayers().stream().anyMatch(p -> p.getId().equals(user.getId()));
         if (!joined) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Non sei iscritto alla campagna");
+        campaignProgressService.requireUnlocked(chapter.getCampaign().getId(), user.getUsername());
         if (!chapter.isHasCombat()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Capitolo senza combattimento");
         boolean unlocked = campaignChapterProgressRepository.findByUserIdAndChapterId(user.getId(), chapterId)
                 .map(CampaignChapterProgress::isUnlocked).orElse(false);

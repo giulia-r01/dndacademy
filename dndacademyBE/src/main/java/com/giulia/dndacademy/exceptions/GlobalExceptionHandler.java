@@ -17,6 +17,17 @@ public class GlobalExceptionHandler {
                     .build());
   }
 
+  @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+  public ResponseEntity<ErrorResponse> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+    return ResponseEntity.status(403).body(ErrorResponse.builder().message("Accesso non consentito").build());
+  }
+
+  @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+  public ResponseEntity<ErrorResponse> handleIntegrity(org.springframework.dao.DataIntegrityViolationException ex) {
+    return ResponseEntity.status(409).body(ErrorResponse.builder()
+            .message("Operazione in conflitto con dati gia presenti o utilizzati").build());
+  }
+
   @ExceptionHandler(RuntimeException.class)
   public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
     return ResponseEntity.badRequest()

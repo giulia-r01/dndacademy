@@ -32,7 +32,9 @@ export default function AdminCharacterCard({
           </p>
 
           <p className="mt-1 text-xs text-[var(--text-muted)]">
-            {isAlreadyChosen
+            {character.usedInCombat
+              ? "Personaggio utilizzato in combattimento: la scheda resta protetta per conservare lo storico."
+              : isAlreadyChosen
               ? `Scelto da ${character.playerUsername}. Può essere modificato, ma non eliminato.`
               : "Personaggio disponibile. Può essere modificato o eliminato."}
           </p>
@@ -42,6 +44,7 @@ export default function AdminCharacterCard({
           <AppButton
             type="button"
             variant="secondary"
+            disabled={character.usedInCombat}
             onClick={() => onEdit(character)}
           >
             <span className="inline-flex items-center gap-2">

@@ -50,6 +50,7 @@ export interface UpdateCharacterRequest {
 }
 
 export interface Character {
+  usedInCombat?: boolean
   id: number
   name: string
   race: string

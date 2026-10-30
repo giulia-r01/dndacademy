@@ -6,7 +6,7 @@ Interfaccia web della piattaforma didattica: percorso Player, campagne a capitol
 
 ## Stack
 
-Next.js 16.2.7 con App Router, React 19.2.4, TypeScript, Tailwind CSS 4 e React Icons. Stato React, hook e servizi TypeScript per le chiamate REST. JWT inviato come Bearer token; il client conserva il token in `localStorage`.
+Next.js 16.4.3 con App Router, React 19.2.4, TypeScript, Tailwind CSS 4 e React Icons. Stato React, hook e servizi TypeScript per le chiamate REST. JWT inviato come Bearer token; il client conserva il token in `localStorage`.
 
 ## Configurazione e avvio
 
@@ -110,7 +110,7 @@ npx tsc --noEmit --incremental false
 npm run lint
 ```
 
-Sono presenti quarantatre test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
+Sono presenti quarantaquattro test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
 
 Con il frontend avviato in un altro terminale:
 
@@ -123,7 +123,7 @@ npm run test:ui
 
 Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
 
-I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 43 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
+I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 44 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
 
 ## Limiti attuali e prossimi sviluppi
 
@@ -154,3 +154,11 @@ La sequenza di iniziativa usa uno scorrimento orizzontale con barra sottile, pis
 
 
 Lo storico raggruppa gli scontri della pagina corrente in accordion per campagna chiusi inizialmente, con sezioni per capitolo e conteggio dei tentativi. Le identità usano gli ID per non confondere nomi uguali; i dati storici senza collegamenti restano consultabili in gruppi di ripiego. Le campagne aperte restano aperte cambiando pagina. I conteggi sono esplicitamente limitati alla pagina quando lo storico è paginato; Precedenti/Successivi consentono di consultare gli altri scontri. Due nuove regressioni coprono gruppi chiusi, tastiera, nomi uguali con ID distinti e metadati mancanti; quelle esistenti verificano paginazione, dettagli, cure e resa mobile.
+
+### Revisione pre merge del 30 ottobre 2026
+
+Next.js ed eslint-config-next sono aggiornati a 16.4.3; il lockfile include gli aggiornamenti compatibili delle dipendenze. npm audit non segnala vulnerabilita alla data della revisione. Lint, build di produzione e tutti i 44 test browser sono stati verificati.
+
+Le modali spostano il focus iniziale su un controllo visibile, mantengono Tab e Shift+Tab nel pannello, si chiudono con Escape e restituiscono il focus al pulsante di apertura. Una regressione browser verifica l'intero ciclo. Gli input nascosti del selettore immagine sono esclusi dal focus iniziale.
+
+Le schede Master con usedInCombat impediscono la modifica del personaggio gia usato in combattimento, con una spiegazione visibile. Il backend applica lo stesso vincolo per preservare lo storico. Le API restano l'autorita per permessi, progressione e conflitti: la disabilitazione dei pulsanti e un aiuto all'interazione.

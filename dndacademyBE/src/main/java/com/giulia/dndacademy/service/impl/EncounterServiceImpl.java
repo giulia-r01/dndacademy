@@ -36,7 +36,7 @@ public class EncounterServiceImpl implements EncounterService {
 
         CampaignChapter chapter = getOwnedChapter(
                 request.getChapterId(),
-                master
+                master, true
         );
 
         if (!chapter.isHasCombat()) {
@@ -119,7 +119,7 @@ public class EncounterServiceImpl implements EncounterService {
 
         CampaignChapter chapter = getOwnedChapter(
                 request.getChapterId(),
-                master
+                master, true
         );
 
         if (!chapter.isHasCombat()) {
@@ -191,7 +191,12 @@ public class EncounterServiceImpl implements EncounterService {
             Long chapterId,
             User master
     ) {
-        CampaignChapter chapter = chapterRepository.findById(chapterId)
+        return getOwnedChapter(chapterId, master, false);
+    }
+
+    private CampaignChapter getOwnedChapter(Long chapterId, User master, boolean forUpdate) {
+        CampaignChapter chapter = (forUpdate ? chapterRepository.findLockedById(chapterId)
+                : chapterRepository.findById(chapterId))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Capitolo non trovato"
