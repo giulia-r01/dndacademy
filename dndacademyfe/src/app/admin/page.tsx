@@ -18,6 +18,12 @@ import Link from "next/link"
 
 const adminSections = [
   {
+    title: "Utenti",
+    description: "Consulta le statistiche degli utenti e gestisci i ruoli Master e Player.",
+    icon: FiUsers,
+    href: "/admin/users",
+  },
+  {
     title: "Campagne",
     description: "Crea e gestisci le campagne tutorial disponibili.",
     icon: FiFlag,
@@ -121,7 +127,8 @@ export default function AdminPage() {
             Area Master
           </h2>
           <p className="mt-2 max-w-2xl text-[var(--text-soft)]">
-            Gestisci campagne, personaggi, NPC, incontri, lezioni, quiz e badge.
+            Consulta le statistiche utenti e gestisci ruoli, campagne, personaggi,
+            NPC, incontri, lezioni, quiz e badge.
           </p>
         </div>
         <div className="grid gap-5 md:grid-cols-2">

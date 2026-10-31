@@ -1,6 +1,6 @@
 "use client"
 
-import { FiBell, FiMenu, FiUser } from "react-icons/fi"
+import { FiMenu, FiUser } from "react-icons/fi"
 import type { UserProfile } from "@/types/user"
 
 type TopbarProps = {
@@ -37,15 +37,6 @@ export default function Topbar({ onMenuClick, user }: TopbarProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="relative rounded-xl p-2 text-[var(--text-soft)] transition hover:bg-[var(--surface-soft)] hover:text-[var(--text-main)]"
-            aria-label="Notifiche"
-          >
-            <FiBell size={20} aria-hidden="true" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--accent)]" />
-          </button>
-
           <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] px-3 py-2">
             <div
               className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-sm font-black text-white"

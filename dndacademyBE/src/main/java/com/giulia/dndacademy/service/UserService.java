@@ -1,12 +1,14 @@
 package com.giulia.dndacademy.service;
 
 import com.giulia.dndacademy.dto.UserDTO;
+import com.giulia.dndacademy.model.enumerations.Role;
 import com.giulia.dndacademy.model.User;
 
 import java.util.List;
 
 public interface UserService {
     User register(User user);
+    UserDTO updateRole(Long id, Role role, String actorUsername);
     UserDTO getUserById(Long id);
     List<UserDTO> getAllUsers();
     User getByUsername(String username);

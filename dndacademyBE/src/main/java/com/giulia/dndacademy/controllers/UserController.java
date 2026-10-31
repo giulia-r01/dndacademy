@@ -1,6 +1,8 @@
 package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.UserDTO;
+import com.giulia.dndacademy.dto.UpdateUserRoleRequest;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import com.giulia.dndacademy.service.UserService;
@@ -28,6 +30,14 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @PreAuthorize("hasRole('MASTER')")
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<UserDTO> updateRole(@PathVariable Long id,
+                                               @Valid @RequestBody UpdateUserRoleRequest request,
+                                               Authentication authentication) {
+        return ResponseEntity.ok(userService.updateRole(id, request.role(), authentication.getName()));
     }
 
     @GetMapping("/me")
