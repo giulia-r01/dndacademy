@@ -19,6 +19,10 @@ public class Badge {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(unique = true)
+    private com.giulia.dndacademy.model.enumerations.SystemBadge systemCode;
+
     @Column(length = 1000)
     private String description;
 }

@@ -14,6 +14,6 @@ public class ResetPasswordRequest {
     private String token;
 
     @NotBlank(message = "Nuova password obbligatoria")
-    @Size(min = 6, message = "La password deve avere almeno 6 caratteri")
+    @com.giulia.dndacademy.validation.ValidPassword
     private String newPassword;
 }

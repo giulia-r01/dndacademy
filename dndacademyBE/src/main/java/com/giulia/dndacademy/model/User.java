@@ -34,6 +34,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password; // hash della password
 
+    @Column(length = 2048)
+    private String avatarUrl;
+
+    @Column(nullable = false)
+    private long tokenVersion;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 

@@ -4,6 +4,13 @@ type ApiFetchOptions = RequestInit & {
   auth?: boolean
 }
 
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message)
+    this.name = "ApiError"
+  }
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: ApiFetchOptions = {},
@@ -24,7 +31,10 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => null)
-    throw new Error(error?.message || "Errore generico")
+    if (response.status === 401 && options.auth && typeof window !== "undefined" && token === localStorage.getItem("token")) {
+      window.dispatchEvent(new Event("session-expired"))
+    }
+    throw new ApiError(error?.message || (response.status === 401 ? "Sessione scaduta. Accedi nuovamente." : "Impossibile completare la richiesta."), response.status)
   }
 
   if (response.status === 204) {

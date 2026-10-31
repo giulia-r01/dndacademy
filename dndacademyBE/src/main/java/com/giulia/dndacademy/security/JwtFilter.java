@@ -1,68 +1,56 @@
 package com.giulia.dndacademy.security;
 
 import com.giulia.dndacademy.model.User;
-import com.giulia.dndacademy.service.UserService;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.giulia.dndacademy.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.giulia.dndacademy.dto.ErrorResponse;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
-
-    @Autowired
-    private JwtTool jwtTool;
-
-    @Autowired
-    private UserService userService;
+    private final JwtTool jwtTool;
+    private final UserRepository users;
+    private final ObjectMapper json;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
-
-        String authHeader = request.getHeader("Authorization");
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain chain) throws ServletException, IOException {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
             try {
-                String username = jwtTool.extractUsername(token);
-
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    User user = userService.getByUsername(username);
-
-                    Authentication auth = new UsernamePasswordAuthenticationToken(
-                            user,
-                            null,
-                            user.getAuthorities()
-                    );
-
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                Claims claims = jwtTool.parse(header.substring(7));
+                User user = users.findById(Long.valueOf(claims.getSubject()))
+                        .orElseThrow(() -> new IllegalArgumentException("Utente non trovato"));
+                Number version = claims.get("version", Number.class);
+                if (version == null || version.longValue() != user.getTokenVersion()) {
+                    throw new IllegalArgumentException("Sessione scaduta");
                 }
-
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("text/plain");
-                response.getWriter().write("Token non valido o scaduto");
+                SecurityContextHolder.getContext().setAuthentication(
+                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
+            } catch (JwtException | IllegalArgumentException ex) {
+                SecurityContextHolder.clearContext();
+                response.setStatus(401);
+                response.setContentType("application/json");
+                json.writeValue(response.getOutputStream(), ErrorResponse.builder()
+                        .message("Sessione scaduta. Accedi nuovamente.").build());
                 return;
             }
         }
-
-        filterChain.doFilter(request, response);
+        chain.doFilter(request, response);
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/auth"); // esclude login/register
+        return request.getServletPath().startsWith("/auth/");
     }
 }

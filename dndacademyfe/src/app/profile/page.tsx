@@ -1,25 +1,13 @@
+"use client"
+
 import AppShell from "@/components/layout/AppShell"
-import AppCard from "@/components/common/AppCard"
+import ProfileForms from "@/components/profile/ProfileForms"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 export default function ProfilePage() {
-  return (
-    <AppShell>
-      <section className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-black text-[var(--text-main)]">
-            Profilo
-          </h2>
-          <p className="mt-2 text-[var(--text-soft)]">
-            Gestisci le informazioni principali del tuo account.
-          </p>
-        </div>
-
-        <AppCard>
-          <p className="text-[var(--text-muted)]">
-            Qui mostreremo username, email, ruolo e livello di apprendimento.
-          </p>
-        </AppCard>
-      </section>
-    </AppShell>
-  )
+  const { user } = useCurrentUser()
+  return <AppShell><section className="space-y-6">
+    <div><h2 className="text-3xl font-black">Il tuo profilo</h2><p className="mt-2 text-[var(--text-soft)]">Gestisci il tuo account, l’immagine profilo e la sicurezza.</p></div>
+    {user && <ProfileForms key={user.id} user={user} />}
+  </section></AppShell>
 }

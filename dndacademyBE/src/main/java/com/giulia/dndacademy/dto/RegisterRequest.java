@@ -13,17 +13,14 @@ import lombok.*;
 public class RegisterRequest {
 
     @NotBlank(message = "Username obbligatorio")
+    @Pattern(regexp = "[A-Za-z0-9_.-]{3,40}", message = "Username: da 3 a 40 lettere, numeri, punti, trattini o underscore")
     private String username;
 
     @Email(message = "Email non valida")
     @NotBlank(message = "Email obbligatoria")
+    @Size(max = 254)
     private String email;
 
-    @NotBlank(message = "Password obbligatoria")
-    @Size(min = 8, message = "La password deve avere almeno 8 caratteri")
-    @Pattern(
-            regexp = "^(?=.*[A-Z])(?=.*[0-9!@#$%^&*(),.?\":{}|<>]).*$",
-            message = "La password deve contenere almeno una lettera maiuscola e almeno un numero o carattere speciale"
-    )
+    @com.giulia.dndacademy.validation.ValidPassword
     private String password;
 }

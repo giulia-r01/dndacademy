@@ -21,8 +21,13 @@ public class BadgeController {
 
     @PreAuthorize("hasRole('MASTER')")
     @PostMapping
-    public BadgeDTO createBadge(@RequestBody CreateBadgeRequest request) {
+    public BadgeDTO createBadge(@jakarta.validation.Valid @RequestBody CreateBadgeRequest request) {
         return badgeService.createBadge(request);
+    }
+
+    @GetMapping("/catalog")
+    public List<com.giulia.dndacademy.dto.UserBadgeDTO> getCatalog(Authentication authentication) {
+        return badgeService.getCatalog(authentication.getName());
     }
 
     @GetMapping("/me")
@@ -43,7 +48,7 @@ public class BadgeController {
     @PutMapping("/{badgeId}")
     public BadgeDTO updateBadge(
             @PathVariable Long badgeId,
-            @RequestBody UpdateBadgeRequest request
+            @jakarta.validation.Valid @RequestBody UpdateBadgeRequest request
     ) {
         return badgeService.updateBadge(badgeId, request);
     }

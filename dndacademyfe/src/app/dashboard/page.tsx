@@ -54,7 +54,7 @@ export default function DashboardPage() {
   }, [])
 
   const completedLessons = lessons.filter((lesson) => lesson.completed).length
-  const passedQuizzes = quizResults.filter((quiz) => quiz.passed).length
+  const passedQuizzes = new Set(quizResults.filter((quiz) => quiz.passed).map((quiz) => quiz.quizId)).size
   const unlockedBadges = badges.length
   const nextLessons = lessons.filter((lesson) => !lesson.completed).slice(0, 3)
 

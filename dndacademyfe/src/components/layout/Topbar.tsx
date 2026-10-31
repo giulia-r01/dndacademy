@@ -2,6 +2,8 @@
 
 import { FiMenu, FiUser } from "react-icons/fi"
 import type { UserProfile } from "@/types/user"
+import Link from "next/link"
+import UserAvatar from "@/components/common/UserAvatar"
 
 type TopbarProps = {
   onMenuClick: () => void
@@ -11,7 +13,6 @@ type TopbarProps = {
 export default function Topbar({ onMenuClick, user }: TopbarProps) {
   const username = user?.username ?? "Avventuriero"
   const learningLevel = user?.learningLevel ?? "BEGINNER"
-  const avatarLetter = username.charAt(0).toUpperCase()
   return (
     <header className="border-b border-[var(--border-teal-soft)] bg-[var(--bg-topbar)] px-4 py-4 sm:px-6">
       <div className="flex items-center justify-between gap-4">
@@ -37,13 +38,8 @@ export default function Topbar({ onMenuClick, user }: TopbarProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] px-3 py-2">
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-sm font-black text-white"
-              aria-hidden="true"
-            >
-              {avatarLetter}
-            </div>
+          <Link href="/profile" aria-label="Vai al tuo profilo" className="flex items-center gap-3 rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] px-3 py-2">
+            <UserAvatar username={username} avatarUrl={user?.avatarUrl} />
 
             <div className="hidden text-sm sm:block">
               <p className="font-bold text-[var(--text-main)]">{username}</p>
@@ -55,7 +51,7 @@ export default function Topbar({ onMenuClick, user }: TopbarProps) {
               size={18}
               aria-hidden="true"
             />
-          </div>
+          </Link>
         </div>
       </div>
     </header>

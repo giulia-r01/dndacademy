@@ -8,6 +8,7 @@ import { FiAlertTriangle } from "react-icons/fi"
 import AppButton from "@/components/common/AppButton"
 import FormInput from "@/components/common/FormInput"
 import { authService } from "@/services/auth.service"
+import { isPasswordValid, passwordHint } from "@/lib/password"
 
 export default function RegisterForm() {
   const router = useRouter()
@@ -19,13 +20,6 @@ export default function RegisterForm() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  function isPasswordValid(password: string) {
-    const hasUppercase = /[A-Z]/.test(password)
-    const hasNumberOrSpecial = /[0-9!@#$%^&*(),.?":{}|<>]/.test(password)
-
-    return password.length >= 8 && hasUppercase && hasNumberOrSpecial
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
@@ -34,7 +28,7 @@ export default function RegisterForm() {
 
     if (!isPasswordValid(password)) {
       setError(
-        "La password deve avere almeno 8 caratteri, una lettera maiuscola e almeno un numero o carattere speciale.",
+        passwordHint,
       )
       setIsLoading(false)
       return
@@ -66,6 +60,10 @@ export default function RegisterForm() {
         type="text"
         placeholder="Scegli il tuo username"
         autoComplete="username"
+        required
+        minLength={3}
+        maxLength={40}
+        pattern="[A-Za-z0-9_.\-]{3,40}"
         value={username}
         onChange={(event) => setUsername(event.target.value)}
       />
@@ -76,6 +74,8 @@ export default function RegisterForm() {
         type="email"
         placeholder="nome@email.com"
         autoComplete="email"
+        required
+        maxLength={254}
         value={email}
         onChange={(event) => setEmail(event.target.value)}
       />
@@ -86,6 +86,8 @@ export default function RegisterForm() {
         type="password"
         placeholder="Almeno 8 caratteri"
         autoComplete="new-password"
+        required
+        minLength={8}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
@@ -100,9 +102,7 @@ export default function RegisterForm() {
         />
 
         <p className="text-sm leading-6 text-[var(--text-muted)]">
-          La password deve avere almeno <strong>8 caratteri</strong>, una{" "}
-          <strong>lettera maiuscola</strong> e almeno un{" "}
-          <strong>numero o carattere speciale</strong>.
+          {passwordHint}
         </p>
       </div>
 

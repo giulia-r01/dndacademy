@@ -98,6 +98,8 @@ function BadgeFormContent({
       <FormInput
         label="Nome badge"
         name="badgeName"
+        required
+        maxLength={255}
         type="text"
         placeholder="Es. Apprendista Avventuriero"
         value={formValues.name}
@@ -118,6 +120,8 @@ function BadgeFormContent({
         </label>
 
         <textarea
+          required
+          maxLength={1000}
           id="badgeDescription"
           name="badgeDescription"
           rows={5}

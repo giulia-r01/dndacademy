@@ -178,11 +178,13 @@ export default function AdminBadgesPage() {
                       <AppButton
                         type="button"
                         variant="danger"
+                        disabled={badge.system}
+                        title={badge.system ? "I badge di sistema non possono essere eliminati" : undefined}
                         onClick={() => openDeleteModal(badge)}
                       >
                         <span className="inline-flex items-center gap-2">
                           <FiTrash2 aria-hidden="true" />
-                          Elimina
+                          {badge.system ? "Badge di sistema" : "Elimina"}
                         </span>
                       </AppButton>
                     </div>

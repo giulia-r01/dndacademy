@@ -6,4 +6,6 @@ public interface ImageUploadService {
 
     String uploadCharacterImage(MultipartFile file);
     String uploadNpcImage(MultipartFile file);
+    String uploadUserImage(MultipartFile file, Long userId);
+    void deleteUserImage(Long userId);
 }

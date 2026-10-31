@@ -16,6 +16,7 @@ public class BadgeDTO {
     private String description;
     private LocalDateTime unlockedAt;
 
+    private boolean system;
     private boolean assignedToUsers;
     private boolean usedAsChapterReward;
 }

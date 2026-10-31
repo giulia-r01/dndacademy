@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:ui": "node --test tests/ui/combat-and-npcs.test.mjs"
+    "test:ui": "node --test tests/ui/admin-users.test.mjs tests/ui/combat-and-npcs.test.mjs tests/ui/profile-and-badges.test.mjs tests/ui/login-session.test.mjs"
   },
   "dependencies": {
     "next": "16.4.3",

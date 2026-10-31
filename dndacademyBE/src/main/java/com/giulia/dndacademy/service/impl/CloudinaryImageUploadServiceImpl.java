@@ -35,6 +35,35 @@ public class CloudinaryImageUploadServiceImpl implements ImageUploadService {
         return uploadImage(file, "dndacademy/npcs");
     }
 
+    @Override
+    public String uploadUserImage(MultipartFile file, Long userId) {
+        validateFile(file);
+        try {
+            Map result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "public_id", "dndacademy/avatars/user-" + userId,
+                    "overwrite", true, "invalidate", true, "resource_type", "image",
+                    "allowed_formats", List.of("jpg", "png", "webp")));
+            String url = (String) result.get("secure_url");
+            if (url == null || !url.startsWith("https://")) throw new IOException("URL immagine non valido");
+            return url;
+        } catch (IOException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_GATEWAY, "Caricamento immagine non riuscito", ex);
+        }
+    }
+
+    @Override
+    public void deleteUserImage(Long userId) {
+        try {
+            Map result = cloudinary.uploader().destroy("dndacademy/avatars/user-" + userId,
+                    ObjectUtils.asMap("invalidate", true, "resource_type", "image"));
+            if (!List.of("ok", "not found").contains(result.get("result"))) throw new IOException("Rimozione non riuscita");
+        } catch (IOException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_GATEWAY, "Rimozione immagine non riuscita", ex);
+        }
+    }
+
     private String uploadImage(MultipartFile file, String folder) {
         validateFile(file);
 

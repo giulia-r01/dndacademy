@@ -143,7 +143,7 @@ public class QuizServiceImpl implements QuizService {
 
         if (passed && !alreadyPassed) {
             lessonService.completeLessonAfterQuiz(quiz.getLesson().getId(), username);
-            badgeService.assignBadge(username, "Primo Quiz");
+            badgeService.assignSystemBadge(username, com.giulia.dndacademy.model.enumerations.SystemBadge.FIRST_QUIZ);
             userService.updateLearningLevel(username);
 
             long completedLessons = userLessonProgressRepository
@@ -156,13 +156,13 @@ public class QuizServiceImpl implements QuizService {
                     .countDistinctPassedQuizzesByUsername(username);
 
             if (completedLessons >= 2 && passedQuizzes >= 2) {
-                badgeService.assignBadge(username, "Studente di D&D");
+                badgeService.assignSystemBadge(username, com.giulia.dndacademy.model.enumerations.SystemBadge.STUDENT);
             }
 
             User updatedUser = userService.getByUsername(username);
 
-            if (updatedUser.getLearningLevel() == LearningLevel.INTERMEDIATE) {
-                badgeService.assignBadge(username, "Avventuriero Esperto");
+            if (updatedUser.getLearningLevel() == LearningLevel.ADVANCED) {
+                badgeService.assignSystemBadge(username, com.giulia.dndacademy.model.enumerations.SystemBadge.EXPERT);
             }
         }
 

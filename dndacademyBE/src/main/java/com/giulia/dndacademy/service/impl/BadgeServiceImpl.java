@@ -22,12 +22,24 @@ import java.util.List;
 public class BadgeServiceImpl implements BadgeService {
 
     private final BadgeRepository badgeRepository;
+    private final com.giulia.dndacademy.repository.UserRepository userRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final UserService userService;
     private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void assignSystemBadge(String username, com.giulia.dndacademy.model.enumerations.SystemBadge code) {
+        Badge badge = badgeRepository.findBySystemCode(code)
+                .orElseThrow(() -> new IllegalStateException("Badge di sistema non inizializzato"));
+        assignBadge(username, badge.getName());
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
     public void assignBadge(String username, String badgeName) {
+        User candidate = userService.getByUsername(username);
+        User user = userRepository.findForUpdateById(candidate.getId()).orElseThrow();
 
         boolean alreadyExists = userBadgeRepository
                 .existsByUserUsernameAndBadgeName(username, badgeName);
@@ -36,7 +48,6 @@ public class BadgeServiceImpl implements BadgeService {
             return;
         }
 
-        User user = userService.getByUsername(username);
 
         Badge badge = badgeRepository.findByName(badgeName)
                 .orElseThrow(() -> new RuntimeException("Badge non trovato"));
@@ -48,6 +59,18 @@ public class BadgeServiceImpl implements BadgeService {
                 .build();
 
         userBadgeRepository.save(userBadge);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<com.giulia.dndacademy.dto.UserBadgeDTO> getCatalog(String username) {
+        var unlocked = userBadgeRepository.findByUserUsername(username).stream()
+                .collect(java.util.stream.Collectors.toMap(item -> item.getBadge().getId(), item -> item));
+        return badgeRepository.findAll().stream().map(badge -> {
+            var owned = unlocked.get(badge.getId());
+            return new com.giulia.dndacademy.dto.UserBadgeDTO(badge.getId(), badge.getName(),
+                    badge.getDescription(), owned != null, owned == null ? null : owned.getUnlockedAt());
+        }).toList();
     }
 
     @Override
@@ -68,8 +91,8 @@ public class BadgeServiceImpl implements BadgeService {
     public BadgeDTO createBadge(CreateBadgeRequest request) {
 
         Badge badge = Badge.builder()
-                .name(request.getName())
-                .description(request.getDescription())
+                .name(request.getName().trim())
+                .description(request.getDescription().trim())
                 .build();
 
         Badge saved = badgeRepository.save(badge);
@@ -95,12 +118,7 @@ public class BadgeServiceImpl implements BadgeService {
 
         Badge updatedBadge = badgeRepository.save(badge);
 
-        return BadgeDTO.builder()
-                .id(updatedBadge.getId())
-                .name(updatedBadge.getName())
-                .description(updatedBadge.getDescription())
-                .unlockedAt(null)
-                .build();
+        return mapToDTO(updatedBadge);
     }
 
     @Override
@@ -108,6 +126,10 @@ public class BadgeServiceImpl implements BadgeService {
         Badge badge = badgeRepository.findById(badgeId)
                 .orElseThrow(() -> new RuntimeException("Badge non trovato."));
 
+        if (badge.getSystemCode() != null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT, "I badge di sistema non possono essere eliminati");
+        }
         if (userBadgeRepository.existsByBadgeId(badgeId)) {
             throw new RuntimeException(
                     "Non puoi eliminare questo badge perché è già stato assegnato a uno o più utenti."
@@ -129,6 +151,7 @@ public class BadgeServiceImpl implements BadgeService {
                 .name(badge.getName())
                 .description(badge.getDescription())
                 .unlockedAt(null)
+                .system(badge.getSystemCode() != null)
                 .assignedToUsers(userBadgeRepository.existsByBadgeId(badge.getId()))
                 .usedAsChapterReward(
                         campaignChapterRepository.existsByRewardBadgeId(badge.getId())

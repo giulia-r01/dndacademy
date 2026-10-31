@@ -9,8 +9,10 @@ import java.util.List;
 public interface BadgeService {
 
     void assignBadge(String username, String badgeName);
+    void assignSystemBadge(String username, com.giulia.dndacademy.model.enumerations.SystemBadge code);
 
     List<BadgeDTO> getMyBadges(String username);
+    List<com.giulia.dndacademy.dto.UserBadgeDTO> getCatalog(String username);
 
     BadgeDTO createBadge(CreateBadgeRequest request);
 

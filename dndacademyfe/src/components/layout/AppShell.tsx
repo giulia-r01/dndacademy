@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import Sidebar from "@/components/layout/Sidebar"
 import Topbar from "@/components/layout/Topbar"
+import AppButton from "@/components/common/AppButton"
 
 type AppShellProps = {
   children: ReactNode
@@ -15,14 +16,13 @@ export default function AppShell({ children }: AppShellProps) {
   const router = useRouter()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  const { user, isLoading, error } = useCurrentUser()
+  const { user, isLoading, error, refresh, logout, loginHref } = useCurrentUser()
 
   useEffect(() => {
-    if (!isLoading && error) {
-      localStorage.removeItem("token")
-      router.push("/login")
+    if (!isLoading && !user && !error) {
+      router.replace(loginHref)
     }
-  }, [error, isLoading, router])
+  }, [error, isLoading, user, router, loginHref])
 
   function openSidebar() {
     setIsSidebarOpen(true)
@@ -33,7 +33,7 @@ export default function AppShell({ children }: AppShellProps) {
   }
 
   function handleLogout() {
-    localStorage.removeItem("token")
+    logout()
     router.push("/login")
   }
 
@@ -46,6 +46,11 @@ export default function AppShell({ children }: AppShellProps) {
       </main>
     )
   }
+
+  if (error) return <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg-app)] p-6 text-[var(--text-main)]">
+    <p role="alert">{error}</p><AppButton onClick={() => void refresh()}>Riprova</AppButton>
+  </main>
+  if (!user) return null
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)]">

@@ -44,13 +44,7 @@ public class UserServiceImpl implements UserService {
         }
         target.setRole(role);
         User saved = userRepository.save(target);
-        return UserDTO.builder()
-                .id(saved.getId())
-                .username(saved.getUsername())
-                .email(saved.getEmail())
-                .role(saved.getRole())
-                .learningLevel(saved.getLearningLevel())
-                .build();
+        return UserDTO.from(saved);
     }
 
     @Override
@@ -67,13 +61,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO getUserById(Long id) {
         return userRepository.findById(id)
-                .map(u -> UserDTO.builder()
-                        .id(u.getId())
-                        .username(u.getUsername())
-                        .email(u.getEmail())
-                        .role(u.getRole())
-                        .learningLevel(u.getLearningLevel())
-                        .build())
+                .map(u -> UserDTO.from(u))
                 .orElse(null);
     }
 
@@ -84,19 +72,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
+        return userRepository.existsByEmailIgnoreCase(email);
     }
 
     @Override
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream().map(u ->
-                UserDTO.builder()
-                        .id(u.getId())
-                        .username(u.getUsername())
-                        .email(u.getEmail())
-                        .role(u.getRole())
-                        .learningLevel(u.getLearningLevel())
-                        .build()
+                UserDTO.from(u)
         ).collect(Collectors.toList());
     }
 
@@ -105,13 +87,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
 
-        return UserDTO.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .learningLevel(user.getLearningLevel())
-                .build();
+        return UserDTO.from(user);
     }
 
     @Override

@@ -3,9 +3,13 @@ import type {
   Badge,
   CreateBadgeRequest,
   UpdateBadgeRequest,
+  UserBadge,
 } from "@/types/badge"
 
 export const badgeService = {
+  getCatalog() {
+    return apiFetch<UserBadge[]>("/api/badges/catalog", { auth: true })
+  },
   getAll() {
     return apiFetch<Badge[]>("/api/badges", {
       method: "GET",

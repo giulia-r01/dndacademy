@@ -8,16 +8,10 @@ import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi"
 import AppButton from "@/components/common/AppButton"
 import FormInput from "@/components/common/FormInput"
 import { authService } from "@/services/auth.service"
+import { isPasswordValid, passwordHint } from "@/lib/password"
 
 type ResetPasswordFormProps = {
   initialToken: string
-}
-
-function isPasswordValid(password: string) {
-  const hasUppercase = /[A-Z]/.test(password)
-  const hasNumberOrSpecial = /[0-9!@#$%^&*(),.?":{}|<>]/.test(password)
-
-  return password.length >= 8 && hasUppercase && hasNumberOrSpecial
 }
 
 export default function ResetPasswordForm({
@@ -51,7 +45,7 @@ export default function ResetPasswordForm({
 
     if (!isPasswordValid(newPassword)) {
       setError(
-        "La password deve avere almeno 8 caratteri, una lettera maiuscola e almeno un numero o carattere speciale.",
+        passwordHint,
       )
       return
     }
@@ -89,6 +83,8 @@ export default function ResetPasswordForm({
         type="password"
         placeholder="Inserisci la nuova password"
         autoComplete="new-password"
+        required
+        minLength={8}
         value={newPassword}
         onChange={(event) => setNewPassword(event.target.value)}
       />
@@ -104,9 +100,7 @@ export default function ResetPasswordForm({
         />
 
         <p className="text-sm leading-6 text-[var(--text-muted)]">
-          La password deve avere almeno <strong>8 caratteri</strong>, una{" "}
-          <strong>lettera maiuscola</strong> e almeno un{" "}
-          <strong>numero o carattere speciale</strong>.
+          {passwordHint}
         </p>
       </div>
 

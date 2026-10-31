@@ -9,6 +9,12 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+  public ResponseEntity<ErrorResponse> handleUpload(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+    return ResponseEntity.status(413).body(ErrorResponse.builder()
+            .message("L'immagine non puo superare 5 MB").build());
+  }
+
   @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
   public ResponseEntity<ErrorResponse> handleStatus(org.springframework.web.server.ResponseStatusException ex) {
     return ResponseEntity.status(ex.getStatusCode())

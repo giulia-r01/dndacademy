@@ -6,10 +6,11 @@ import Link from "next/link"
 
 import AppButton from "@/components/common/AppButton"
 import FormInput from "@/components/common/FormInput"
-import { authService } from "@/services/auth.service"
+import { useCurrentUser } from "@/hooks/useCurrentUser"
 
 export default function LoginForm() {
   const router = useRouter()
+  const { login } = useCurrentUser()
 
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
@@ -23,12 +24,10 @@ export default function LoginForm() {
     setIsLoading(true)
 
     try {
-      const response = await authService.login({
+      await login({
         username,
         password,
       })
-
-      localStorage.setItem("token", response.token)
 
       router.push("/dashboard")
     } catch (err) {

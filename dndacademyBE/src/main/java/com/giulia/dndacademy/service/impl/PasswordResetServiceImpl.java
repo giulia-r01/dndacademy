@@ -25,6 +25,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
+    private final jakarta.persistence.EntityManager entityManager;
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
@@ -33,8 +34,11 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Nessun utente trovato con questa email"));
+        User candidate = userRepository.findByEmailIgnoreCase(request.getEmail().trim()).orElse(null);
+        if (candidate == null) return;
+        User user = userRepository.findForUpdateById(candidate.getId()).orElseThrow();
+        entityManager.refresh(user);
+        if (!user.getEmail().equalsIgnoreCase(request.getEmail().trim())) return;
 
         String token = UUID.randomUUID().toString();
 
@@ -73,13 +77,19 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new RuntimeException("Token scaduto");
         }
 
-        User user = resetToken.getUser();
+        User user = userRepository.findForUpdateById(resetToken.getUser().getId()).orElseThrow();
+        // Re-read after taking the user lock: a password/email change may have invalidated the token.
+        entityManager.refresh(resetToken);
+        if (resetToken.isUsed() || resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token non valido o scaduto");
+        }
 
         if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
             throw new RuntimeException("La nuova password deve essere diversa da quella precedente");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
 
         userRepository.save(user);
 

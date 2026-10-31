@@ -28,6 +28,9 @@ public class AuthController {
     private UserService userService;
 
     @Autowired
+    private com.giulia.dndacademy.repository.UserRepository userRepository;
+
+    @Autowired
     private JwtTool jwtTool;
 
     @Autowired
@@ -52,7 +55,7 @@ public class AuthController {
 
         User user = User.builder()
                 .username(request.getUsername())
-                .email(request.getEmail())
+                .email(request.getEmail().trim().toLowerCase(java.util.Locale.ROOT))
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.PLAYER)
                 .learningLevel(LearningLevel.BEGINNER)
@@ -75,13 +78,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid AuthRequest request) {
 
-        User user = userService.getByUsername(request.getUsername());
+        User user = userRepository.findByUsername(request.getUsername()).orElse(null);
+        if (user == null) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
 
-        String token = jwtTool.generateToken(user.getUsername());
+        String token = jwtTool.generateToken(user);
 
         return ResponseEntity.ok(new AuthResponse(token));
     }

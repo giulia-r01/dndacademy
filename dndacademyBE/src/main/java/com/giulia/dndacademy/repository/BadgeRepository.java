@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface BadgeRepository extends JpaRepository<Badge, Long> {
 
     Optional<Badge> findByName(String name);
+    Optional<Badge> findBySystemCode(com.giulia.dndacademy.model.enumerations.SystemBadge code);
 }
