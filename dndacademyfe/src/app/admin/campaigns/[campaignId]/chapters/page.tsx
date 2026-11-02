@@ -16,6 +16,7 @@ import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 import AppModal from "@/components/common/AppModal"
 import AppShell from "@/components/layout/AppShell"
+import { encounterHref } from "@/lib/navigation"
 import { useAdminCampaignChapters } from "@/hooks/useAdminCampaignChapters"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import type { CampaignChapter } from "@/types/campaign-chapter"
@@ -128,7 +129,7 @@ export default function AdminCampaignChaptersPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell breadcrumbs={[{ label: "Area Master", href: "/admin" }, { label: "Campagne", href: "/admin/campaigns" }, { label: campaignName }]}>
       <section className="space-y-6">
         <Link
           href="/admin/campaigns"
@@ -138,6 +139,7 @@ export default function AdminCampaignChaptersPage() {
           Torna alle campagne
         </Link>
 
+        <AppCard className="space-y-3"><h3 className="font-black">Prepara le risorse del capitolo</h3><p className="text-sm text-[var(--text-soft)]">Crea le lezioni prima dei quiz, poi collega le attività al capitolo. Per un incontro prepara almeno un PNG nemico.</p><div className="flex flex-wrap gap-3"><AppButton href="/admin/lessons" variant="secondary">Gestisci lezioni</AppButton><AppButton href="/admin/quizzes" variant="secondary">Gestisci quiz</AppButton><AppButton href="/admin/npcs" variant="secondary">Gestisci PNG</AppButton></div></AppCard>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
@@ -241,7 +243,7 @@ export default function AdminCampaignChaptersPage() {
                     <div className="flex flex-wrap gap-3">
                       {chapter.hasCombat && (
                         <Link
-                          href={`/admin/encounters?campaignId=${campaignId}&chapterId=${chapter.id}`}
+                          href={encounterHref(campaignId, chapter.id)}
                           className="inline-flex items-center rounded-xl border border-[var(--border-teal-soft)] px-4 py-2 text-sm font-bold text-[var(--accent-soft)] hover:border-[var(--border-gold)]"
                         >
                           Configura incontro

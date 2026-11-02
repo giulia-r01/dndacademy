@@ -7,12 +7,18 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 import Sidebar from "@/components/layout/Sidebar"
 import Topbar from "@/components/layout/Topbar"
 import AppButton from "@/components/common/AppButton"
+import { usePathname } from "next/navigation"
+import Breadcrumbs from "@/components/layout/Breadcrumbs"
+import { defaultBreadcrumbs, type Breadcrumb } from "@/lib/navigation"
 
 type AppShellProps = {
   children: ReactNode
+  breadcrumbs?: Breadcrumb[]
+  activeHref?: string
 }
 
-export default function AppShell({ children }: AppShellProps) {
+export default function AppShell({ children, breadcrumbs, activeHref }: AppShellProps) {
+  const pathname = usePathname()
   const router = useRouter()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -56,7 +62,7 @@ export default function AppShell({ children }: AppShellProps) {
     <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)]">
       <div className="flex min-h-screen">
         <div className="hidden lg:block">
-          <Sidebar user={user} onLogout={handleLogout} />
+          <Sidebar user={user} activeHref={activeHref} />
         </div>
 
         {isSidebarOpen && (
@@ -72,17 +78,17 @@ export default function AppShell({ children }: AppShellProps) {
               <Sidebar
                 user={user}
                 onClose={closeSidebar}
-                onLogout={handleLogout}
                 showCloseButton
+                activeHref={activeHref}
               />
             </div>
           </div>
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar onMenuClick={openSidebar} user={user} />
+          <Topbar onMenuClick={openSidebar} user={user} onLogout={handleLogout} />
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8"><Breadcrumbs items={breadcrumbs ?? defaultBreadcrumbs(pathname)} />{children}</main>
         </div>
       </div>
     </div>

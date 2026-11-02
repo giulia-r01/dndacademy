@@ -1,164 +1,166 @@
 # D&D Academy — Frontend
 
-Interfaccia web della piattaforma didattica: percorso Player, campagne a capitoli, combattimenti narrativi e backoffice Master. Integrata con le API Spring Boot; progetto in sviluppo attivo.
+Interfaccia della piattaforma didattica per imparare Dungeons & Dragons attraverso campagne guidate, lezioni, quiz e combattimenti narrativi. Include Area Player, Area Master, profilo e badge. Il progetto è in preparazione al collaudo preproduzione.
 
-[Panoramica](../README.md) · [Backend e API](../dndacademyBE/README.md)
+[Panoramica del progetto](../README.md) · [Backend e API](../dndacademyBE/README.md) · [Navigazione e flussi](docs/navigation-flow.md) · [Profilo, badge e collaudo](docs/profile-and-badges.md)
 
 ## Stack
 
-Next.js 16.4.3 con App Router, React 19.2.4, TypeScript, Tailwind CSS 4 e React Icons. Stato React, hook e servizi TypeScript per le chiamate REST. JWT inviato come Bearer token; il client conserva il token in `localStorage`.
+Next.js 16.4.3 con App Router, React 19.2.4, TypeScript, Tailwind CSS 4 e React Icons. Provider e hook React condividono sessione e area di navigazione; i servizi TypeScript comunicano con le API REST Spring Boot.
+
+Il JWT è conservato in `localStorage` e inviato come Bearer token. Il backend resta l'autorità per permessi, proprietà dei dati e progressione. Le variabili `NEXT_PUBLIC_*` sono pubbliche e non devono contenere credenziali.
 
 ## Configurazione e avvio
 
-Servono Node.js **20.9 o superiore**, npm e il backend configurato e avviato. Da questa cartella, creare `.env.local`:
+Servono Node.js 20.9 o superiore, npm e il backend configurato. Da questa cartella creare `.env.local`:
 
 ```dotenv
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-La variabile indica la base delle API, senza aggiungere `/api`: i servizi specificano già il percorso completo. È una variabile pubblica del frontend. Nel backend impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per CORS e link di recupero password.
+La base non deve includere `/api`: i servizi specificano già i percorsi completi, compresi quelli `/auth`. Nel backend impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per allineare CORS e collegamenti delle email.
 
 ```powershell
 npm ci
 npm run dev
 ```
 
-Aprire [l'app locale](http://localhost:3000).
-
-Per creare e avviare una build:
+Aprire [l'app locale](http://localhost:3000). Per verificare la build di produzione:
 
 ```powershell
 npm run build
 npm run start
 ```
 
-`NEXT_PUBLIC_API_URL` deve essere configurata anche nell'ambiente di build. Il backend e i servizi esterni restano necessari per i relativi flussi.
+`NEXT_PUBLIC_API_URL` deve essere disponibile durante la build. Il server di sviluppo e quello di produzione usano normalmente la porta 3000: avviarne uno alla volta su quella porta. Database, SMTP e Cloudinary sono configurati nel backend.
 
-## Pagine e funzionalità
+## Navigazione e ruoli
 
-| Area | Percorsi principali | Funzionalità |
-| --- | --- | --- |
-| Account | `/login`, `/register`, `/forgot-password`, `/reset-password` | Accesso e recupero password |
-| Player | `/dashboard`, `/profile`, `/achievements` | Dashboard, profilo e badge |
-| Didattica | `/lessons`, `/lessons/[lessonId]`, `/lessons/[lessonId]/quiz` | Lezioni e quiz |
-| Campagne | `/campaigns`, `/campaigns/[campaignId]` | Iscrizione, capitoli e progressi |
-| Capitolo | `/campaigns/[campaignId]/chapters/[chapterId]` | Narrazione, requisiti e completamento |
-| Personaggi | `/characters` | Personaggi assegnati e scelta tra quelli disponibili |
-| Storico | `/combat` | Combattimenti personali, esiti, campagna, personaggio e registro di sola lettura |
-| Combattimento | `/combat?chapterId=...&campaignId=...` | Preparazione, iniziativa, azioni e registro |
-| Backoffice | `/admin` | Accesso alle sezioni Master |
-| Contenuti | `/admin/lessons`, `/admin/quizzes`, `/admin/badges` | Didattica e ricompense |
-| Campagne Master | `/admin/campaigns`, `/admin/campaigns/[campaignId]/chapters` | Campagne, capitoli e accesso agli incontri |
-| Personaggi Master | `/admin/characters` | Preparazione e immagini personaggi |
-| NPC | `/admin/npcs` | Nemici, aiutanti, statistiche e immagini |
-| Incontri | `/admin/encounters?chapterId=...` | NPC e quantità nel capitolo |
+Il login carica il profilo e aggiorna la sessione condivisa prima di cambiare pagina. Il Player entra in **Il tuo percorso** (`/dashboard`); il Master in **Area Master** (`/admin`). Un errore temporaneo di rete non elimina il token: la pagina permette di riprovare. Una risposta autenticata `401` termina la sessione.
 
-Il backoffice richiede un account MASTER già predisposto. La registrazione pubblica crea PLAYER. I controlli nell'interfaccia accompagnano quelli effettuati dalle API.
+Il Master può passare tra le due aree usando il selettore nella sidebar. Le voci sono raggruppate per attività:
 
-## Requisiti del capitolo
+| Area | Gruppi e destinazioni |
+| --- | --- |
+| Player | Percorso: Il tuo percorso, Campagne, Biblioteca lezioni; La tua avventura: I tuoi personaggi, Storico combattimenti; Traguardi: Badge |
+| Master | Gestione: Area Master e Campagne; Didattica: Lezioni e Quiz; Risorse: Personaggi, PNG e Badge; Amministrazione: Utenti |
 
-Le schede mostrano i progressi reali separatamente dal completamento del capitolo: **Lezione completata**, **Quiz superato** e **Combattimento vinto** per i requisiti acquisiti; **Da completare**, **Da superare** e **Da vincere** per quelli ancora mancanti. I pulsanti diventano **Rivedi lezione**, **Ripeti quiz** e **Ripeti combattimento** quando il requisito ? già soddisfatto. La revisione ? facoltativa e non azzera il progresso già salvato. Gli stati vengono letti dall'API dei capitoli del Player e sono verificati anche dopo il ricaricamento della pagina.
+**Profilo ed Esci sono nel menu dell'avatar in alto**, su desktop e mobile. Il menu supporta tastiera, frecce, Home/End, Tab, Escape e chiusura cliccando fuori. Nel profilo viene mantenuta l'area da cui il Master proviene.
 
-## I tuoi combattimenti
+In fondo alla sidebar rimane il riquadro del livello con la barra. Le etichette condivise sono **Principiante, Intermedio, Avanzato**. La barra rappresenta il livello raggiunto su tre livelli; non indica la percentuale di lezioni completate. La navigazione laterale scorre quando lo schermo è basso; titoli e breadcrumb riflettono la pagina corrente.
 
-La voce Combat senza un capitolo mostra un collegamento alle campagne e lo storico personale paginato in un accordion chiuso inizialmente, apribile anche da tastiera. Gli incontri aperti dal capitolo mantengono la preparazione e l’arena con personaggio, nemico e comandi centrali. Le schede mostrano campagna, capitolo, incontro, personaggio e ritratto, HP salvati, esito e data di conclusione quando disponibile. Gli esiti sono Vittoria, Sconfitta e Non concluso; ogni tentativo conserva il proprio risultato: Non concluso indica l’assenza di un esito salvato, anche per tentativi precedenti a una vittoria successiva. I dati più vecchi completati ma privi di un esito preciso sono indicati come Concluso.
+## Percorso Player
 
-Il pulsante **Vedi dettagli e registro** apre una finestra di sola lettura con partecipanti e cronologia delle azioni. I registri assenti vengono segnalati senza inventare eventi; la lettura non avvia sessioni e non consente nuove azioni. Precedenti/Successivi permettono di consultare anche gli scontri più vecchi. In assenza di scontri viene proposto l’accesso alle campagne. La ripresa dei combattimenti attivi resta uno sviluppo distinto dallo storico.
+1. La home propone di iniziare un'avventura o continuare le campagne in corso. Uno scontro aperto presente tra i risultati recenti dello storico può essere ripreso direttamente. Le statistiche accompagnano le azioni principali.
+2. L'iscrizione apre direttamente la campagna. Da qui si entra nel prossimo capitolo, conservando il contesto narrativo.
+3. Il capitolo presenta storia, prossimo passo e requisiti effettivi: lezione, quiz e combattimento, quando previsti. La scelta del personaggio è legata alla campagna; è disponibile anche nella preparazione dello scontro.
+4. Lezioni e quiz aperti dal capitolo conservano il collegamento di ritorno. La provenienza viene verificata contro i capitoli restituiti dal backend prima di mostrare i collegamenti contestuali. La biblioteca resta consultabile separatamente.
+5. La lettura può essere salvata con **Segna come letta**, anche per lezioni senza quiz. I requisiti già soddisfatti restano consultabili e le attività possono essere ripetute.
+6. Il completamento del capitolo è disponibile quando i requisiti risultano soddisfatti. Dopo il salvataggio si ricaricano i capitoli e viene proposto il successivo sbloccato, quando presente.
 
-## Flusso del combattimento
+Con più campagne in corso la home propone scelte distinte: non deduce l'ultima attività da dati che le API non espongono. Cataloghi vuoti ed errori di caricamento sono gestiti separatamente.
 
-1. Il Player apre lo scontro dal capitolo della campagna.
-2. La preparazione mostra il personaggio con ritratto grande, razza, classe, livello, HP, CA, arma, incantesimo e caratteristiche. Se manca, permette di sceglierlo tra quelli disponibili senza lasciare il capitolo. L’anteprima dello stesso incontro mostra immagini, quantità, statistiche e descrizioni dei nemici e degli eventuali aiutanti. Non viene avviata alcuna sessione finché non si preme il pulsante dedicato.
-3. L'avvio carica i partecipanti in ordine di iniziativa, con schieramento, immagini, CA e HP. Il combattente in turno è evidenziato.
-4. Nel proprio turno il Player sceglie un nemico e usa l'arma o, quando configurato, l'incantesimo.
-5. Per nemici e aiutanti viene mostrato il turno e il pulsante **“Mostra l'azione di…”**. Ogni richiesta risolve una sola azione; bersaglio e tiri NPC sono decisi dal backend.
-6. Il risultato mostra colpi riusciti o mancati, critici, danni e HP prima/dopo. I danni al proprio personaggio hanno un avviso dedicato; il registro mostra prima gli eventi più recenti.
-7. Dopo una vittoria il Player torna al capitolo per completarlo e ottenere l'eventuale ricompensa.
+## Rotte principali
 
-La schermata ha una larghezza massima di 1440 px. Su desktop risultato, dadi e comandi stanno al centro, tra il personaggio e l’NPC. Le colonne laterali mantengono spazio per ritratti ampi senza allargare eccessivamente il pannello centrale. Le container query adattano la disposizione alla larghezza effettiva del contenuto, inclusa la sidebar: su tablet e telefono i comandi passano sotto i ritratti. Le informazioni HP e CA sono sovrapposte alla parte bassa delle immagini; le altezze si adattano allo schermo. Iniziativa e turno condividono la fascia superiore quando c’è spazio. L’iniziativa è una fascia compatta e il registro è espandibile. Il ritratto NPC segue automaticamente il combattimento: dopo ogni azione mostra per 1,6 secondi il bersaglio NPC o l’autore NPC del colpo, quindi passa al prossimo NPC in turno. Durante questa presentazione i comandi attendono, per evitare di saltare il feedback. A scontro concluso resta visibile l’NPC coinvolto nell’ultima azione. Non c’è un selettore manuale del ritratto; la scelta del bersaglio di attacco resta disponibile nel turno del Player. Il danno anima il ritratto colpito e la barra HP; le animazioni rispettano la preferenza di movimento ridotto.
+| Funzione | Percorso |
+| --- | --- |
+| Accesso e registrazione | `/login`, `/register` |
+| Recupero password | `/forgot-password`, `/reset-password` |
+| Percorso, profilo e badge | `/dashboard`, `/profile`, `/achievements` |
+| Campagne e capitoli | `/campaigns`, `/campaigns/[campaignId]`, `/campaigns/[campaignId]/chapters/[chapterId]` |
+| Biblioteca e attività | `/lessons`, `/lessons/[lessonId]`, `/lessons/[lessonId]/quiz` |
+| Attività da un capitolo | Rotta lezione o quiz con `?campaignId=...&chapterId=...` |
+| Personaggi | `/characters`, con `?campaignId=...` per preselezionare una campagna |
+| Storico | `/combat` |
+| Combattimento del capitolo | `/campaigns/[campaignId]/chapters/[chapterId]/combat` |
+| Ripresa dello scontro | Rotta combattimento con `?combatId=...` |
+| Gestione e utenti | `/admin`, `/admin/users` |
+| Contenuti e risorse Master | `/admin/lessons`, `/admin/quizzes`, `/admin/badges`, `/admin/characters`, `/admin/npcs` |
+| Campagne e capitoli Master | `/admin/campaigns`, `/admin/campaigns/[campaignId]/chapters` |
+| Incontro del capitolo | `/admin/campaigns/[campaignId]/chapters/[chapterId]/encounter` |
 
-Gli NPC con lo stesso nome sono distinti con un numero. Le richieste di azione sono protette durante il caricamento; dopo un errore il client tenta di rileggere lo stato senza ripetere automaticamente l'attacco.
+I vecchi URL `/combat?campaignId=...&chapterId=...` e `/admin/encounters?campaignId=...&chapterId=...` reindirizzano alle rotte contestuali. Gli incontri si aprono dai capitoli e non sono una voce autonoma del menu. Gli ID non validi vengono rifiutati; le schermate dinamiche separano lo stato di risorse con ID diversi.
 
-Le azioni NPC inviano `expectedEventCount` per evitare che una richiesta ripetuta risolva un altro turno. Il contratto delle API è descritto nel README backend.
+## Area Master
 
-## Immagini
+La panoramica presenta l'ordine di preparazione: creare la campagna e i personaggi, preparare contenuti e risorse, costruire i capitoli e configurare gli incontri. Le pagine dei capitoli offrono collegamenti a lezioni, quiz e PNG.
 
-Le schede di `/admin/npcs` riusano lo stesso componente ritratto delle schede personaggio, con HP, CA, attacco e iniziativa. Il modulo di creazione/modifica è organizzato in identità, difesa e statistiche, con anteprima del ritratto e selezione del file. Il Master può caricare l’immagine durante la creazione oppure aggiungerla o sostituirla dalla scheda, anche per NPC già usati. Se il caricamento fallisce dopo il salvataggio, la scheda resta disponibile e il messaggio invita a riprovare senza ricreare l’NPC. Sono accettati JPG, PNG e WEBP fino al limite applicativo di 5 MB; il file viene inviato al backend e caricato su Cloudinary.
+La sezione Utenti mostra statistiche, ricerca e filtri e permette il cambio Master/Player con conferma. La modifica del proprio ruolo è impedita anche dal backend. La registrazione pubblica crea Player: il primo account Master deve essere predisposto nell'ambiente; i successivi possono essere promossi da un Master esistente.
 
-Le immagini di personaggi, nemici e aiutanti sono mostrate nel combattimento. Se manca un’immagine, il riquadro del ritratto mostra un’icona segnaposto. La configurazione Next.js consente le immagini remote da `res.cloudinary.com`.
+Il Master prepara personaggi delle campagne e PNG nemici o aiutanti, anche guaritori con dado, bonus e utilizzi limitati per scontro. La gestione incontri presenta contesto del capitolo, partecipanti, quantità e statistiche. Le modali gestiscono focus iniziale, confinamento, Escape e ripristino del focus. Le schede e le API proteggono le modifiche incompatibili con personaggi già usati in combattimento.
 
-## Struttura
+## Profilo e badge
+
+Il profilo consente di modificare username ed email confermando la password attuale, caricare o rimuovere l'avatar e cambiare password. Ruolo e livello sono in sola lettura.
+
+La scelta di un'immagine valida avvia subito il caricamento: spinner sull'avatar, messaggio di stato e controlli disabilitati segnalano l'operazione. Un errore mantiene l'immagine precedente e consente una nuova selezione dello stesso file. Formati: JPG, PNG e WEBP, fino a 5 MB. I dati salvati aggiornano anche la barra superiore.
+
+Dopo il cambio password si torna al login con una conferma; le sessioni precedenti e i link di recupero sono invalidati dal backend. Il token usa l'ID immutabile dell'utente, quindi il cambio username conserva identità e progressi.
+
+La pagina Badge mostra ottenuti e bloccati, data di sblocco, ricerca, filtri e riepilogo della collezione. I badge automatici sono identificati da codici stabili, inizializzati all'avvio e protetti dall'eliminazione. Contratti API e dettagli di collaudo sono in [Profilo e badge](docs/profile-and-badges.md).
+
+## Combattimento, storico e immagini
+
+La preparazione mostra personaggio e incontro senza avviare una sessione. Il pulsante di avvio crea un nuovo tentativo; **Riprendi combattimento** carica invece quello salvato e verifica la corrispondenza con campagna e capitolo.
+
+Nell'arena il Player sceglie bersaglio e azione con arma o incantesimo. Il pulsante del turno PNG risolve una sola azione; tiri e decisioni sono del backend. I comandi sono protetti durante richieste e presentazione delle azioni; dopo un errore si tenta la rilettura dello stato senza ripetere automaticamente l'attacco. Le azioni PNG inviano `expectedEventCount` per prevenire la ripetizione involontaria di un turno.
+
+Ritratti, comandi, dadi, HP, danni e cure si adattano alla larghezza disponibile. Il ritratto PNG segue turno e azione; gli omonimi sono distinti con un numero. I guaritori mostrano cure rimaste e recuperi, anche da 0 HP; una vittoria di gruppo con il personaggio fuori combattimento è segnalata. Le animazioni rispettano il movimento ridotto e l'iniziativa è consultabile anche da tastiera.
+
+Lo storico è **aperto inizialmente** e paginato. I gruppi per campagna sono richiudibili e contengono sezioni per capitolo. Ogni tentativo mantiene il proprio esito; i vecchi dati incompleti hanno etichette di ripiego. Il dettaglio di partecipanti e registro è di sola lettura; gli scontri aperti con riferimenti disponibili offrono anche la ripresa.
+
+Per mantenere la ripresa al ricaricamento usare l'URL con `combatId`, raggiungibile dalla home o dallo storico. Un avvio nuovo non aggiunge ancora l'ID alla barra degli indirizzi: ricaricare una rotta priva di `combatId` riapre la preparazione, e il tentativo salvato rimane recuperabile dallo storico.
+
+Le immagini di avatar, personaggi e PNG sono caricate dal backend su Cloudinary. Le schede di personaggi e PNG riusano il componente ritratto; i ritratti mancanti hanno un segnaposto. Nel modulo PNG sono disponibili selezione, anteprima e sostituzione. Se l'upload fallisce dopo la creazione, si può riprovare sulla scheda salvata senza ricreare il PNG.
+
+## Struttura del frontend
 
 ```text
 src/
-  app/          Pagine e layout App Router
-  components/   Componenti comuni, didattici, di combattimento e backoffice
-  hooks/        Hook condivisi
+  app/          Rotte App Router, layout, validazione ID e redirect compatibili
+  components/   Schermate riutilizzabili e componenti di interfaccia
+  hooks/        Sessione condivisa, area Player/Master, contesto dei capitoli e gestione contenuti
+  lib/          Percorsi, breadcrumb, prossime azioni, etichette livelli e regole password
   services/     Client API e servizi per funzionalità
-  types/        Tipi delle richieste e risposte
+  types/        Tipi delle richieste e delle risposte
+tests/ui/       Flussi e regressioni browser con API simulate
+docs/           Contratti e approfondimenti di navigazione e collaudo
 ```
 
-`services/api.ts` gestisce URL base, token, corpo JSON o multipart e messaggi di errore. I servizi delle singole funzionalità definiscono gli endpoint.
+`CurrentUserProvider` condivide il profilo ed evita richieste iniziali duplicate. `NavigationProvider` mantiene l'area di navigazione. `AppShell` compone sidebar, barra superiore, menu account e breadcrumb. `services/api.ts` gestisce URL base, token, JSON/multipart ed errori HTTP. I componenti di schermata sono condivisi dalle rotte senza duplicare la logica delle attività.
 
-## Verifiche
+## Verifiche automatiche
 
 ```powershell
-# Controllo TypeScript senza generare file
 npx tsc --noEmit --incremental false
-
-# ESLint dell'intero frontend
 npm run lint
+npm run build
 ```
-
-Sono presenti quarantaquattro test browser Playwright in `tests/ui/combat-and-npcs.test.mjs`. Verificano layout da 390 a 1920 px, adattamento alla sidebar, assenza di overflow, corretto NPC mostrato dopo la sconfitta, dimensioni dei ritratti, turni NPC, danni, scelta del bersaglio, passaggio automatico dal goblin colpito al prossimo NPC in turno, assenza del selettore del ritratto, dadi, registro e creazione con immagine, compreso il fallimento dell’upload senza duplicati. Le API sono simulate: i test non modificano il database o Cloudinary.
 
 Con il frontend avviato in un altro terminale:
 
 ```powershell
-# Installazione del browser di prova, una volta
+# Necessario una volta se non si usa un browser già installato
 npx playwright install chromium
-
 npm run test:ui
 ```
 
-Variabili opzionali: `UI_BASE_URL` per un indirizzo diverso da `http://localhost:3000`, `UI_BROWSER_PATH` per un eseguibile Chromium/Chrome/Edge già installato e `UI_SCREENSHOT_DIR` per salvare screenshot. Usare una cartella esterna ai sorgenti, ad esempio `../dndacademyBE/target/ui-screenshots`.
+Il comando comprende tutti i file della suite:
 
-I nove test UI di combattimento e NPC sono stati verificati nella sessione precedente. Il collaudo aggiunge due regressioni per la navigazione PLAYER/MASTER, quattro scenari per i requisiti del capitolo e sei per la preparazione: scheda completa, immagini e quantità, aiutanti, scelta del personaggio, errori di accesso e resa mobile. Lo storico aggiunge otto scenari per accordion inizialmente chiuso e tastiera, esiti, dettaglio, elenco vuoto, paginazione, errori, accessi e mobile; tutti i 44 test browser passano con API simulate. Queste verifiche non sostituiscono i test con backend e servizi reali o la build di produzione. Restano da completare la prova dell’intero scontro e l’upload reale su Cloudinary.
+| File | Copertura |
+| --- | --- |
+| `tests/ui/admin-users.test.mjs` | Statistiche, filtri, cambio ruolo e accesso riservato |
+| `tests/ui/combat-and-npcs.test.mjs` | Arena, PNG, guaritori, incontri, storico, personaggi, layout e modali |
+| `tests/ui/profile-and-badges.test.mjs` | Profilo, password, upload automatico e rallentato, errori e badge |
+| `tests/ui/login-session.test.mjs` | Primo login, accesso dopo cambio password e profilo non disponibile |
+| `tests/ui/navigation-flow.test.mjs` | Percorsi Player/Master, contesto, vecchie rotte, ripresa, menu account e livelli |
 
-## Limiti attuali e prossimi sviluppi
+Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSER_PATH` (eseguibile Chromium, Chrome o Edge) e `UI_SCREENSHOT_DIR` (cartella per gli screenshot). Le API e i servizi esterni sono simulati: questi test non modificano il database applicativo o Cloudinary. Non sostituiscono il collaudo con backend, PostgreSQL, SMTP e Cloudinary reali.
 
-- Il ricaricamento della pagina non ripristina ancora lo scontro in corso dalla UI.
-- Gli incontri sono individuali contro NPC; non c'è sincronizzazione multiplayer in tempo reale.
-- Gli HP del combattimento sono separati dagli HP permanenti del personaggio.
-- Le azioni di nemici e aiutanti proseguono con il pulsante dedicato, una alla volta.
-- Restano da ampliare presentazione delle azioni, ripresa delle sessioni e verifiche automatiche dei flussi.
+## Collaudo preproduzione e sviluppi previsti
 
-Per regole, requisiti, configurazione dei servizi e persistenza consultare il README backend.
+Prima del rilascio verificare con account Player e Master reali il percorso completo, permessi, progressione, ritorno dalle attività, ripresa dello stato salvato, cambio password su più sessioni, immagini ed email. Il database e lo schema `public` devono esistere ed essere accessibili all'utente del backend. Il reset dell'ambiente di test è un'operazione esplicita e separata dalla build del frontend.
 
+Il tour di primo avvio, distinto per ruolo e richiamabile dall'utente, è il prossimo intervento concordato e **non è ancora implementato**. Restano la gestione versionata delle migrazioni backend, le verifiche dei servizi reali e la preparazione del deploy. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
 
-La pagina Personaggi consente una sola scelta per campagna: le altre schede restano consultabili con pulsanti disabilitati e spiegazione visibile. Il blocco si applica subito dopo una scelta riuscita, senza impedire la scelta in altre campagne. Durante la richiesta sono disabilitate anche le altre scelte e il cambio campagna. Tre regressioni browser verificano scelta esistente, prima assegnazione e campagne distinte.
-
-
-La gestione incontri mostra campagna e titolo del capitolo, uno stato iniziale con i passaggi di configurazione e una libreria NPC con conteggi di nemici e alleati. Se manca un nemico, propone la creazione nella libreria. Gli incontri configurati mostrano ritratti, ruoli, quantità, HP, CA e danni dei partecipanti. L’eliminazione resta in una sezione richiudibile con conferma. Quattro regressioni browser verificano creazione e riapertura del modulo, libreria vuota, riepilogo con statistiche e resa mobile.
-
-
-Il modulo NPC usa un pulsante Carica immagine / Cambia immagine accessibile da tastiera, con nome del file selezionato visibile e anteprima. Il selettore nativo viene azzerato per consentire di riselezionare lo stesso file, mentre il nome resta nello stato del modulo. I test di creazione e recupero da errore upload verificano apertura da tastiera, selezione e sostituzione del file.
-
-
-### Guaritori
-
-Nel modulo NPC, selezionare Aiutante e ruolo Guaritore, quindi dado cura, bonus (0-30) e utilizzi per combattimento (1-20). La scheda, il riepilogo incontro e l’anteprima espongono le cure. Nell’arena sono visibili ruolo, cure rimaste, dado e HP recuperati in verde; un recupero da 0 HP segnala il ritorno in combattimento. Il registro e il dettaglio storico distinguono gli eventi HEAL dalle azioni ATTACK. La vittoria con il personaggio a 0 HP viene presentata come vittoria del gruppo con personaggio fuori combattimento. Cinque nuovi scenari browser coprono configurazione, cura desktop/mobile, esito di gruppo e storico. Gli NPC già usati non vengono convertiti: crearne uno nuovo per collaudare le cure.
-
-
-La sequenza di iniziativa usa uno scorrimento orizzontale con barra sottile, pista scura e cursore nel colore primario. La lista è raggiungibile da tastiera con indicatore di focus; in modalità contrasto forzato mantiene i colori di sistema.
-
-
-Lo storico raggruppa gli scontri della pagina corrente in accordion per campagna chiusi inizialmente, con sezioni per capitolo e conteggio dei tentativi. Le identità usano gli ID per non confondere nomi uguali; i dati storici senza collegamenti restano consultabili in gruppi di ripiego. Le campagne aperte restano aperte cambiando pagina. I conteggi sono esplicitamente limitati alla pagina quando lo storico è paginato; Precedenti/Successivi consentono di consultare gli altri scontri. Due nuove regressioni coprono gruppi chiusi, tastiera, nomi uguali con ID distinti e metadati mancanti; quelle esistenti verificano paginazione, dettagli, cure e resa mobile.
-
-### Revisione pre merge del 30 ottobre 2026
-
-Next.js ed eslint-config-next sono aggiornati a 16.4.3; il lockfile include gli aggiornamenti compatibili delle dipendenze. npm audit non segnala vulnerabilita alla data della revisione. Lint, build di produzione e tutti i 44 test browser sono stati verificati.
-
-Le modali spostano il focus iniziale su un controllo visibile, mantengono Tab e Shift+Tab nel pannello, si chiudono con Escape e restituiscono il focus al pulsante di apertura. Una regressione browser verifica l'intero ciclo. Gli input nascosti del selettore immagine sono esclusi dal focus iniziale.
-
-Le schede Master con usedInCombat impediscono la modifica del personaggio gia usato in combattimento, con una spiegazione visibile. Il backend applica lo stesso vincolo per preservare lo storico. Le API restano l'autorita per permessi, progressione e conflitti: la disabilitazione dei pulsanti e un aiuto all'interazione.
+Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.

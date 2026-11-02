@@ -11,8 +11,8 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { userService } from "@/services/user.service"
 import { isPasswordValid, passwordHint } from "@/lib/password"
 import type { UserProfile } from "@/types/user"
+import { learningLevelLabels as levels } from "@/lib/learning-level"
 
-const levels = { BEGINNER: "Principiante", INTERMEDIATE: "Intermedio", ADVANCED: "Avanzato" }
 const errorMessage = (err: unknown) => err instanceof Error ? err.message : "Impossibile completare l’operazione."
 
 export default function ProfileForms({ user }: { user: UserProfile }) {

@@ -12,7 +12,7 @@ import type { Character } from "@/types/character"
 import type { CombatPreview, CombatPreviewNpc } from "@/types/combat"
 import styles from "./CombatPreparation.module.css"
 
-type Props = { campaignId: number; chapterId: number; isBusy: boolean; onStart: () => Promise<void> }
+type Props = { campaignId: number; chapterId: number; isBusy: boolean; onStart: () => Promise<void>; onPreviewLoaded?: (preview: CombatPreview) => void }
 const abilityLabels = { strength: "Forza", dexterity: "Destrezza", constitution: "Costituzione", intelligence: "Intelligenza", wisdom: "Saggezza", charisma: "Carisma" } as const
 const signed = (value: number) => `${value >= 0 ? "+" : ""}${value}`
 
@@ -33,7 +33,7 @@ function NpcPreview({ participant }: { participant: CombatPreviewNpc }) {
   </article>
 }
 
-export default function CombatPreparation({ campaignId, chapterId, isBusy, onStart }: Props) {
+export default function CombatPreparation({ campaignId, chapterId, isBusy, onStart, onPreviewLoaded }: Props) {
   const [character, setCharacter] = useState<Character | null>(null)
   const [available, setAvailable] = useState<Character[]>([])
   const [preview, setPreview] = useState<CombatPreview | null>(null)
@@ -51,11 +51,12 @@ export default function CombatPreparation({ campaignId, chapterId, isBusy, onSta
       setCharacter(selected)
       setAvailable(choices)
       setPreview(encounter)
+      onPreviewLoaded?.(encounter)
       setError("")
     }).catch((err: unknown) => {
       if (active()) setError(err instanceof Error ? err.message : "Impossibile preparare lo scontro")
     }).finally(() => { if (active()) setLoading(false) })
-  }, [campaignId, chapterId])
+  }, [campaignId, chapterId, onPreviewLoaded])
 
   useEffect(() => {
     let active = true

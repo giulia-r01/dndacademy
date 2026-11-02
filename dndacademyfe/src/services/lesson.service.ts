@@ -7,6 +7,9 @@ import type {
 } from "@/types/lesson"
 
 export const lessonService = {
+  complete(lessonId: number) {
+    return apiFetch<UserLessonProgress>(`/api/lessons/${lessonId}/complete`, { method: "PATCH", auth: true })
+  },
   getAll() {
     return apiFetch<Lesson[]>("/api/lessons", {
       method: "GET",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
+import { combatHref } from "@/lib/navigation"
 import EntityPortrait from "@/components/common/EntityPortrait"
 import CombatHistoryDetails from "@/components/combat/CombatHistoryDetails"
 import { combatService } from "@/services/combat.service"
@@ -23,13 +24,13 @@ export default function CombatHistory() {
   const [page, setPage] = useState(0)
   const [reload, setReload] = useState(0)
   const [openCampaigns, setOpenCampaigns] = useState<Set<string>>(new Set())
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   return <div className="space-y-5">
     <AppCard className="flex flex-wrap items-center justify-between gap-4">
       <p className="max-w-2xl text-sm text-[var(--text-soft)]">Apri un incontro dal capitolo della campagna per entrare nell&apos;arena con il tuo personaggio e i nemici.</p>
       <AppButton href="/campaigns" variant="secondary">Vai alle campagne</AppButton>
     </AppCard>
-    <details className="rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)]" onToggle={event => setExpanded(event.currentTarget.open)}>
+    <details open={expanded} className="rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)]" onToggle={event => setExpanded(event.currentTarget.open)}>
       <summary className="cursor-pointer rounded-2xl p-5 font-bold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]">Storico dei combattimenti</summary>
       {expanded && <div className="border-t border-[var(--border-teal-soft)] p-4 sm:p-5"><HistoryPage key={`${page}-${reload}`} openCampaigns={openCampaigns} onCampaignToggle={(key, open) => setOpenCampaigns(current => {
         if (current.has(key) === open) return current
@@ -79,6 +80,7 @@ function HistoryPage({ page, onPage, onRetry, openCampaigns, onCampaignToggle }:
               <div className="text-sm"><p className="font-bold">{combat.characterName ?? "Personaggio non disponibile"}</p>{combat.characterCurrentHp !== null && combat.characterMaxHp !== null && <p className="text-[var(--text-muted)]">HP salvati: {combat.characterCurrentHp}/{combat.characterMaxHp}</p>}</div>
               {combat.outcome === "PLAYER_VICTORY" && combat.characterCurrentHp === 0 && <p className="text-sm text-[var(--accent-soft)]">Vittoria del gruppo: personaggio fuori combattimento.</p>}
               <p className="text-xs text-[var(--text-muted)]">{combat.completed ? `Concluso: ${finishedDate(combat.completedAt)}` : "Nessun esito finale salvato per questo tentativo"}</p>
+              {!combat.completed && combat.campaignId && combat.chapterId && <AppButton href={`${combatHref(combat.campaignId, combat.chapterId)}?combatId=${combat.combatId}`}>Riprendi combattimento</AppButton>}
               <AppButton type="button" variant="secondary" onClick={() => setSelected(combat)}>Vedi dettagli e registro</AppButton>
             </div>
           </div>

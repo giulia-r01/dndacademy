@@ -8,7 +8,6 @@ import {
   FiUserPlus,
   FiHelpCircle,
   FiUsers,
-  FiTarget,
 } from "react-icons/fi"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
@@ -17,12 +16,6 @@ import { useCurrentUser } from "@/hooks/useCurrentUser"
 import Link from "next/link"
 
 const adminSections = [
-  {
-    title: "Utenti",
-    description: "Consulta le statistiche degli utenti e gestisci i ruoli Master e Player.",
-    icon: FiUsers,
-    href: "/admin/users",
-  },
   {
     title: "Campagne",
     description: "Crea e gestisci le campagne tutorial disponibili.",
@@ -36,16 +29,10 @@ const adminSections = [
     href: "/admin/characters",
   },
   {
-    title: "NPC",
+    title: "PNG",
     description: "Crea nemici e alleati per i combattimenti narrativi.",
     icon: FiUsers,
     href: "/admin/npcs",
-  },
-  {
-    title: "Incontri",
-    description: "Configura gli incontri entrando nei capitoli delle campagne.",
-    icon: FiTarget,
-    href: "/admin/campaigns",
   },
   {
     title: "Lezioni",
@@ -64,6 +51,12 @@ const adminSections = [
     description: "Crea riconoscimenti e obiettivi per i player.",
     icon: FiShield,
     href: "/admin/badges",
+  },
+  {
+    title: "Utenti",
+    description: "Consulta le statistiche degli utenti e gestisci i ruoli Master e Player.",
+    icon: FiUsers,
+    href: "/admin/users",
   },
 ]
 
@@ -131,6 +124,15 @@ export default function AdminPage() {
             NPC, incontri, lezioni, quiz e badge.
           </p>
         </div>
+        <AppCard className="space-y-4 border-[var(--border-gold)]">
+          <h3 className="text-xl font-black">Prepara un’avventura per i tuoi Player</h3>
+          <ol className="grid gap-3 text-sm text-[var(--text-soft)] md:grid-cols-3">
+            <li><strong className="block text-[var(--accent-soft)]">1. Crea la campagna</strong>Definisci il percorso e prepara i personaggi che i Player potranno scegliere.</li>
+            <li><strong className="block text-[var(--accent-soft)]">2. Prepara i contenuti</strong>Crea lezioni e quiz; aggiungi PNG e badge quando servono alla tua storia.</li>
+            <li><strong className="block text-[var(--accent-soft)]">3. Costruisci i capitoli</strong>Collega le attività e configura gli incontri direttamente dal capitolo.</li>
+          </ol>
+          <AppButton href="/admin/campaigns">Gestisci le campagne</AppButton>
+        </AppCard>
         <div className="grid gap-5 md:grid-cols-2">
           {adminSections.map((section) => {
             const Icon = section.icon

@@ -1,18 +1,19 @@
 "use client"
 
-import { FiMenu, FiUser } from "react-icons/fi"
+import { FiMenu } from "react-icons/fi"
 import type { UserProfile } from "@/types/user"
-import Link from "next/link"
-import UserAvatar from "@/components/common/UserAvatar"
+import AccountMenu from "@/components/layout/AccountMenu"
+import { usePathname } from "next/navigation"
+import { pageTitle } from "@/lib/navigation"
 
 type TopbarProps = {
   onMenuClick: () => void
   user: UserProfile | null
+  onLogout: () => void
 }
 
-export default function Topbar({ onMenuClick, user }: TopbarProps) {
-  const username = user?.username ?? "Avventuriero"
-  const learningLevel = user?.learningLevel ?? "BEGINNER"
+export default function Topbar({ onMenuClick, user, onLogout }: TopbarProps) {
+  const pathname = usePathname()
   return (
     <header className="border-b border-[var(--border-teal-soft)] bg-[var(--bg-topbar)] px-4 py-4 sm:px-6">
       <div className="flex items-center justify-between gap-4">
@@ -28,7 +29,7 @@ export default function Topbar({ onMenuClick, user }: TopbarProps) {
 
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[var(--accent-soft)]">
-              Dashboard
+              {pageTitle(pathname)}
             </p>
 
             <h1 className="mt-1 text-xl font-black text-[var(--text-main)] sm:text-2xl">
@@ -37,22 +38,7 @@ export default function Topbar({ onMenuClick, user }: TopbarProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link href="/profile" aria-label="Vai al tuo profilo" className="flex items-center gap-3 rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] px-3 py-2">
-            <UserAvatar username={username} avatarUrl={user?.avatarUrl} />
-
-            <div className="hidden text-sm sm:block">
-              <p className="font-bold text-[var(--text-main)]">{username}</p>
-              <p className="text-[var(--text-muted)]">{learningLevel}</p>
-            </div>
-
-            <FiUser
-              className="hidden text-[var(--text-soft)] sm:block"
-              size={18}
-              aria-hidden="true"
-            />
-          </Link>
-        </div>
+        <AccountMenu user={user} onLogout={onLogout} />
       </div>
     </header>
   )

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { CurrentUserProvider } from "@/hooks/useCurrentUser"
+import { NavigationProvider } from "@/hooks/useNavigation"
 
 export const metadata: Metadata = {
   title: "D&D Academy",
@@ -12,7 +13,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="it">
-      <body><CurrentUserProvider>{children}</CurrentUserProvider></body>
+      <body><CurrentUserProvider><NavigationProvider>{children}</NavigationProvider></CurrentUserProvider></body>
     </html>
   )
 }

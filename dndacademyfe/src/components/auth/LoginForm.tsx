@@ -24,12 +24,12 @@ export default function LoginForm() {
     setIsLoading(true)
 
     try {
-      await login({
+      const profile = await login({
         username,
         password,
       })
 
-      router.push("/dashboard")
+      router.push(profile.role === "MASTER" ? "/admin" : "/dashboard")
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Errore durante il login"

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 import CampaignProgressCard from "@/components/campaigns/CampaignProgressCard"
 import AppCard from "@/components/common/AppCard"
@@ -9,6 +10,7 @@ import { campaignService } from "@/services/campaign.service"
 import type { CampaignProgress } from "@/types/campaign-progress"
 
 export default function CampaignsPage() {
+  const router = useRouter()
   const [campaigns, setCampaigns] = useState<CampaignProgress[]>([])
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -36,8 +38,9 @@ export default function CampaignsPage() {
   }, [])
 
   const completedCampaigns = campaigns.filter((campaign) => campaign.completed)
+  const currentCampaigns = campaigns.filter(campaign => campaign.joined && campaign.unlocked && !campaign.completed)
   const availableCampaigns = campaigns.filter(
-    (campaign) => campaign.unlocked && !campaign.completed,
+    (campaign) => !campaign.joined && campaign.unlocked && !campaign.completed,
   )
   const lockedCampaigns = campaigns.filter((campaign) => !campaign.unlocked)
 
@@ -52,9 +55,7 @@ export default function CampaignsPage() {
     try {
       await campaignService.join(campaignId)
 
-      const updatedCampaigns = await campaignService.getMyProgress()
-
-      setCampaigns(updatedCampaigns)
+      router.push(`/campaigns/${campaignId}`)
     } catch (err) {
       const message =
         err instanceof Error
@@ -117,6 +118,7 @@ export default function CampaignsPage() {
 
         {!isLoading && !error && campaigns.length > 0 && (
           <div className="space-y-8">
+            {currentCampaigns.length > 0 && <CampaignSection title="Le tue campagne in corso" description="Riprendi il percorso dal prossimo capitolo da completare." campaigns={currentCampaigns} onJoin={handleJoinCampaign} joiningCampaignId={joiningCampaignId} />}
             {availableCampaigns.length > 0 && (
               <CampaignSection
                 title="Disponibili"

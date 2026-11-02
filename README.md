@@ -4,50 +4,63 @@ Piattaforma didattica per imparare le basi di Dungeons & Dragons attraverso lezi
 
 ## Stato del progetto
 
-Backend Spring Boot e frontend Next.js sono integrati. Sono presenti il percorso Player, il backoffice Master e il combattimento narrativo contro NPC. Il progetto è in sviluppo attivo: le meccaniche di D&D sono semplificate e la preparazione al rilascio in produzione resta da completare.
+Backend Spring Boot e frontend Next.js sono integrati. Sono disponibili Area Player, Area Master, gestione utenti, profilo, badge, combattimenti narrativi e storico. Il progetto è in preparazione al collaudo preproduzione; il tour di primo avvio e la preparazione del deploy restano da completare. Le meccaniche di D&D sono semplificate.
 
-Gli ultimi aggiornamenti comprendono:
-
-- Gestione di NPC e incontri, con quantità di nemici e aiutanti per capitolo.
-- Sincronizzazione dei progressi e riapertura delle campagne già completate quando vengono aggiunti capitoli ancora da completare, conservando badge e sblocchi acquisiti.
-- Preparazione dello scontro con scheda completa e ritratto grande del personaggio, selezione se necessaria e anteprima autorizzata dei nemici e aiutanti con immagini, quantità e statistiche.
-- Requisiti del capitolo con stato individuale: lezione completata, quiz superato e vittoria ottenuta, con pulsanti per rivedere o ripetere le attività.
-- Turni NPC visibili e risolti una singola azione alla volta.
-- Avvisi dei danni subiti, HP prima/dopo e registro persistente degli attacchi.
-- Storico personale dei combattimenti in un accordion chiuso inizialmente, con gruppi richiudibili per campagna e sezioni per capitolo, oltre a campagna, capitolo, personaggio, esito e data di conclusione, paginazione e dettaglio del registro in sola lettura.
-- Immagini caricabili per nemici e aiutanti, schede uniformate ai personaggi e anteprima nel modulo NPC.
-- Arena di combattimento con comandi centrali, ritratti ai lati e NPC mostrato automaticamente secondo turni e colpi, iniziativa compatta e registro espandibile.
-- Errori HTTP espliciti preservati e messaggi di ripiego al posto dei messaggi nulli.
-
-## Ruoli e flusso di gioco
-
-Il **PLAYER** si registra, segue lezioni, supera quiz, consulta progressi e badge, si iscrive alle campagne e sceglie un personaggio preparato dal Master. Completa i capitoli in ordine rispettando i requisiti configurati: lezione, quiz e vittoria in combattimento, quando previsti.
-
-Il **MASTER** gestisce campagne, capitoli narrativi, personaggi, lezioni, quiz, domande, risposte e badge. Prepara NPC nemici o aiutanti e li inserisce negli incontri dei capitoli. La registrazione pubblica crea account PLAYER; per il backoffice occorre un account MASTER già predisposto.
-
-Nel combattimento il Player sceglie bersaglio e azione con arma o incantesimo. Quando tocca a un NPC, la pagina mostra il suo turno: il pulsante **“Mostra l'azione di…”** fa proseguire lo scontro. Tiri, bersaglio NPC e danni sono decisi dal backend. Dopo la vittoria si torna al capitolo per completarlo e ottenere l'eventuale ricompensa.
-
-## Struttura e tecnologie
-
-| Cartella | Contenuto | Stack |
+| Componente | Contenuto | Stack |
 | --- | --- | --- |
 | [dndacademyBE](dndacademyBE/README.md) | API, sicurezza, regole e persistenza | Java 17, Spring Boot 3.5.11, JPA, PostgreSQL, Maven |
 | [dndacademyfe](dndacademyfe/README.md) | Interfaccia Player e Master | Next.js 16.4.3, React 19.2.4, TypeScript, Tailwind CSS 4 |
 
-JWT e BCrypt gestiscono l'autenticazione. Cloudinary ospita le immagini di personaggi e NPC; SMTP supporta le email di benvenuto e recupero password. Il frontend usa stato React e servizi TypeScript per comunicare con le API.
+JWT e BCrypt gestiscono l'autenticazione. Cloudinary ospita avatar e immagini di personaggi e PNG; SMTP supporta le email di benvenuto e recupero password.
+
+## Percorso Player
+
+Il login apre **Il tuo percorso**: la home propone di iniziare un'avventura o riprendere le campagne in corso, con statistiche e traguardi come riepilogo.
+
+**Campagna → capitolo → attività richieste → completamento e ricompensa → capitolo successivo.**
+
+L'iscrizione apre direttamente la campagna. I capitoli guidano tra storia, lezioni, quiz e combattimenti opzionali. Le attività aperte dalla campagna mantengono il collegamento di ritorno al capitolo. La biblioteca resta consultabile per studio e ripasso; le lezioni possono essere segnate come lette, anche senza un quiz.
+
+Il personaggio è scelto tra quelli preparati dal Master per la campagna, anche nella preparazione dello scontro quando necessario. È consentita una scelta per campagna. I requisiti acquisiti e le ricompense restano salvati e consultabili; le campagne si riaprono quando vengono aggiunti capitoli da completare, conservando i progressi precedenti.
+
+Nel combattimento il Player sceglie bersaglio e azione con arma o incantesimo. Il pulsante **Mostra l'azione di…** fa avanzare un singolo turno PNG; tiri, bersagli PNG, danni e cure vengono decisi dal backend. Gli aiutanti guaritori possono soccorrere gli alleati a 0 HP e curare i feriti con utilizzi limitati. Dopo la vittoria si torna al capitolo per completarlo.
+
+Lo storico personale è paginato, inizialmente aperto e raggruppato per campagna e capitolo. Ogni tentativo mantiene esito e registro; il dettaglio è di sola lettura. Gli scontri aperti si possono riprendere dalla home, quando presenti nei risultati recenti, o dallo storico senza creare un nuovo tentativo.
+
+## Area Master e account
+
+Il Master entra in **Area Master** e può passare all'Area Player dal selettore del menu. La gestione segue le dipendenze dei contenuti: campagna e personaggi, lezioni e quiz, PNG e badge, capitoli e incontri. Gli incontri si configurano direttamente dal capitolo.
+
+La sezione Utenti offre statistiche, ricerca e filtri e consente di assegnare o revocare il ruolo Master con conferma. Il proprio ruolo non è modificabile. La registrazione pubblica crea Player: il primo Master deve essere predisposto nell'ambiente, mentre i successivi possono essere promossi da un Master esistente.
+
+**Profilo ed Esci sono nel menu apribile dall'avatar in alto.** La sidebar presenta gruppi distinti per ruolo e il riquadro del livello con la barra. Le etichette dei livelli sono Principiante, Intermedio e Avanzato in tutta l'interfaccia; la barra rappresenta il livello raggiunto su tre livelli.
+
+Il profilo permette di aggiornare username ed email confermando la password attuale, caricare o rimuovere l'avatar e cambiare password. Il caricamento parte alla scelta di un'immagine valida e mostra uno stato di avanzamento; un errore conserva l'immagine precedente. I dati aggiornano subito anche la barra superiore.
+
+I token identificano l'utente tramite l'ID immutabile: il cambio username conserva identità e progressi. Il cambio password invalida le sessioni precedenti e i link di recupero, e richiede un nuovo login. I badge automatici usano codici stabili, sono inizializzati all'avvio e non possono essere eliminati.
+
+## Navigazione e rotte
+
+I percorsi principali restano `/dashboard`, `/campaigns`, `/lessons`, `/characters`, `/combat`, `/achievements`, `/profile` e `/admin`. `/combat` è lo storico; l'arena e la gestione incontri appartengono al capitolo:
+
+- Player: `/campaigns/[campaignId]/chapters/[chapterId]/combat`.
+- Master: `/admin/campaigns/[campaignId]/chapters/[chapterId]/encounter`.
+- Ripresa: rotta dell'arena con `?combatId=...`.
+
+I vecchi collegamenti con `campaignId` e `chapterId` nella query reindirizzano alle nuove rotte contestuali. Lezioni e quiz possono conservare quei parametri come contesto verificato di provenienza. Dettagli e comportamento mobile sono descritti in [Navigazione e percorso dell'utente](dndacademyfe/docs/navigation-flow.md).
 
 ## Avvio locale
 
-Servono JDK 17 o compatibile, PostgreSQL, Node.js **20.9 o superiore** e npm. Configurare database, JWT, SMTP e Cloudinary seguendo il [README backend](dndacademyBE/README.md#configurazione-e-avvio). Impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per allineare CORS e link delle email.
+Servono JDK 17 o compatibile, PostgreSQL, Node.js 20.9 o superiore e npm. Configurare database, JWT, SMTP e Cloudinary seguendo il [README backend](dndacademyBE/README.md#configurazione-e-avvio). Impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per CORS e collegamenti delle email.
 
-In un terminale, dalla radice del progetto:
+In un terminale, dalla radice:
 
 ```powershell
 cd dndacademyBE
 .\mvnw.cmd spring-boot:run
 ```
 
-Nel file locale `dndacademyfe/.env.local`:
+Creare `dndacademyfe/.env.local`:
 
 ```dotenv
 NEXT_PUBLIC_API_URL=http://localhost:8080
@@ -61,35 +74,40 @@ npm ci
 npm run dev
 ```
 
-Aprire [l'app locale](http://localhost:3000). L'API ascolta sulla porta 8080. Su macOS/Linux il comando backend è `./mvnw spring-boot:run`. Le credenziali di database e servizi esterni vanno mantenute nella configurazione locale.
+Aprire [l'app locale](http://localhost:3000). L'API ascolta normalmente sulla porta 8080. Su macOS/Linux usare `./mvnw spring-boot:run`. Le credenziali dei servizi restano nella configurazione locale e non vanno committate; le variabili `NEXT_PUBLIC_*` sono invece pubbliche.
 
-Per provare lo scontro, il Master prepara campagna, capitolo con combattimento, personaggi e incontro con almeno un nemico. Il Player si iscrive, sblocca il capitolo e sceglie il personaggio. Il combattimento usa attualmente il primo incontro del capitolo in ordine di ID.
+Il backend crea o aggiorna le tabelle tramite Hibernate, ma database e schema devono già esistere e l'utente configurato deve avere i permessi necessari. Se in sviluppo si elimina anche `public`, ricreare lo schema prima dell'avvio. Una build non svuota né ricrea automaticamente il database. Dopo un reset con riutilizzo degli ID cambiare anche `JWT_SECRET` per invalidare i token dei vecchi account.
 
-## Verifiche e limiti attuali
+Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. La configurazione attuale usa `ddl-auto: update`: le migrazioni versionate restano un requisito della preparazione al rilascio.
 
-Le modifiche recenti hanno superato compilazione backend, 78 test backend, inclusi 12 test di integrazione e il caricamento del contesto Spring, su H2 e PostgreSQL isolati, controllo TypeScript ed ESLint sui file frontend interessati. Sono inoltre presenti quarantaquattro test browser Playwright con API simulate per combattimento desktop/mobile e creazione NPC con immagine, incluso il recupero da upload fallito. I comandi sono descritti nei README dei due componenti. Restano da verificare lo scontro completo con backend reale e il caricamento reale su Cloudinary.
+## Verifiche
 
-- I combattimenti sono individuali contro NPC; il party della campagna non implica uno scontro multiplayer in tempo reale.
-- La UI non ripristina ancora il combattimento al ricaricamento della pagina, anche se stato e registro sono persistiti.
-- Gli HP dello scontro sono separati da quelli permanenti del personaggio.
-- La strategia NPC è semplice e deterministica nella scelta del bersaglio.
-- Il database usa `ddl-auto: update`; le migrazioni versionate sono ancora da introdurre.
+Nel frontend:
 
-## Prossimi sviluppi
+```powershell
+npx tsc --noEmit --incremental false
+npm run lint
+npm run build
+# Con il server frontend già avviato e un browser Playwright disponibile
+npm run test:ui
+```
 
-- Validazione completa dei flussi Player e Master nell'app.
-- Ripresa delle sessioni di combattimento e miglioramenti alla presentazione delle azioni.
-- Strategie NPC, magie e condizioni più articolate.
-- Test di integrazione ed end-to-end, migrazioni e configurazioni per ambiente.
-- Preparazione e verifica del deploy.
+Nel backend:
+
+```powershell
+.\mvnw.cmd test
+```
+
+I test browser coprono navigazione Player/Master, login, profilo, password, menu account, livelli, utenti, badge, personaggi, combattimenti, PNG e incontri su desktop e mobile. Le API sono simulate: la suite non modifica database applicativo, SMTP o Cloudinary. Il backend dispone di una configurazione test isolata con H2 come default; eventuali override `TEST_DATABASE_*` cambiano il database di test.
+
+Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero percorso, permessi, progressione, immagini, email, revoca delle sessioni e ripresa degli scontri. I comandi e i dettagli sono nei README dei componenti e in [Profilo e badge: verifica prima del rilascio](dndacademyfe/docs/profile-and-badges.md). I risultati delle verifiche precedenti sono conservati come documenti datati in [Revisione pre merge del 30 ottobre 2026](dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [Collaudo storico](dndacademyBE/docs/COLLAUDO.md).
+
+## Limiti e prossimi interventi
+
+- Il tour di primo avvio per Player e Master, richiamabile dall'utente e solo frontend, non è ancora implementato.
+- Le migrazioni versionate, la configurazione di rilascio e il collaudo dei servizi reali restano da completare prima della produzione.
+- La ripresa al ricaricamento funziona con un URL contenente `combatId`. L'avvio di un nuovo tentativo non aggiunge ancora l'ID all'URL: ricaricare una rotta priva di ID riapre la preparazione; il tentativo salvato resta recuperabile dallo storico.
+- I combattimenti sono individuali contro PNG: il party della campagna non implica sincronizzazione multiplayer in tempo reale.
+- Gli HP dello scontro sono separati da quelli permanenti del personaggio; la strategia PNG rimane semplificata.
 
 Il progetto ha finalità educative e di portfolio.
-
-
-Gli aiutanti possono essere configurati come guaritori con dado, bonus e utilizzi per combattimento: soccorrono gli alleati a 0 HP e curano i feriti, con eventi e utilizzi persistiti e feedback distinto dagli attacchi. La vittoria resta del gruppo; l’interfaccia segnala esplicitamente il personaggio fuori combattimento. Lo schema di riferimento viene creato dalle entità su un database vuoto, con colonne obbligatorie e valori iniziali gestiti in Java, senza script di transizione o default SQL. Il database esistente non viene svuotato automaticamente; dettagli nel README backend.
-
-## Revisione prima del merge
-
-La revisione del 30 ottobre 2026 corregge permessi sugli HP, accesso alle campagne bloccate, assegnazioni e incontri concorrenti, protezione delle schede usate nello storico, validazioni e risposte di errore. Le modali gestiscono focus iniziale, confinamento e ripristino. Le dipendenze frontend sono aggiornate e npm audit non segnala vulnerabilita alla data della verifica.
-
-Il backend dispone di una configurazione di test isolata che non usa il database dell'app. I nuovi vincoli univoci richiedono dati coerenti: nessuna eliminazione o riparazione automatica dei dati storici e inclusa. Consultare la [revisione pre merge](dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) per prove, esito e limiti.

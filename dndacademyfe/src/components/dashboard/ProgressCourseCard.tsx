@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
+import { learningLevelLabels as levelLabels } from "@/lib/learning-level"
 
 type ProgressCourseCardProps = {
   title: string
@@ -12,11 +13,6 @@ type ProgressCourseCardProps = {
   href?: string
 }
 
-const levelLabels = {
-  BEGINNER: "Principiante",
-  INTERMEDIATE: "Intermedio",
-  ADVANCED: "Avanzato",
-}
 
 export default function ProgressCourseCard({
   title,

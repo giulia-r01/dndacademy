@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 import LessonProgressCard from "@/components/lessons/LessonProgressCard"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
+import AppButton from "@/components/common/AppButton"
 import { lessonService } from "@/services/lesson.service"
 import type { UserLessonProgress } from "@/types/lesson"
 
@@ -36,15 +37,16 @@ export default function LessonsPage() {
       <section className="space-y-6">
         <div>
           <h2 className="text-3xl font-black text-[var(--text-main)]">
-            Lezioni
+            Biblioteca lezioni
           </h2>
 
           <p className="mt-2 max-w-2xl text-[var(--text-soft)]">
-            Segui il percorso didattico passo dopo passo. Completa le lezioni e
-            supera i quiz per sbloccare nuovi contenuti.
+            Consulta e ripassa le lezioni disponibili. Per seguire una storia
+            guidata, apri una campagna e affronta le attività dei suoi capitoli.
           </p>
         </div>
 
+        <AppButton href="/campaigns" variant="secondary">Segui una campagna guidata</AppButton>
         {isLoading && (
           <AppCard>
             <p className="text-[var(--text-muted)]">Caricamento lezioni...</p>

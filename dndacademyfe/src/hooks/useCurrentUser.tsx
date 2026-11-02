@@ -16,7 +16,7 @@ type CurrentUserState = {
   refresh: () => Promise<void>
   logout: (reason?: "passwordChanged") => void
   loginHref: string
-  login: (credentials: LoginRequest) => Promise<void>
+  login: (credentials: LoginRequest) => Promise<UserProfile>
 }
 const CurrentUserContext = createContext<CurrentUserState | null>(null)
 
@@ -106,6 +106,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
       if (attempt !== generation.current) throw new Error("Accesso interrotto. Riprova.")
       setUser(profile)
       setLoginHref("/login")
+      return profile
     } catch (err) {
       if (attempt === generation.current) {
         setError(err instanceof Error ? err.message : "Impossibile completare l’accesso.")

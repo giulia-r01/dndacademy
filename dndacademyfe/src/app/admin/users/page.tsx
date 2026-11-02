@@ -11,12 +11,8 @@ import AppShell from "@/components/layout/AppShell"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import { userService } from "@/services/user.service"
 import type { LearningLevel, UserProfile, UserRole } from "@/types/user"
+import { learningLevelLabels as levels } from "@/lib/learning-level"
 
-const levels: Record<LearningLevel, string> = {
-  BEGINNER: "Principiante",
-  INTERMEDIATE: "Intermedio",
-  ADVANCED: "Avanzato",
-}
 const fieldClass = "w-full rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface)] px-4 py-3 text-[var(--text-main)]"
 
 export default function AdminUsersPage() {

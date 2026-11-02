@@ -99,6 +99,11 @@ async function setup(viewport = { width: 1600, height: 1000 }, options = {}) {
   })
   return { context, page, allowHistory: () => { historyFailure = false }, starts: () => starts, counts: () => ({ creates, uploads }) }
 }
+async function openHistory(page) {
+  const summary = page.locator("summary").filter({ hasText: "Storico dei combattimenti" })
+  await summary.waitFor()
+  if (await summary.locator("..").getAttribute("open") === null) await summary.click()
+}
 async function screenshot(page, name) { if (shots) { await mkdir(shots, { recursive: true }); await page.screenshot({ path: `${shots}/${name}.png`, fullPage: true }) } }
 async function start(page) {
   await page.goto(`${baseURL}/combat?chapterId=3&campaignId=1`)
@@ -222,9 +227,9 @@ for (const role of ["PLAYER", "MASTER"]) test(`navigazione per ruolo: ${role}`, 
     const navigation = page.getByRole("navigation", { name: "Navigazione principale" })
     if (role === "PLAYER") {
       await page.getByRole("heading", { name: "Accesso riservato", exact: true }).waitFor()
-      assert.equal(await navigation.getByRole("link", { name: "Backoffice", exact: true }).count(), 0)
+      assert.equal(await navigation.getByRole("link", { name: "Area Master", exact: true }).count(), 0)
     } else {
-      await navigation.getByRole("link", { name: "Backoffice", exact: true }).waitFor()
+      await navigation.getByRole("link", { name: "Area Master", exact: true }).waitFor()
       assert.equal(await page.getByRole("heading", { name: "Accesso riservato", exact: true }).count(), 0)
     }
   } finally { await context.close() }
@@ -245,11 +250,11 @@ for (const scenario of [
       if (scenario.quizOnly) assert.equal(await lesson.count(), 0)
       else {
         await lesson.getByText(scenario.lessonCompleted ? "Lezione completata" : "Da completare", { exact: true }).waitFor()
-        assert.equal(await lesson.getByRole("link", { name: scenario.lessonCompleted ? "Rivedi lezione" : "Vai alla lezione", exact: true }).getAttribute("href"), "/lessons/10")
+        assert.equal(await lesson.getByRole("link", { name: scenario.lessonCompleted ? "Rivedi lezione" : "Vai alla lezione", exact: true }).getAttribute("href"), "/lessons/10?campaignId=1&chapterId=3")
       }
       const quiz = page.getByRole("region", { name: "Quiz", exact: true })
       await quiz.getByText(scenario.quizPassed ? "Quiz superato" : "Da superare", { exact: true }).waitFor()
-      assert.equal(await quiz.getByRole("link", { name: scenario.quizPassed ? "Ripeti quiz" : "Vai al quiz", exact: true }).getAttribute("href"), "/lessons/10/quiz")
+      assert.equal(await quiz.getByRole("link", { name: scenario.quizPassed ? "Ripeti quiz" : "Vai al quiz", exact: true }).getAttribute("href"), "/lessons/10/quiz?campaignId=1&chapterId=3")
       const combat = page.getByRole("region", { name: "Combattimento", exact: true })
       await combat.getByText(scenario.combatWon ? "Combattimento vinto" : "Da vincere", { exact: true }).waitFor()
       await combat.getByRole("link", { name: scenario.combatWon ? "Ripeti combattimento" : "Avvia combattimento", exact: true }).waitFor()
@@ -335,8 +340,8 @@ test("storico: campagne, personaggi, vittorie, sconfitte e scontri aperti", asyn
   const { context, page, starts } = await setup(undefined, { role: "PLAYER", historyShort: true })
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
-    await page.getByRole("heading", { name: "I tuoi combattimenti", exact: true }).waitFor()
+    await openHistory(page)
+    await page.getByRole("heading", { name: "Storico combattimenti", exact: true }).waitFor()
     await page.getByText("3 scontri salvati", { exact: true }).waitFor()
     await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByText("Vittoria", { exact: true }).waitFor()
@@ -352,7 +357,7 @@ test("storico: dettagli e registro leggibili senza azioni di combattimento", asy
   const { context, page, starts } = await setup(undefined, { historyShort: true })
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByRole("button", { name: "Vedi dettagli e registro", exact: true }).click()
     const dialog = page.getByRole("dialog")
@@ -371,7 +376,7 @@ test("storico vuoto: invito alle campagne", async () => {
   const { context, page } = await setup(undefined, { emptyHistory: true })
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await page.getByRole("heading", { name: "Il tuo diario di battaglia inizia qui", exact: true }).waitFor()
     assert.equal(await page.getByRole("link", { name: "Vai alle campagne", exact: true }).getAttribute("href"), "/campaigns")
   } finally { await context.close() }
@@ -381,7 +386,7 @@ test("storico: paginazione avanti e indietro", async () => {
   const { context, page } = await setup()
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await page.getByText("Pagina 1 di 2", { exact: true }).waitFor()
     await openHistoryCampaign(page)
     await page.getByRole("button", { name: "Successivi", exact: true }).click()
@@ -397,7 +402,7 @@ test("storico: errore di caricamento e riprova", async () => {
   const { context, page, allowHistory } = await setup(undefined, { historyError: true, historyShort: true })
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await page.getByRole("alert").filter({ hasText: "Storico temporaneamente non disponibile" }).waitFor()
     allowHistory()
     await page.getByRole("button", { name: "Riprova", exact: true }).click()
@@ -410,7 +415,7 @@ test("storico: dettaglio non autorizzato non mostra il registro", async () => {
   const { context, page } = await setup(undefined, { forbiddenHistoryDetail: true, historyShort: true })
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByRole("button", { name: "Vedi dettagli e registro", exact: true }).click()
     const dialog = page.getByRole("dialog")
@@ -423,7 +428,7 @@ test("storico mobile: elenco e dettaglio senza overflow", async () => {
   const { context, page } = await setup({ width: 390, height: 844 }, { historyShort: true })
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await openHistoryCampaign(page)
     const item = page.getByRole("article", { name: "Combattimento 113", exact: true })
     await item.waitFor()
@@ -436,15 +441,16 @@ test("storico mobile: elenco e dettaglio senza overflow", async () => {
 })
 
 
-test("storico: accordion chiuso inizialmente e richiudibile", async () => {
+test("storico: aperto inizialmente e richiudibile da tastiera", async () => {
   const { context, page, starts } = await setup(undefined, { historyShort: true })
   try {
     await page.goto(`${baseURL}/combat`)
     const summary = page.locator("summary").filter({ hasText: "Storico dei combattimenti" })
     await summary.waitFor()
-    assert.equal(await summary.locator("..").getAttribute("open"), null)
-    assert.equal(await page.getByRole("article", { name: "Combattimento 113", exact: true }).count(), 0)
+    assert.notEqual(await summary.locator("..").getAttribute("open"), null)
     await summary.focus()
+    await page.keyboard.press("Enter")
+    assert.equal(await summary.locator("..").getAttribute("open"), null)
     await page.keyboard.press("Enter")
     await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).waitFor()
@@ -459,6 +465,10 @@ test("storico: accordion chiuso inizialmente e richiudibile", async () => {
 async function setupCharacters({ owned = true, multipleCampaigns = false } = {}) {
   const session = await setup(undefined, { role: "PLAYER" })
   let mine = owned ? [{ ...ownCharacter }] : [], claims = 0
+  await session.page.route("**/api/campaigns/me/progress", route => route.fulfill({ contentType: "application/json", body: JSON.stringify([
+    { campaignId: 1, joined: true, unlocked: true, completed: false },
+    ...(multipleCampaigns ? [{ campaignId: 2, joined: true, unlocked: true, completed: false }] : []),
+  ]) }))
   await session.page.route("**/api/campaigns", route => route.fulfill({ contentType: "application/json", body: JSON.stringify([
     { id: 1, name: "Miniere", description: "La prima campagna" },
     ...(multipleCampaigns ? [{ id: 2, name: "Foresta", description: "La seconda campagna" }] : []),
@@ -673,7 +683,7 @@ test("storico: una cura non viene presentata come attacco mancato", async () => 
   const { context, page } = await setupHealing()
   try {
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await openHistoryCampaign(page)
     await page.getByRole("article", { name: "Combattimento 113", exact: true }).getByRole("button", { name: "Vedi dettagli e registro", exact: true }).click()
     const dialog = page.getByRole("dialog")
@@ -695,7 +705,7 @@ test("storico raggruppato: campagne chiuse, capitoli e identita distinte", async
     const entry = (id, campaignId, chapterId, extra = {}) => ({ combatId: id, campaignId, chapterId, campaignName: "Stesso nome", chapterTitle: "Stesso capitolo", encounterTitle: `Scontro ${id}`, characterName: "Thorin", characterImageUrl: null, characterCurrentHp: 15, characterMaxHp: 15, completed: true, outcome: "PLAYER_VICTORY", completedAt: null, ...extra })
     await page.route("**/api/combat/history?**", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [entry(10, 2, 5), entry(9, 1, 3), entry(8, 2, 6)], page: 0, size: 12, totalPages: 1, totalElements: 3 }) }))
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     const groups = page.locator("details[data-campaign-key]")
     await groups.first().waitFor()
     assert.equal(await groups.count(), 2)
@@ -717,7 +727,7 @@ test("storico raggruppato: metadati storici mancanti restano consultabili", asyn
   try {
     await page.route("**/api/combat/history?**", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [{ combatId: 10, campaignId: null, chapterId: null, campaignName: "Campagna non disponibile", chapterTitle: "Capitolo non disponibile", encounterTitle: "Combattimento", characterName: null, characterImageUrl: null, characterCurrentHp: null, characterMaxHp: null, completed: true, outcome: null, completedAt: null }], page: 0, size: 12, totalPages: 1, totalElements: 1 }) }))
     await page.goto(`${baseURL}/combat`)
-    await page.locator("summary").filter({ hasText: "Storico dei combattimenti" }).click()
+    await openHistory(page)
     await openHistoryCampaign(page)
     await page.getByRole("region", { name: "Capitolo: Capitolo non disponibile", exact: true }).waitFor()
     await page.getByRole("article", { name: "Combattimento 10", exact: true }).getByText("Concluso", { exact: true }).waitFor()

@@ -19,6 +19,8 @@ Registrazione, recupero e cambio password condividono la stessa validazione: alm
 
 Le immagini ammesse sono JPG, PNG e WEBP fino a 5 MB. Cloudinary valida il formato effettivo. L'asset ha un identificatore stabile per utente: la sostituzione sovrascrive l'immagine precedente e invalida la cache; la rimozione elimina anche l'asset remoto.
 
+Il profilo si apre dal menu dell'avatar nella barra superiore, che contiene anche Esci. La selezione di un'immagine valida avvia immediatamente il caricamento, senza una seconda conferma: spinner sull'avatar, messaggio di stato e controlli disabilitati indicano l'operazione. In caso di errore rimane visibile l'immagine precedente e si può selezionare nuovamente anche lo stesso file. Il profilo condiviso aggiorna la barra superiore dopo il salvataggio. Livelli e barra della sidebar usano le etichette italiane comuni.
+
 ## Database ricreato e ambiente di test
 
 Le modifiche aggiungono `users.avatar_url`, `users.token_version`, `badges.system_code` e il vincolo unico su `(user_id, badge_id)` in `user_badges`. Non è stata eseguita alcuna pulizia del database applicativo.
@@ -28,6 +30,8 @@ I token usano ora l'ID utente e la versione delle credenziali: le sessioni emess
 All'avvio vengono creati i tre badge di sistema mancanti: Primo Quiz, Studente di D&D e Avventuriero Esperto. Il codice stabile mantiene le assegnazioni automatiche anche se il Master modifica il titolo. I badge di sistema non si possono eliminare. Il badge Esperto richiede il livello avanzato (5 lezioni e 5 quiz distinti).
 
 La configurazione di produzione deve gestire lo schema tramite una procedura di rilascio controllata; il reset locale non costituisce una migrazione di produzione. Questa modifica non cambia le impostazioni di creazione/aggiornamento schema esistenti.
+
+Il database e lo schema devono esistere e l'utente del backend deve poter creare le tabelle. Se durante un reset locale viene eliminato anche `public`, ricrearlo prima dell'avvio, per esempio con `CREATE SCHEMA IF NOT EXISTS public;` usando l'utente del backend oppure assegnandogli i permessi necessari. Eliminare solo le righe non ricrea lo schema e una compilazione non aggiorna da sola un database esistente.
 
 ## Verifiche
 
