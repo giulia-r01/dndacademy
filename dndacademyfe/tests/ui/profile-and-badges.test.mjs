@@ -12,7 +12,8 @@ async function setup(options = {}) {
   const context = await browser.newContext({ viewport: options.mobile ? { width: 390, height: 844 } : { width: 1440, height: 1100 } })
   await context.addInitScript(() => localStorage.setItem("token", "profile-test-token"))
   const page = await context.newPage()
-  let profile = { id: 1, username: "alice", email: "alice@example.test", role: "PLAYER", learningLevel: "INTERMEDIATE", avatarUrl: null }
+  let profile = { id: 1, username: "alice", email: "alice@example.test", role: "PLAYER", learningLevel: "INTERMEDIATE", avatarUrl: options.avatarUrl ?? null }
+  let avatarGate = Promise.resolve()
   let failProfile = !!options.profileError, failSave = false, failAvatar = false, failCatalog = !!options.catalogError
   const mutations = [], meCalls = []
   const catalog = options.empty ? [] : [
@@ -37,6 +38,7 @@ async function setup(options = {}) {
       return reply(profile)
     }
     if (path === "/api/users/me/avatar") {
+      await avatarGate
       if (failAvatar) return reply({ message: "Caricamento immagine non riuscito" }, 502)
       if (method === "PUT") assert.match(request.headers()["content-type"], /multipart\/form-data; boundary=/)
       profile = { ...profile, avatarUrl: method === "DELETE" ? null : "https://example.test/avatar.png" }
@@ -49,7 +51,13 @@ async function setup(options = {}) {
     if (path === "/api/badges/catalog") return failCatalog ? reply({ message: "Badge non disponibili" }, 503) : reply(catalog)
     return reply({ message: `Endpoint inatteso: ${path}` }, 404)
   })
-  return { page, context, mutations, meCalls, allowProfile: () => { failProfile = false }, failSave: () => { failSave = true }, allowSave: () => { failSave = false }, failAvatar: () => { failAvatar = true }, allowAvatar: () => { failAvatar = false }, allowCatalog: () => { failCatalog = false } }
+  return { page, context, mutations, meCalls, allowProfile: () => { failProfile = false }, failSave: () => { failSave = true }, allowSave: () => { failSave = false }, failAvatar: () => { failAvatar = true }, allowAvatar: () => { failAvatar = false }, allowCatalog: () => { failCatalog = false },
+    blockAvatar: () => {
+      let release
+      avatarGate = new Promise((resolve) => { release = resolve })
+      return () => { release(); avatarGate = Promise.resolve() }
+    },
+  }
 }
 async function screenshot(page, name) {
   if (!process.env.UI_SCREENSHOT_DIR) return
@@ -85,20 +93,47 @@ test("profilo mobile: validazione immagini, errore di upload, caricamento e rimo
     await f.page.getByLabel("Immagine profilo", { exact: true }).setInputFiles({ name: "bad.txt", mimeType: "text/plain", buffer: Buffer.from("bad") })
     await f.page.getByRole("alert").filter({ hasText: "Scegli un’immagine" }).waitFor()
     assert.equal(f.mutations.length, 0)
-    await f.page.getByLabel("Immagine profilo", { exact: true }).setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: Buffer.from("fixture") })
     f.failAvatar()
-    await f.page.getByRole("button", { name: "Carica immagine", exact: true }).click()
+    await f.page.getByLabel("Immagine profilo", { exact: true }).setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: Buffer.from("fixture") })
     await f.page.getByRole("alert").filter({ hasText: "Caricamento immagine non riuscito" }).waitFor()
     f.allowAvatar()
-    await f.page.getByRole("button", { name: "Carica immagine", exact: true }).click()
+    await f.page.getByLabel("Immagine profilo", { exact: true }).setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: Buffer.from("fixture") })
     await f.page.getByRole("status").filter({ hasText: "Immagine profilo aggiornata" }).waitFor()
     assert.equal(await f.page.getByRole("img", { name: "Immagine profilo di alice" }).count(), 2)
     assert.equal(await f.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
     await screenshot(f.page, "profile-mobile")
+    f.failAvatar()
+    await f.page.getByLabel("Immagine profilo", { exact: true }).setInputFiles({ name: "replacement.png", mimeType: "image/png", buffer: Buffer.from("replacement") })
+    await f.page.getByRole("alert").filter({ hasText: "Caricamento immagine non riuscito" }).waitFor()
+    assert.equal(await f.page.getByRole("img", { name: "Immagine profilo di alice" }).count(), 2)
+    f.allowAvatar()
     await f.page.getByRole("button", { name: "Rimuovi immagine", exact: true }).click()
     await f.page.getByRole("status").filter({ hasText: "Immagine profilo rimossa" }).waitFor()
     assert.equal(await f.page.getByRole("img", { name: "Immagine profilo di alice" }).count(), 0)
   } finally { await f.context.close() }
+})
+
+test("avatar: caricamento e rimozione lenti mostrano lo stato e bloccano nuove azioni", async () => {
+  const f = await setup({ mobile: true, avatarUrl: "https://example.test/avatar.png" })
+  let release = () => {}
+  try {
+    await f.page.goto(`${baseURL}/profile`)
+    await f.page.getByRole("button", { name: "Rimuovi immagine", exact: true }).waitFor()
+    release = f.blockAvatar()
+    await f.page.getByLabel("Immagine profilo", { exact: true }).setInputFiles({ name: "avatar.png", mimeType: "image/png", buffer: Buffer.from("fixture") })
+    await f.page.getByRole("status").filter({ hasText: "Caricamento immagine in corso" }).waitFor()
+    assert.equal(await f.page.getByLabel("Immagine profilo", { exact: true }).isDisabled(), true)
+    assert.equal(await f.page.getByRole("button", { name: "Rimuovi immagine", exact: true }).isDisabled(), true)
+    assert.equal(await f.page.getByRole("img", { name: "Immagine profilo di alice" }).count(), 2)
+    release()
+    await f.page.getByRole("status").filter({ hasText: "Immagine profilo aggiornata" }).waitFor()
+    assert.equal(await f.page.getByLabel("Immagine profilo", { exact: true }).isEnabled(), true)
+    release = f.blockAvatar()
+    await f.page.getByRole("button", { name: "Rimuovi immagine", exact: true }).click()
+    await f.page.getByRole("status").filter({ hasText: "Rimozione immagine in corso" }).waitFor()
+    release()
+    await f.page.getByRole("status").filter({ hasText: "Immagine profilo rimossa" }).waitFor()
+  } finally { release(); await f.context.close() }
 })
 
 test("password: conferma, validazione e uscita dalla sessione dopo il salvataggio", async () => {

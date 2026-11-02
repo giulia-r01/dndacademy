@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { FiAward, FiLock, FiUser } from "react-icons/fi"
+import { FiAward, FiLoader, FiLock, FiUser } from "react-icons/fi"
 import AppCard from "@/components/common/AppCard"
 import AppButton from "@/components/common/AppButton"
 import FormInput from "@/components/common/FormInput"
@@ -23,9 +23,9 @@ export default function ProfileForms({ user }: { user: UserProfile }) {
   const [oldPassword, setOldPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [file, setFile] = useState<File | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState<"account" | "password" | "avatar" | null>(null)
+  const [avatarAction, setAvatarAction] = useState<"upload" | "remove">("upload")
   const inFlight = useRef(false)
   const [feedback, setFeedback] = useState<{ section: string; error?: string; success?: string } | null>(null)
 
@@ -70,32 +70,34 @@ export default function ProfileForms({ user }: { user: UserProfile }) {
   }
 
   function selectFile(selected: File | null) {
-    setFeedback(null)
-    setFile(null)
-    if (!selected) return
+    if (!selected || inFlight.current) return
+    if (fileInput.current) fileInput.current.value = ""
     if (!["image/jpeg", "image/png", "image/webp"].includes(selected.type) || selected.size > 5 * 1024 * 1024 || selected.size === 0) {
       setFeedback({ section: "avatar", error: "Scegli un’immagine JPG, PNG o WEBP, fino a 5 MB." })
-      if (fileInput.current) fileInput.current.value = ""
       return
     }
-    setFile(selected)
+    saveAvatar(selected)
   }
 
-  function saveAvatar(remove: boolean) {
-    if (!remove && !file) return
+  function saveAvatar(file: File | null) {
+    if (inFlight.current) return
+    setAvatarAction(file ? "upload" : "remove")
     void perform("avatar", async () => {
-      const updated = remove ? await userService.removeAvatar() : await userService.uploadAvatar(file!)
+      const updated = file ? await userService.uploadAvatar(file) : await userService.removeAvatar()
       updateUser(updated)
-      setFile(null)
-      if (fileInput.current) fileInput.current.value = ""
-      setFeedback({ section: "avatar", success: remove ? "Immagine profilo rimossa." : "Immagine profilo aggiornata." })
+      setFeedback({ section: "avatar", success: file ? "Immagine profilo aggiornata." : "Immagine profilo rimossa." })
     })
   }
 
   return <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
     <AppCard className="space-y-5">
       <div className="flex flex-wrap items-center gap-5">
-        <UserAvatar username={user.username} avatarUrl={user.avatarUrl} large />
+        <div aria-busy={busy === "avatar"} className="relative flex h-28 w-28 shrink-0">
+          <UserAvatar username={user.username} avatarUrl={user.avatarUrl} large />
+          {busy === "avatar" && <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center rounded-full bg-black/60">
+            <FiLoader size={36} className="animate-spin text-white motion-reduce:animate-none" />
+          </span>}
+        </div>
         <div className="min-w-0">
           <h3 className="break-words text-2xl font-black">{user.username}</h3>
           <p className="mt-1 text-[var(--accent-soft)]">{user.role === "MASTER" ? "Master" : "Player"}</p>
@@ -103,16 +105,16 @@ export default function ProfileForms({ user }: { user: UserProfile }) {
         </div>
       </div>
       <p className="text-sm text-[var(--text-muted)]">Il livello aumenta completando lezioni e quiz. Il ruolo viene gestito dai Master.</p>
-      <div className="space-y-3 border-t border-[var(--border-teal-soft)] pt-5">
+      <div aria-busy={busy === "avatar"} className="space-y-3 border-t border-[var(--border-teal-soft)] pt-5">
         <label htmlFor="avatar" className="block font-bold">Immagine profilo</label>
-        <p id="avatar-help" className="text-sm text-[var(--text-muted)]">JPG, PNG o WEBP. Massimo 5 MB.</p>
+        <p id="avatar-help" className="text-sm text-[var(--text-muted)]">Scegli un’immagine per aggiornarla subito. JPG, PNG o WEBP, massimo 5 MB.</p>
         <input ref={fileInput} id="avatar" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="avatar-help" disabled={busy !== null} onChange={(event) => selectFile(event.target.files?.[0] ?? null)} className="block w-full min-w-0 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--surface-muted)] file:px-3 file:py-2 file:text-[var(--text-main)]" />
-        <div className="flex flex-wrap gap-3">
-          <AppButton disabled={!file || busy !== null} onClick={() => saveAvatar(false)}>{busy === "avatar" ? "Aggiornamento..." : "Carica immagine"}</AppButton>
-          {user.avatarUrl && <AppButton variant="secondary" disabled={busy !== null} onClick={() => saveAvatar(true)}>Rimuovi immagine</AppButton>}
-        </div>
+        {user.avatarUrl && <AppButton variant="secondary" disabled={busy !== null} onClick={() => saveAvatar(null)}>Rimuovi immagine</AppButton>}
         {status("avatar")}
       </div>
+      {busy === "avatar" && <p role="status" className="rounded-xl border border-[var(--border-gold)] bg-[var(--surface-muted)] px-4 py-3 text-sm font-bold text-[var(--accent-soft)]">
+        {avatarAction === "upload" ? "Caricamento immagine in corso…" : "Rimozione immagine in corso…"}
+      </p>}
       <Link href="/achievements" className="inline-flex items-center gap-2 font-bold text-[var(--accent-soft)]"><FiAward aria-hidden="true" /> I tuoi badge</Link>
     </AppCard>
     <div className="space-y-6">
