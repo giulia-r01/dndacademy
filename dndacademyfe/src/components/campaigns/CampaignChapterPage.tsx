@@ -15,6 +15,7 @@ import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { campaignService } from "@/services/campaign.service"
+import { characterService } from "@/services/character.service"
 import type { CampaignChapterPlayer } from "@/types/campaign-chapter"
 import { chapterBreadcrumbs, chapterHref, chapterRequirementsMet, combatHref, lessonHref, nextChapterAction } from "@/lib/navigation"
 
@@ -26,9 +27,14 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
   const [error, setError] = useState("")
   const [isCompleting, setIsCompleting] = useState(false)
   const [completeError, setCompleteError] = useState("")
+  const [hasCharacter, setHasCharacter] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    let active = true
     async function loadChapter() {
+      setIsLoading(true)
+      setError("")
       if (Number.isNaN(campaignId) || Number.isNaN(chapterId)) {
         setError("ID capitolo non valido")
         setIsLoading(false)
@@ -36,8 +42,13 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
       }
 
       try {
-        const chapters = await campaignService.getPlayerChapters(campaignId)
+        const [chapters, characters] = await Promise.all([
+          campaignService.getPlayerChapters(campaignId),
+          characterService.getMine(),
+        ])
+        if (!active) return
         setChapters(chapters)
+        setHasCharacter(characters.some(character => character.campaignId === campaignId))
 
         const selectedChapter = chapters.find(
           (item) => item.chapterId === chapterId,
@@ -58,17 +69,18 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
         const message =
           err instanceof Error ? err.message : "Errore nel caricamento capitolo"
 
-        setError(message)
+        if (active) setError(message)
       } finally {
-        setIsLoading(false)
+        if (active) setIsLoading(false)
       }
     }
 
     loadChapter()
-  }, [campaignId, chapterId])
+    return () => { active = false }
+  }, [campaignId, chapterId, attempt])
 
   async function handleCompleteChapter() {
-    if (!chapter || chapter.completed || isCompleting) {
+    if (!chapter || !hasCharacter || chapter.completed || isCompleting) {
       return
     }
 
@@ -131,10 +143,19 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
             <p role="alert" className="text-danger">
               {error}
             </p>
+            <AppButton className="mt-4" variant="secondary" onClick={() => setAttempt(value => value + 1)}>Riprova</AppButton>
           </AppCard>
         )}
 
-        {!isLoading && !error && chapter && (
+        {!isLoading && !error && chapter && !hasCharacter && !chapter.completed && (
+          <AppCard className="space-y-4 border-[var(--border-gold)]">
+            <h2 className="text-2xl font-black">Prima di iniziare, scegli il tuo personaggio</h2>
+            <p className="text-[var(--text-soft)]">Per giocare a {chapter.campaignName}, scegli chi interpreterai tra i personaggi preparati dal Master. Poi potrai iniziare i capitoli.</p>
+            <AppButton href={`/characters?campaignId=${campaignId}`}>Scegli il tuo personaggio</AppButton>
+          </AppCard>
+        )}
+
+        {!isLoading && !error && chapter && (hasCharacter || chapter.completed) && (
           <>
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">

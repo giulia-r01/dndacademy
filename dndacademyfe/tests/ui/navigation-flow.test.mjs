@@ -15,7 +15,8 @@ async function setup(options = {}) {
   await skipAutomaticTour(context)
   const page = await context.newPage()
   const profile = { id: 1, username: "tester", email: "test@example.test", role: options.master ? "MASTER" : "PLAYER", learningLevel: options.level ?? "BEGINNER", avatarUrl: null }
-  let joined = !options.newPlayer, completed = false, quizPassed = false, lessonRead = false, claimed = false, starts = 0
+  let joined = !options.newPlayer, completed = !!options.completed, quizPassed = false, lessonRead = !!options.lessonRead, claimed = !!options.claimed, starts = 0
+  let characterLookupFailed = !!options.characterError
   const calls = []
   const campaign = () => ({ campaignId: 1, campaignName: "Le Miniere", campaignDescription: "La prima avventura", difficulty: "BEGINNER", unlocked: true, joined, completed: false, completedAt: null })
   const chapters = () => [
@@ -43,7 +44,10 @@ async function setup(options = {}) {
     if (path === "/api/questions/quiz/20") return reply([{ id: 30, text: "Quale dado usi?", answers: [{ id: 40, text: "d20" }, { id: 41, text: "d4" }] }])
     if (path === "/api/quizzes/submit") { quizPassed = true; return reply({ quizId: 20, correctAnswers: 1, totalQuestions: 1, score: 100, passed: true }) }
     if (path === "/api/quizzes/me/results" || path === "/api/badges/me" || path === "/api/npcs" || path === "/api/encounters/chapter/3") return reply([])
-    if (path === "/api/characters/me") return reply(claimed ? [{ ...hero, playerUsername: "tester" }] : [])
+    if (path === "/api/characters/me") {
+      if (characterLookupFailed) return reply({ message: "Personaggio non disponibile" }, 503)
+      return reply(claimed ? [{ ...hero, campaignId: options.characterCampaignId ?? 1, playerUsername: "tester" }] : [])
+    }
     if (path === "/api/characters/campaign/1/available") return reply([{ ...hero }])
     if (path === "/api/characters/11/claim") { claimed = true; return reply({ ...hero, playerUsername: "tester" }) }
     if (path === "/api/combat/history") return reply({ items: options.resume ? [{ combatId: 9, campaignId: 1, chapterId: 3, campaignName: "Le Miniere", chapterTitle: "Il sentiero", encounterTitle: "Lo scontro aperto", completed: false }] : [], page: 0, size: 12, totalPages: 1, totalElements: options.resume ? 1 : 0 })
@@ -51,7 +55,7 @@ async function setup(options = {}) {
     if (path.includes("/start")) { starts++; return reply({ message: "Non deve essere creato un nuovo scontro" }, 400) }
     return reply({ message: `Endpoint inatteso: ${path}` }, 404)
   })
-  return { context, page, calls, starts: () => starts }
+  return { context, page, calls, starts: () => starts, allowCharacterLookup: () => { characterLookupFailed = false } }
 }
 async function screenshot(page, name) {
   if (!process.env.UI_SCREENSHOT_DIR) return
@@ -67,14 +71,126 @@ test("Player nuovo: dalla home all’iscrizione e al primo capitolo", async () =
     await page.getByRole("link", { name: "Scegli la tua avventura", exact: true }).click()
     await page.getByRole("button", { name: "Unisciti", exact: true }).click()
     await page.waitForURL(`${baseURL}/campaigns/1`)
-    await page.getByRole("link", { name: "Apri il prossimo capitolo", exact: true }).click()
+    await page.getByText("La prima avventura", { exact: true }).waitFor()
+    assert.equal(await page.getByRole("button", { name: "Scegli prima il personaggio", exact: true }).isDisabled(), true)
+    assert.equal(await page.getByRole("link", { name: "Inizia", exact: true }).count(), 0)
+    await page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true }).click()
+    await page.waitForURL(`${baseURL}/characters?campaignId=1`)
+    await page.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
+    await page.getByRole("link", { name: "Continua la campagna", exact: true }).click()
+    await page.getByText("Il tuo personaggio: Kael", { exact: true }).waitFor()
+    assert.equal(await page.getByRole("link", { name: "Apri il prossimo capitolo", exact: true }).count(), 0)
+    await page.getByRole("link", { name: "Inizia", exact: true }).click()
     await page.getByRole("heading", { name: "Il sentiero", exact: true }).waitFor()
     assert.equal(await page.getByRole("button", { name: "Completa capitolo", exact: true }).isDisabled(), true)
   } finally { await context.close() }
 })
 
-test("Player: campagna, lezione, quiz e capitolo successivo senza perdere il contesto", async () => {
+for (const mobile of [false, true]) {
+  test(`Campagna: riassunto e preparazione precedono i capitoli, mobile=${mobile}`, async () => {
+    const { page, context } = await setup({ mobile })
+    try {
+      await page.goto(`${baseURL}/campaigns/1`)
+      const description = page.getByText("La prima avventura", { exact: true })
+      const choice = page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true })
+      const first = page.getByRole("heading", { name: "Il sentiero", exact: true })
+      await choice.waitFor()
+      assert.ok((await description.boundingBox()).y < (await choice.boundingBox()).y)
+      assert.ok((await choice.boundingBox()).y < (await first.boundingBox()).y)
+      assert.equal(await page.getByRole("link", { name: "Continua", exact: true }).count(), 0)
+      assert.equal(await page.getByRole("button", { name: "Bloccato", exact: true }).isDisabled(), true)
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), false)
+      await screenshot(page, `campaign-preparation-${mobile ? "mobile" : "desktop"}`)
+    } finally { await context.close() }
+  })
+}
+
+test("Campagna: il primo capitolo con attivita gia svolte propone Continua", async () => {
+  const { page, context } = await setup({ claimed: true, lessonRead: true })
+  try {
+    await page.goto(`${baseURL}/campaigns/1`)
+    await page.getByRole("link", { name: "Continua", exact: true }).waitFor()
+    assert.equal(await page.getByRole("link", { name: "Inizia", exact: true }).count(), 0)
+  } finally { await context.close() }
+})
+
+test("Campagna: capitoli completati consultabili e capitolo successivo disponibile", async () => {
+  const { page, context } = await setup({ claimed: true, completed: true })
+  try {
+    await page.goto(`${baseURL}/campaigns/1`)
+    await page.getByRole("link", { name: "Rivedi", exact: true }).waitFor()
+    assert.equal(await page.getByRole("link", { name: "Continua", exact: true }).getAttribute("href"), "/campaigns/1/chapters/4")
+    await page.getByText("1 capitoli completati su 2", { exact: true }).waitFor()
+  } finally { await context.close() }
+})
+
+test("Campagna: errore nel controllo del personaggio recuperabile senza mostrare false assenze", async () => {
+  const { page, context, allowCharacterLookup } = await setup({ claimed: true, characterError: true })
+  try {
+    await page.goto(`${baseURL}/campaigns/1`)
+    await page.getByRole("alert").filter({ hasText: "Personaggio non disponibile" }).waitFor()
+    assert.equal(await page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true }).count(), 0)
+    allowCharacterLookup()
+    await page.getByRole("button", { name: "Riprova", exact: true }).click()
+    await page.getByRole("link", { name: "Inizia", exact: true }).waitFor()
+    await page.getByText("Il tuo personaggio: Kael", { exact: true }).waitFor()
+  } finally { await context.close() }
+})
+
+for (const mobile of [false, true]) {
+  test(`Dashboard e accesso diretto richiedono il personaggio della campagna, mobile=${mobile}`, async () => {
+    const { page, context, calls } = await setup({ mobile, claimed: true, characterCampaignId: 2 })
+    try {
+      await page.goto(`${baseURL}/dashboard`)
+      const choose = page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true })
+      await choose.waitFor()
+      assert.equal(await choose.getAttribute("href"), "/characters?campaignId=1")
+      assert.equal(await page.getByRole("link", { name: "Continua capitolo", exact: true }).count(), 0)
+      assert.equal(await page.getByText("Prossimo passo: Leggi la lezione", { exact: true }).count(), 0)
+      await screenshot(page, `dashboard-character-required-${mobile ? "mobile" : "desktop"}`)
+      await page.goto(`${baseURL}/campaigns/1/chapters/3`)
+      await page.getByRole("heading", { name: "Prima di iniziare, scegli il tuo personaggio", exact: true }).waitFor()
+      assert.equal(await page.getByRole("link", { name: "Leggi la lezione", exact: true }).count(), 0)
+      assert.equal(await page.getByRole("button", { name: "Completa capitolo", exact: true }).count(), 0)
+      await page.reload()
+      await choose.waitFor()
+      assert.equal(await choose.getAttribute("href"), "/characters?campaignId=1")
+      assert.equal(calls.some(call => call.method !== "GET" && call.method !== "OPTIONS"), false)
+      await screenshot(page, `chapter-character-required-${mobile ? "mobile" : "desktop"}`)
+    } finally { await context.close() }
+  })
+}
+
+test("Dashboard: dopo la scelta del personaggio il collegamento al capitolo e disponibile", async () => {
   const { page, context } = await setup()
+  try {
+    await page.goto(`${baseURL}/dashboard`)
+    await page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true }).click()
+    await page.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
+    await page.goto(`${baseURL}/dashboard`)
+    await page.getByRole("link", { name: "Continua capitolo", exact: true }).click()
+    await page.getByRole("link", { name: "Leggi la lezione", exact: true }).waitFor()
+  } finally { await context.close() }
+})
+
+for (const path of ["/dashboard", "/campaigns/1/chapters/3"]) {
+  test(`Controllo personaggio fallito: nessun accesso al capitolo e riprova, ${path}`, async () => {
+    const { page, context, allowCharacterLookup } = await setup({ claimed: true, characterError: true })
+    try {
+      await page.goto(`${baseURL}${path}`)
+      await page.getByRole("alert").filter({ hasText: path === "/dashboard" ? "Non riesco a verificare il tuo personaggio" : "Personaggio non disponibile" }).waitFor()
+      assert.equal(await page.getByRole("link", { name: "Continua capitolo", exact: true }).count(), 0)
+      assert.equal(await page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true }).count(), 0)
+      assert.equal(await page.getByRole("link", { name: "Leggi la lezione", exact: true }).count(), 0)
+      allowCharacterLookup()
+      await page.getByRole("button", { name: "Riprova", exact: true }).click()
+      await page.getByRole("link", { name: path === "/dashboard" ? "Continua capitolo" : "Leggi la lezione", exact: true }).waitFor()
+    } finally { await context.close() }
+  })
+}
+
+test("Player: campagna, lezione, quiz e capitolo successivo senza perdere il contesto", async () => {
+  const { page, context } = await setup({ claimed: true })
   try {
     await page.goto(`${baseURL}/dashboard`)
     await page.getByRole("link", { name: "Continua capitolo", exact: true }).click()
@@ -158,7 +274,7 @@ test("Un contesto capitolo estraneo alla lezione non genera collegamenti di rito
 })
 
 test("Mobile: menu scorrevole, titoli coerenti e breadcrumb senza overflow", async () => {
-  const { page, context } = await setup({ mobile: true })
+  const { page, context } = await setup({ mobile: true, claimed: true })
   try {
     await page.goto(`${baseURL}/campaigns/1/chapters/3`)
     await page.getByRole("heading", { name: "Il sentiero", exact: true }).waitFor()
@@ -195,7 +311,7 @@ test("Errore campagne: evita suggerimenti inventati e permette di riprovare", as
 })
 
 test("Una lezione senza quiz permette di salvare la lettura e completare il capitolo", async () => {
-  const { page, context } = await setup({ noQuiz: true })
+  const { page, context } = await setup({ noQuiz: true, claimed: true })
   try {
     await page.goto(`${baseURL}/lessons/10?campaignId=1&chapterId=3`)
     await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
