@@ -8,14 +8,32 @@ import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { useChapterContext } from "@/hooks/useChapterContext"
-import { chapterBreadcrumbs, chapterHref, lessonHref, type ChapterContext } from "@/lib/navigation"
+import {
+  chapterBreadcrumbs,
+  chapterHref,
+  lessonHref,
+  type ChapterContext,
+} from "@/lib/navigation"
 import { lessonService } from "@/services/lesson.service"
 import type { Lesson } from "@/types/lesson"
 
-export default function LessonDetailPage({ lessonId, source }: { lessonId: number; source: ChapterContext | null }) {
+export default function LessonDetailPage({
+  lessonId,
+  source,
+}: {
+  lessonId: number
+  source: ChapterContext | null
+}) {
   const context = useChapterContext(lessonId, source, false)
-  const backToChapter = context.chapter ? chapterHref(context.chapter.campaignId, context.chapter.chapterId) : null
-  const validSource = context.chapter ? { campaignId: context.chapter.campaignId, chapterId: context.chapter.chapterId } : null
+  const backToChapter = context.chapter
+    ? chapterHref(context.chapter.campaignId, context.chapter.chapterId)
+    : null
+  const validSource = context.chapter
+    ? {
+        campaignId: context.chapter.campaignId,
+        chapterId: context.chapter.chapterId,
+      }
+    : null
 
   const [lesson, setLesson] = useState<Lesson | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -33,9 +51,14 @@ export default function LessonDetailPage({ lessonId, source }: { lessonId: numbe
       }
 
       try {
-        const [data, progress] = await Promise.all([lessonService.getById(lessonId), lessonService.getMyProgress()])
+        const [data, progress] = await Promise.all([
+          lessonService.getById(lessonId),
+          lessonService.getMyProgress(),
+        ])
         setLesson(data)
-        setCompleted(progress.some(item => item.lessonId === lessonId && item.completed))
+        setCompleted(
+          progress.some((item) => item.lessonId === lessonId && item.completed),
+        )
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Errore nel caricamento lezione"
@@ -53,13 +76,32 @@ export default function LessonDetailPage({ lessonId, source }: { lessonId: numbe
     if (saving || completed) return
     setSaving(true)
     setSaveError("")
-    try { await lessonService.complete(lessonId); setCompleted(true) }
-    catch (err) { setSaveError(err instanceof Error ? err.message : "Impossibile salvare il completamento della lezione.") }
-    finally { setSaving(false) }
+    try {
+      await lessonService.complete(lessonId)
+      setCompleted(true)
+    } catch (err) {
+      setSaveError(
+        err instanceof Error
+          ? err.message
+          : "Impossibile salvare il completamento della lezione.",
+      )
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <AppShell activeHref={context.chapter ? "/campaigns" : undefined} breadcrumbs={context.chapter ? [...chapterBreadcrumbs(context.chapter), { label: lesson?.title ?? "Lezione" }] : undefined}>
+    <AppShell
+      activeHref={context.chapter ? "/campaigns" : undefined}
+      breadcrumbs={
+        context.chapter
+          ? [
+              ...chapterBreadcrumbs(context.chapter),
+              { label: lesson?.title ?? "Lezione" },
+            ]
+          : undefined
+      }
+    >
       <section className="space-y-6">
         <Link
           href={backToChapter ?? "/lessons"}
@@ -69,7 +111,13 @@ export default function LessonDetailPage({ lessonId, source }: { lessonId: numbe
           {backToChapter ? "Torna al capitolo" : "Torna alla biblioteca"}
         </Link>
 
-        {context.error && <AppCard><p role="alert" className="text-[var(--danger)]">{context.error}</p></AppCard>}
+        {context.error && (
+          <AppCard>
+            <p role="alert" className="text-[var(--danger)]">
+              {context.error}
+            </p>
+          </AppCard>
+        )}
         {(isLoading || context.loading) && (
           <AppCard>
             <p className="text-[var(--text-muted)]">Caricamento lezione...</p>
@@ -109,26 +157,52 @@ export default function LessonDetailPage({ lessonId, source }: { lessonId: numbe
               </div>
             </AppCard>
 
-            <AppCard className="space-y-3"><h3 className="text-lg font-black">La tua lettura</h3>
-              {completed ? <p role="status" className="text-[var(--primary)]">Lezione completata. Puoi rileggerla quando vuoi.</p> : <AppButton disabled={saving} onClick={markAsRead}>{saving ? "Salvataggio..." : "Segna come letta"}</AppButton>}
-              {saveError && <p role="alert" className="text-[var(--danger)]">{saveError}</p>}
-              {backToChapter && <AppButton href={backToChapter} variant="secondary">Continua il capitolo</AppButton>}
-            </AppCard>
-            {lesson.quiz && <AppCard className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-xl font-black text-[var(--text-main)]">
-                  Pronto per il quiz?
-                </h3>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">
-                  Dopo aver letto la lezione potrai verificare quello che hai
-                  imparato.
+            <AppCard className="space-y-3">
+              <h3 className="text-lg font-black">La tua lettura</h3>
+              {completed ? (
+                <p role="status" className="text-[var(--primary)]">
+                  Lezione completata. Puoi rileggerla quando vuoi.
                 </p>
-              </div>
+              ) : (
+                <AppButton disabled={saving} onClick={markAsRead}>
+                  {saving ? "Salvataggio..." : "Segna come letta"}
+                </AppButton>
+              )}
+              {saveError && (
+                <p role="alert" className="text-[var(--danger)]">
+                  {saveError}
+                </p>
+              )}
+              {backToChapter && (
+                <AppButton href={backToChapter} variant="secondary">
+                  Continua il capitolo
+                </AppButton>
+              )}
+            </AppCard>
+            {lesson.quiz && (
+              <AppCard className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-[var(--text-main)]">
+                    Pronto per il quiz?
+                  </h3>
+                  <p className="mt-2 text-sm text-[var(--text-muted)]">
+                    {completed
+                      ? "Ora puoi verificare quello che hai imparato."
+                      : "Leggi la lezione e premi Segna come letta per sbloccare il quiz."}
+                  </p>
+                </div>
 
-              <Link href={lessonHref(lesson.id, validSource, true)}>
-                <AppButton>Vai al quiz</AppButton>
-              </Link>
-            </AppCard>}
+                {completed ? (
+                  <AppButton href={lessonHref(lesson.id, validSource, true)}>
+                    Vai al quiz
+                  </AppButton>
+                ) : (
+                  <AppButton disabled variant="secondary">
+                    Prima completa la lezione
+                  </AppButton>
+                )}
+              </AppCard>
+            )}
           </>
         )}
       </section>

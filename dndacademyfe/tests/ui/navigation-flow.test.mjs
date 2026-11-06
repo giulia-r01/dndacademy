@@ -17,10 +17,11 @@ async function setup(options = {}) {
   const profile = { id: 1, username: "tester", email: "test@example.test", role: options.master ? "MASTER" : "PLAYER", learningLevel: options.level ?? "BEGINNER", avatarUrl: null }
   let joined = !options.newPlayer, completed = !!options.completed, quizPassed = false, lessonRead = !!options.lessonRead, claimed = !!options.claimed, starts = 0
   let characterLookupFailed = !!options.characterError
+  let lessonLookupFailed = !!options.lessonProgressError
   const calls = []
   const campaign = () => ({ campaignId: 1, campaignName: "Le Miniere", campaignDescription: "La prima avventura", difficulty: "BEGINNER", unlocked: true, joined, completed: false, completedAt: null })
   const chapters = () => [
-    { chapterId: 3, campaignId: 1, campaignName: "Le Miniere", title: "Il sentiero", description: "Entra nella storia", storyText: "La tua avventura ha inizio.", orderIndex: 1, hasCombat: false, lessonId: 10, lessonTitle: "Le basi", lessonCompleted: quizPassed || lessonRead, quizId: options.noQuiz ? null : 20, quizTitle: "Verifica le basi", quizLessonId: 10, quizPassed, combatWon: false, rewardBadgeId: 1, rewardBadgeName: "Primi passi", unlocked: true, completed, completedAt: completed ? "2026-11-02T10:00:00" : null },
+    { chapterId: 3, campaignId: 1, campaignName: "Le Miniere", title: "Il sentiero", description: "Entra nella storia", storyText: "La tua avventura ha inizio.", orderIndex: 1, hasCombat: false, lessonId: options.quizOnly ? null : 10, lessonTitle: "Le basi", lessonCompleted: quizPassed || lessonRead, quizId: options.noQuiz ? null : 20, quizTitle: "Verifica le basi", quizLessonId: 10, quizPassed, combatWon: false, rewardBadgeId: 1, rewardBadgeName: "Primi passi", unlocked: true, completed, completedAt: completed ? "2026-11-02T10:00:00" : null },
     { chapterId: 4, campaignId: 1, campaignName: "Le Miniere", title: "La caverna", description: "Continua", storyText: "La storia continua.", orderIndex: 2, hasCombat: false, lessonId: null, lessonCompleted: false, quizId: null, quizPassed: false, combatWon: false, rewardBadgeId: null, unlocked: completed, completed: false, completedAt: null },
   ]
   const hero = { id: 11, campaignId: 1, name: "Kael", race: "Nano", characterClass: "Guerriero", level: 1, currentHp: 15, maxHp: 15, armorClass: 14, playerUsername: claimed ? "tester" : null, imageUrl: null, weaponName: "Ascia", damageDie: 6, spellcaster: false }
@@ -37,8 +38,8 @@ async function setup(options = {}) {
     if (path === "/api/campaigns/1/chapters/player") return reply(chapters())
     if (path === "/api/campaigns/1/chapters") return reply(chapters().map(item => ({ ...item, id: item.chapterId })))
     if (path === "/api/campaigns/chapters/3/complete") { assert.equal(options.noQuiz ? lessonRead : quizPassed, true); completed = true; return reply({ chapterId: 3, completed: true, completedAt: "2026-11-02T10:00:00" }) }
-    if (path === "/api/lessons/me/progress") return reply([{ lessonId: 10, title: "Le basi", orderIndex: 1, unlocked: true, completed: quizPassed || lessonRead }])
-    if (path === "/api/lessons/10/complete") { lessonRead = true; return reply({ lessonId: 10, completed: true, unlocked: true }) }
+    if (path === "/api/lessons/me/progress") return lessonLookupFailed ? reply({ message: "Progressi non disponibili" }, 503) : reply([{ lessonId: 10, title: "Le basi", orderIndex: 1, unlocked: true, completed: quizPassed || lessonRead }])
+    if (path === "/api/lessons/10/complete") { if (options.lessonSaveError) return reply({ message: "Lettura non salvata" }, 503); lessonRead = true; return reply({ lessonId: 10, completed: true, unlocked: true }) }
     if (path === "/api/lessons/10" || path === "/api/lessons/99") return reply({ id: path.endsWith("99") ? 99 : 10, title: "Le basi", content: "Il contenuto della lezione", orderIndex: 1, quiz: options.noQuiz ? null : { id: 20, title: "Verifica le basi" }, chapters: [] })
     if (path === "/api/quizzes/lesson/10") return reply({ id: 20, lessonId: 10, title: "Verifica le basi", passingScore: 70 })
     if (path === "/api/questions/quiz/20") return reply([{ id: 30, text: "Quale dado usi?", answers: [{ id: 40, text: "d20" }, { id: 41, text: "d4" }] }])
@@ -55,7 +56,7 @@ async function setup(options = {}) {
     if (path.includes("/start")) { starts++; return reply({ message: "Non deve essere creato un nuovo scontro" }, 400) }
     return reply({ message: `Endpoint inatteso: ${path}` }, 404)
   })
-  return { context, page, calls, starts: () => starts, allowCharacterLookup: () => { characterLookupFailed = false } }
+  return { context, page, calls, starts: () => starts, allowCharacterLookup: () => { characterLookupFailed = false }, allowLessonLookup: () => { lessonLookupFailed = false } }
 }
 async function screenshot(page, name) {
   if (!process.env.UI_SCREENSHOT_DIR) return
@@ -150,7 +151,7 @@ for (const mobile of [false, true]) {
       await screenshot(page, `dashboard-character-required-${mobile ? "mobile" : "desktop"}`)
       await page.goto(`${baseURL}/campaigns/1/chapters/3`)
       await page.getByRole("heading", { name: "Prima di iniziare, scegli il tuo personaggio", exact: true }).waitFor()
-      assert.equal(await page.getByRole("link", { name: "Leggi la lezione", exact: true }).count(), 0)
+      assert.equal(await page.getByRole("link", { name: "Vai alla lezione", exact: true }).count(), 0)
       assert.equal(await page.getByRole("button", { name: "Completa capitolo", exact: true }).count(), 0)
       await page.reload()
       await choose.waitFor()
@@ -169,7 +170,7 @@ test("Dashboard: dopo la scelta del personaggio il collegamento al capitolo e di
     await page.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
     await page.goto(`${baseURL}/dashboard`)
     await page.getByRole("link", { name: "Continua capitolo", exact: true }).click()
-    await page.getByRole("link", { name: "Leggi la lezione", exact: true }).waitFor()
+    await page.getByRole("link", { name: "Vai alla lezione", exact: true }).waitFor()
   } finally { await context.close() }
 })
 
@@ -181,10 +182,10 @@ for (const path of ["/dashboard", "/campaigns/1/chapters/3"]) {
       await page.getByRole("alert").filter({ hasText: path === "/dashboard" ? "Non riesco a verificare il tuo personaggio" : "Personaggio non disponibile" }).waitFor()
       assert.equal(await page.getByRole("link", { name: "Continua capitolo", exact: true }).count(), 0)
       assert.equal(await page.getByRole("link", { name: "Scegli il tuo personaggio", exact: true }).count(), 0)
-      assert.equal(await page.getByRole("link", { name: "Leggi la lezione", exact: true }).count(), 0)
+      assert.equal(await page.getByRole("link", { name: "Vai alla lezione", exact: true }).count(), 0)
       allowCharacterLookup()
       await page.getByRole("button", { name: "Riprova", exact: true }).click()
-      await page.getByRole("link", { name: path === "/dashboard" ? "Continua capitolo" : "Leggi la lezione", exact: true }).waitFor()
+      await page.getByRole("link", { name: path === "/dashboard" ? "Continua capitolo" : "Vai alla lezione", exact: true }).waitFor()
     } finally { await context.close() }
   })
 }
@@ -194,10 +195,11 @@ test("Player: campagna, lezione, quiz e capitolo successivo senza perdere il con
   try {
     await page.goto(`${baseURL}/dashboard`)
     await page.getByRole("link", { name: "Continua capitolo", exact: true }).click()
-    await page.getByRole("link", { name: "Leggi la lezione", exact: true }).click()
+    await page.getByRole("link", { name: "Vai alla lezione", exact: true }).click()
     await page.waitForURL(`${baseURL}/lessons/10?campaignId=1&chapterId=3`)
     await page.getByRole("link", { name: "Torna al capitolo", exact: true }).waitFor()
     assert.equal(await page.getByRole("navigation", { name: "Navigazione principale" }).getByRole("link", { name: "Campagne", exact: true }).getAttribute("aria-current"), "page")
+    await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
     await page.getByRole("link", { name: "Vai al quiz", exact: true }).click()
     await page.getByRole("radio", { name: "d20", exact: true }).check()
     await page.getByRole("button", { name: "Invia quiz", exact: true }).click()
@@ -207,6 +209,66 @@ test("Player: campagna, lezione, quiz e capitolo successivo senza perdere il con
     await page.getByRole("link", { name: "Vai al prossimo capitolo", exact: true }).click()
     await page.getByRole("heading", { name: "La caverna", exact: true }).waitFor()
     assert.equal(await page.getByRole("button", { name: "Completa capitolo", exact: true }).isEnabled(), true)
+  } finally { await context.close() }
+})
+
+for (const source of ["", "?campaignId=1&chapterId=3"]) {
+  test(`Quiz: URL diretto bloccato fino al completamento salvato della lezione, source=${source || "biblioteca"}`, async () => {
+    const { page, context, calls } = await setup({ claimed: true })
+    try {
+      await page.goto(`${baseURL}/lessons/10/quiz${source}`)
+      await page.getByRole("heading", { name: "Prima completa la lezione", exact: true }).waitFor()
+      assert.equal(await page.getByRole("radio").count(), 0)
+      assert.equal(calls.some(call => call.path === "/api/quizzes/lesson/10" || call.path === "/api/questions/quiz/20" || call.path === "/api/quizzes/submit"), false)
+      await page.getByRole("link", { name: "Leggi la lezione", exact: true }).click()
+      await page.getByRole("button", { name: "Prima completa la lezione", exact: true }).waitFor()
+      assert.equal(await page.getByRole("link", { name: "Vai al quiz", exact: true }).count(), 0)
+      await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
+      await page.getByRole("link", { name: "Vai al quiz", exact: true }).click()
+      await page.getByRole("radio", { name: "d20", exact: true }).waitFor()
+      await page.reload()
+      await page.getByRole("radio", { name: "d20", exact: true }).waitFor()
+    } finally { await context.close() }
+  })
+}
+
+test("Quiz di un capitolo senza lezione principale: prepara la lezione collegata e conserva il ritorno", async () => {
+  const { page, context } = await setup({ claimed: true, quizOnly: true, mobile: true })
+  try {
+    await page.goto(`${baseURL}/campaigns/1/chapters/3`)
+    await page.getByRole("link", { name: "Leggi la lezione del quiz", exact: true }).click()
+    await page.waitForURL(`${baseURL}/lessons/10?campaignId=1&chapterId=3`)
+    await page.getByRole("link", { name: "Torna al capitolo", exact: true }).waitFor()
+    await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
+    await page.getByRole("link", { name: "Continua il capitolo", exact: true }).click()
+    await page.getByRole("link", { name: "Vai al quiz", exact: true }).click()
+    await page.getByRole("radio", { name: "d20", exact: true }).check()
+    await page.getByRole("button", { name: "Invia quiz", exact: true }).click()
+    await page.getByRole("link", { name: "Torna al capitolo e prosegui", exact: true }).waitFor()
+  } finally { await context.close() }
+})
+
+test("Quiz: errore nel salvataggio della lettura mantiene il quiz bloccato", async () => {
+  const { page, context, calls } = await setup({ claimed: true, lessonSaveError: true })
+  try {
+    await page.goto(`${baseURL}/lessons/10?campaignId=1&chapterId=3`)
+    await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
+    await page.getByRole("alert").filter({ hasText: "Lettura non salvata" }).waitFor()
+    assert.equal(await page.getByRole("link", { name: "Vai al quiz", exact: true }).count(), 0)
+    assert.equal(await page.getByRole("button", { name: "Prima completa la lezione", exact: true }).isDisabled(), true)
+    assert.equal(calls.some(call => call.path === "/api/quizzes/submit"), false)
+  } finally { await context.close() }
+})
+
+test("Quiz: errore nel controllo dei progressi offre riprova senza caricare domande", async () => {
+  const { page, context, calls, allowLessonLookup } = await setup({ claimed: true, lessonRead: true, lessonProgressError: true })
+  try {
+    await page.goto(`${baseURL}/lessons/10/quiz`)
+    await page.getByRole("alert").filter({ hasText: "Progressi non disponibili" }).waitFor()
+    assert.equal(calls.some(call => call.path === "/api/questions/quiz/20"), false)
+    allowLessonLookup()
+    await page.getByRole("button", { name: "Riprova", exact: true }).click()
+    await page.getByRole("radio", { name: "d20", exact: true }).waitFor()
   } finally { await context.close() }
 })
 

@@ -52,6 +52,7 @@ async function setup(viewport = { width: 1600, height: 1000 }, options = {}) {
       })
     }
     if (path.endsWith("/api/users/me")) return reply({ id: 1, username: "tester", email: "test@example.test", role: options.role ?? "MASTER", learningLevel: "BEGINNER" })
+    if (path.endsWith("/api/lessons/me/progress")) return reply([{ lessonId: 10, completed: (options.lessonCompleted ?? true) || (options.quizPassed ?? true), unlocked: true }])
     if (path.endsWith("/api/campaigns/1/chapters/player")) return reply([{
       chapterId: 3, campaignId: 1, campaignName: "Miniere", title: "Il Sentiero degli Agguati",
       description: "Un agguato nel bosco", storyText: "La storia del capitolo.", orderIndex: 3,
@@ -174,7 +175,10 @@ for (const failUpload of [false, true]) test(`NPC: creazione con ritratto e ${fa
     await dialog.getByLabel("Nome", { exact: true }).fill("Guida delle miniere")
     await dialog.getByLabel("Schieramento", { exact: true }).selectOption("ally")
     const uploadButton = dialog.getByRole("button", { name: "Carica immagine", exact: true })
+    await page.bringToFront()
+    await uploadButton.scrollIntoViewIfNeeded()
     await uploadButton.focus()
+    assert.equal(await uploadButton.evaluate(element => element === document.activeElement), true)
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.keyboard.press("Enter")])
     await chooser.setFiles({ name: "ritratto.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a52kAAAAASUVORK5CYII=", "base64") })
     await dialog.getByText("File selezionato: ritratto.png", { exact: true }).waitFor()
@@ -242,6 +246,7 @@ for (const scenario of [
   { name: "tutti i requisiti da svolgere", lessonCompleted: false, quizPassed: false, combatWon: false },
   { name: "progressi misti", lessonCompleted: true, quizPassed: false, combatWon: true },
   { name: "quiz senza lezione del capitolo", quizOnly: true, lessonCompleted: false, quizPassed: true, combatWon: false },
+  { name: "quiz da svolgere senza lezione del capitolo", quizOnly: true, lessonCompleted: false, quizPassed: false, combatWon: false },
 ]) test(`requisiti capitolo: ${scenario.name}`, async () => {
   const { context, page } = await setup(undefined, { ...scenario, role: "PLAYER" })
   try {
@@ -256,11 +261,22 @@ for (const scenario of [
       }
       const quiz = page.getByRole("region", { name: "Quiz", exact: true })
       await quiz.getByText(scenario.quizPassed ? "Quiz superato" : "Da superare", { exact: true }).waitFor()
-      assert.equal(await quiz.getByRole("link", { name: scenario.quizPassed ? "Ripeti quiz" : "Vai al quiz", exact: true }).getAttribute("href"), "/lessons/10/quiz?campaignId=1&chapterId=3")
+      const quizBlocked = !scenario.lessonCompleted && !scenario.quizPassed
+      if (quizBlocked) assert.equal(await quiz.getByRole("button", { name: "Prima completa la lezione", exact: true }).isDisabled(), true)
+      else assert.equal(await quiz.getByRole("link", { name: scenario.quizPassed ? "Ripeti quiz" : "Vai al quiz", exact: true }).getAttribute("href"), "/lessons/10/quiz?campaignId=1&chapterId=3")
       const combat = page.getByRole("region", { name: "Combattimento", exact: true })
       await combat.getByText(scenario.combatWon ? "Combattimento vinto" : "Da vincere", { exact: true }).waitFor()
       await combat.getByRole("link", { name: scenario.combatWon ? "Ripeti combattimento" : "Avvia combattimento", exact: true }).waitFor()
       await page.getByRole("button", { name: "Completa capitolo", exact: true }).waitFor()
+      const story = page.getByRole("region", { name: "Storia del capitolo", exact: true })
+      const storyBox = await story.boundingBox()
+      const firstActivityBox = await (scenario.quizOnly ? quiz : lesson).boundingBox()
+      assert.ok(storyBox.y + storyBox.height <= firstActivityBox.y, "La storia deve precedere le attivita")
+      assert.equal(await page.getByRole("heading", { name: "Il tuo prossimo passo", exact: true }).count(), 0)
+      assert.equal(await page.getByText("Prossima attività", { exact: true }).count(), 1)
+      const next = !scenario.quizOnly && !scenario.lessonCompleted ? lesson : !scenario.quizPassed ? quiz : combat
+      await next.getByText("Prossima attività", { exact: true }).waitFor()
+      assert.match(await next.getByRole("link").getAttribute("class"), /bg-gradient-to-r/)
     }
     await verifyRequirements()
     if (scenario.lessonCompleted && scenario.quizPassed) {
@@ -268,6 +284,25 @@ for (const scenario of [
       await verifyRequirements()
       await screenshot(page, "chapter-requirements-completed")
     }
+  } finally { await context.close() }
+})
+
+for (const width of [390, 1440]) test(`Capitolo: storia prima delle attivita, unico invito per lezione e quiz, ${width}px`, async () => {
+  const { context, page } = await setup({ width, height: 1000 }, { role: "PLAYER", lessonCompleted: false, quizPassed: false })
+  try {
+    await page.goto(`${baseURL}/campaigns/1/chapters/3`)
+    const story = page.getByRole("region", { name: "Storia del capitolo", exact: true })
+    await story.waitFor()
+    for (const title of ["Lezione", "Quiz", "Combattimento"]) {
+      const activity = page.getByRole("region", { name: title, exact: true })
+      assert.ok(await story.evaluate((el, target) => Boolean(el.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING), await activity.elementHandle()))
+      assert.equal(await activity.getByRole("link").count(), title === "Quiz" ? 0 : 1)
+    }
+    assert.equal(await page.getByRole("link", { name: "Vai alla lezione", exact: true }).count(), 1)
+    assert.equal(await page.getByRole("link", { name: "Vai al quiz", exact: true }).count(), 0)
+    assert.equal(await page.getByRole("region", { name: "Quiz", exact: true }).getByRole("button", { name: "Prima completa la lezione", exact: true }).isDisabled(), true)
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+    await screenshot(page, `chapter-story-first-${width}`)
   } finally { await context.close() }
 })
 

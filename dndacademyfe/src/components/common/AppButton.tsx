@@ -30,7 +30,7 @@ export default function AppButton({
   ...props
 }: AppButtonProps) {
   const classes = [
-    "inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold transition disabled:cursor-default disabled:opacity-60",
     variantClasses[variant],
     fullWidth ? "w-full" : "",
     className,

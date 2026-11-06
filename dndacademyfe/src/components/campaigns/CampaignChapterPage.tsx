@@ -16,11 +16,24 @@ import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { campaignService } from "@/services/campaign.service"
 import { characterService } from "@/services/character.service"
+import { lessonService } from "@/services/lesson.service"
 import type { CampaignChapterPlayer } from "@/types/campaign-chapter"
-import { chapterBreadcrumbs, chapterHref, chapterRequirementsMet, combatHref, lessonHref, nextChapterAction } from "@/lib/navigation"
+import {
+  chapterBreadcrumbs,
+  chapterHref,
+  chapterRequirementsMet,
+  combatHref,
+  lessonHref,
+  nextChapterAction,
+} from "@/lib/navigation"
 
-export default function CampaignChapterDetailPage({ campaignId, chapterId }: { campaignId: number; chapterId: number }) {
-
+export default function CampaignChapterDetailPage({
+  campaignId,
+  chapterId,
+}: {
+  campaignId: number
+  chapterId: number
+}) {
   const [chapter, setChapter] = useState<CampaignChapterPlayer | null>(null)
   const [chapters, setChapters] = useState<CampaignChapterPlayer[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -29,6 +42,7 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
   const [completeError, setCompleteError] = useState("")
   const [hasCharacter, setHasCharacter] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [completedLessons, setCompletedLessons] = useState<number[]>([])
 
   useEffect(() => {
     let active = true
@@ -42,13 +56,21 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
       }
 
       try {
-        const [chapters, characters] = await Promise.all([
+        const [chapters, characters, lessons] = await Promise.all([
           campaignService.getPlayerChapters(campaignId),
           characterService.getMine(),
+          lessonService.getMyProgress(),
         ])
         if (!active) return
         setChapters(chapters)
-        setHasCharacter(characters.some(character => character.campaignId === campaignId))
+        setHasCharacter(
+          characters.some((character) => character.campaignId === campaignId),
+        )
+        setCompletedLessons(
+          lessons
+            .filter((lesson) => lesson.completed)
+            .map((lesson) => lesson.lessonId),
+        )
 
         const selectedChapter = chapters.find(
           (item) => item.chapterId === chapterId,
@@ -76,7 +98,9 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
     }
 
     loadChapter()
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [campaignId, chapterId, attempt])
 
   async function handleCompleteChapter() {
@@ -104,10 +128,12 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
       try {
         const updated = await campaignService.getPlayerChapters(campaignId)
         setChapters(updated)
-        const refreshed = updated.find(item => item.chapterId === chapterId)
+        const refreshed = updated.find((item) => item.chapterId === chapterId)
         if (refreshed) setChapter(refreshed)
       } catch {
-        setCompleteError("Capitolo completato. Torna alla campagna per aggiornare l’elenco dei prossimi capitoli.")
+        setCompleteError(
+          "Capitolo completato. Torna alla campagna per aggiornare l’elenco dei prossimi capitoli.",
+        )
       }
     } catch (err) {
       const message =
@@ -120,6 +146,19 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
       setIsCompleting(false)
     }
   }
+
+  const nextAction =
+    chapter && !chapter.completed && !chapterRequirementsMet(chapter)
+      ? nextChapterAction(chapter)
+      : null
+  const hasActivities = Boolean(
+    chapter?.lessonId || chapter?.quizId || chapter?.hasCombat,
+  )
+  const quizLessonId = chapter?.quizLessonId ?? chapter?.lessonId
+  const quizBlocked = Boolean(
+    chapter?.quizId &&
+    (!quizLessonId || !completedLessons.includes(quizLessonId)),
+  )
 
   return (
     <AppShell breadcrumbs={chapter ? chapterBreadcrumbs(chapter) : undefined}>
@@ -143,135 +182,271 @@ export default function CampaignChapterDetailPage({ campaignId, chapterId }: { c
             <p role="alert" className="text-danger">
               {error}
             </p>
-            <AppButton className="mt-4" variant="secondary" onClick={() => setAttempt(value => value + 1)}>Riprova</AppButton>
+            <AppButton
+              className="mt-4"
+              variant="secondary"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Riprova
+            </AppButton>
           </AppCard>
         )}
 
-        {!isLoading && !error && chapter && !hasCharacter && !chapter.completed && (
-          <AppCard className="space-y-4 border-[var(--border-gold)]">
-            <h2 className="text-2xl font-black">Prima di iniziare, scegli il tuo personaggio</h2>
-            <p className="text-[var(--text-soft)]">Per giocare a {chapter.campaignName}, scegli chi interpreterai tra i personaggi preparati dal Master. Poi potrai iniziare i capitoli.</p>
-            <AppButton href={`/characters?campaignId=${campaignId}`}>Scegli il tuo personaggio</AppButton>
-          </AppCard>
-        )}
-
-        {!isLoading && !error && chapter && (hasCharacter || chapter.completed) && (
-          <>
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
-                Capitolo {chapter.orderIndex}
-              </p>
-
-              <h2 className="mt-2 text-3xl font-black text-[var(--text-main)]">
-                {chapter.title}
+        {!isLoading &&
+          !error &&
+          chapter &&
+          !hasCharacter &&
+          !chapter.completed && (
+            <AppCard className="space-y-4 border-[var(--border-gold)]">
+              <h2 className="text-2xl font-black">
+                Prima di iniziare, scegli il tuo personaggio
               </h2>
-
-              {chapter.description && (
-                <p className="mt-2 max-w-3xl text-[var(--text-soft)]">
-                  {chapter.description}
-                </p>
-              )}
-            </div>
-
-            {!chapter.completed && <AppCard className="space-y-3 border-[var(--border-gold)]"><h3 className="text-lg font-black">Il tuo prossimo passo</h3><p className="text-sm text-[var(--text-soft)]">{chapterRequirementsMet(chapter) ? "Hai soddisfatto i requisiti: leggi la storia e completa il capitolo per proseguire." : "Segui le attività richieste e torna qui per completare il capitolo."}</p>{!chapterRequirementsMet(chapter) && <AppButton href={nextChapterAction(chapter).href}>{nextChapterAction(chapter).label}</AppButton>}</AppCard>}
-            {chapter.completed && <AppCard className="space-y-3 border-[var(--primary)]"><p role="status">Capitolo completato! I tuoi progressi sono salvati.</p>{(() => {
-              const next = [...chapters].sort((a, b) => a.orderIndex - b.orderIndex).find(item => item.orderIndex > chapter.orderIndex && item.unlocked && !item.completed)
-              return next ? <AppButton href={chapterHref(campaignId, next.chapterId)}>Vai al prossimo capitolo</AppButton> : <AppButton href={`/campaigns/${campaignId}`} variant="secondary">Torna alla campagna</AppButton>
-            })()}</AppCard>}
-            <AppCard>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
-                Storia
+              <p className="text-[var(--text-soft)]">
+                Per giocare a {chapter.campaignName}, scegli chi interpreterai
+                tra i personaggi preparati dal Master. Poi potrai iniziare i
+                capitoli.
               </p>
-
-              <p className="mt-4 whitespace-pre-line text-base leading-8 text-[var(--text-soft)]">
-                {chapter.storyText}
-              </p>
+              <AppButton href={`/characters?campaignId=${campaignId}`}>
+                Scegli il tuo personaggio
+              </AppButton>
             </AppCard>
+          )}
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              {chapter.lessonId && (
-                <ActionCard
-                  icon={<FiBookOpen aria-hidden="true" />}
-                  title="Lezione"
-                  description={
-                    chapter.lessonTitle ?? "Completa la lezione collegata."
-                  }
-                  href={lessonHref(chapter.lessonId, { campaignId, chapterId })}
-                  label={chapter.lessonCompleted ? "Rivedi lezione" : "Vai alla lezione"}
-                  completed={chapter.lessonCompleted}
-                  statusLabel={chapter.lessonCompleted ? "Lezione completata" : "Da completare"}
-                  hint={chapter.lessonCompleted ? "Puoi rivedere la lezione: il completamento resta salvato." : "Completa la lezione per soddisfare questo requisito."}
-                />
+        {!isLoading &&
+          !error &&
+          chapter &&
+          (hasCharacter || chapter.completed) && (
+            <>
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
+                  Capitolo {chapter.orderIndex}
+                </p>
+
+                <h2 className="mt-2 text-3xl font-black text-[var(--text-main)]">
+                  {chapter.title}
+                </h2>
+
+                {chapter.description && (
+                  <p className="mt-2 max-w-3xl text-[var(--text-soft)]">
+                    {chapter.description}
+                  </p>
+                )}
+              </div>
+
+              <AppCard role="region" aria-label="Storia del capitolo">
+                <h3 className="text-xl font-black text-[var(--text-main)]">
+                  1. Leggi la storia
+                </h3>
+                <p className="mt-2 text-sm text-[var(--text-muted)]">
+                  Entra nella scena e scopri cosa sta vivendo il tuo
+                  personaggio. Dopo la storia trovi le attività del capitolo.
+                </p>
+
+                <p className="mt-4 whitespace-pre-line text-base leading-8 text-[var(--text-soft)]">
+                  {chapter.storyText}
+                </p>
+              </AppCard>
+
+              {hasActivities && (
+                <div>
+                  <h3 className="text-xl font-black">2. Svolgi le attività</h3>
+                  <p className="mt-2 text-sm text-[var(--text-soft)]">
+                    {chapter.completed
+                      ? "Puoi rivedere le attività per esercitarti: i progressi restano salvati."
+                      : "Dopo aver letto la storia, segui le attività nell’ordine indicato. Il prossimo passo è evidenziato."}
+                  </p>
+                </div>
               )}
+              <div className="space-y-4">
+                {chapter.lessonId && (
+                  <ActionCard
+                    icon={<FiBookOpen aria-hidden="true" />}
+                    title="Lezione"
+                    description={
+                      chapter.lessonTitle ?? "Completa la lezione collegata."
+                    }
+                    href={lessonHref(chapter.lessonId, {
+                      campaignId,
+                      chapterId,
+                    })}
+                    label={
+                      chapter.lessonCompleted
+                        ? "Rivedi lezione"
+                        : "Vai alla lezione"
+                    }
+                    completed={chapter.lessonCompleted}
+                    isNext={
+                      nextAction?.href ===
+                      lessonHref(chapter.lessonId, { campaignId, chapterId })
+                    }
+                    statusLabel={
+                      chapter.lessonCompleted
+                        ? "Lezione completata"
+                        : "Da completare"
+                    }
+                    hint={
+                      chapter.lessonCompleted
+                        ? "Puoi rivedere la lezione: il completamento resta salvato."
+                        : "Completa la lezione per soddisfare questo requisito."
+                    }
+                  />
+                )}
 
-              {chapter.quizId && (
-                <ActionCard
-                  icon={<FiHelpCircle aria-hidden="true" />}
-                  title="Quiz"
-                  description={chapter.quizTitle ?? "Supera il quiz collegato."}
-                  href={lessonHref((chapter.quizLessonId ?? chapter.lessonId)!, { campaignId, chapterId }, true)}
-                  label={chapter.quizPassed ? "Ripeti quiz" : "Vai al quiz"}
-                  completed={chapter.quizPassed}
-                  statusLabel={chapter.quizPassed ? "Quiz superato" : "Da superare"}
-                  hint={chapter.quizPassed ? "Puoi ripeterlo per esercitarti: il superamento resta valido." : "Supera il quiz per soddisfare questo requisito."}
-                />
-              )}
+                {chapter.quizId && (
+                  <ActionCard
+                    icon={<FiHelpCircle aria-hidden="true" />}
+                    title="Quiz"
+                    description={
+                      chapter.quizTitle ?? "Supera il quiz collegato."
+                    }
+                    href={lessonHref(
+                      (chapter.quizLessonId ?? chapter.lessonId)!,
+                      { campaignId, chapterId },
+                      true,
+                    )}
+                    label={chapter.quizPassed ? "Ripeti quiz" : "Vai al quiz"}
+                    completed={chapter.quizPassed}
+                    blocked={quizBlocked}
+                    prerequisiteHref={
+                      quizBlocked &&
+                      quizLessonId &&
+                      quizLessonId !== chapter.lessonId
+                        ? lessonHref(quizLessonId, { campaignId, chapterId })
+                        : undefined
+                    }
+                    isNext={
+                      nextAction?.href ===
+                      lessonHref(
+                        (chapter.quizLessonId ?? chapter.lessonId)!,
+                        { campaignId, chapterId },
+                        true,
+                      )
+                    }
+                    statusLabel={
+                      chapter.quizPassed ? "Quiz superato" : "Da superare"
+                    }
+                    hint={
+                      quizBlocked
+                        ? "Leggi la lezione collegata e premi Segna come letta per sbloccare il quiz."
+                        : chapter.quizPassed
+                          ? "Puoi ripeterlo per esercitarti: il superamento resta valido."
+                          : "Supera il quiz per soddisfare questo requisito."
+                    }
+                  />
+                )}
 
-              {chapter.hasCombat && (
-                <ActionCard
-                  icon={<FiShield aria-hidden="true" />}
-                  title="Combattimento"
-                  description="Affronta il combattimento previsto da questo capitolo."
-                  href={combatHref(chapter.campaignId, chapter.chapterId)}
-                  label={chapter.combatWon ? "Ripeti combattimento" : "Avvia combattimento"}
-                  completed={chapter.combatWon}
-                  statusLabel={chapter.combatWon ? "Combattimento vinto" : "Da vincere"}
-                  hint={chapter.combatWon ? "Hai già ottenuto una vittoria per questo capitolo." : "Vinci lo scontro per soddisfare questo requisito."}
-                />
-              )}
+                {chapter.hasCombat && (
+                  <ActionCard
+                    icon={<FiShield aria-hidden="true" />}
+                    title="Combattimento"
+                    description="Affronta il combattimento previsto da questo capitolo."
+                    href={combatHref(chapter.campaignId, chapter.chapterId)}
+                    label={
+                      chapter.combatWon
+                        ? "Ripeti combattimento"
+                        : "Avvia combattimento"
+                    }
+                    completed={chapter.combatWon}
+                    isNext={
+                      nextAction?.href ===
+                      combatHref(chapter.campaignId, chapter.chapterId)
+                    }
+                    statusLabel={
+                      chapter.combatWon ? "Combattimento vinto" : "Da vincere"
+                    }
+                    hint={
+                      chapter.combatWon
+                        ? "Hai già ottenuto una vittoria per questo capitolo."
+                        : "Vinci lo scontro per soddisfare questo requisito."
+                    }
+                  />
+                )}
+              </div>
 
+              <AppCard
+                className={
+                  !chapter.completed && chapterRequirementsMet(chapter)
+                    ? "border-[var(--border-gold)]"
+                    : ""
+                }
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-[var(--text-main)]">
+                      {hasActivities ? "3." : "2."} Completa il capitolo
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                      Il capitolo viene completato solo dopo aver soddisfatto
+                      tutti i requisiti: lezione, quiz e combattimento se
+                      presenti.
+                    </p>
+                  </div>
+                  {completeError && (
+                    <p role="alert" className="text-danger">
+                      {completeError}
+                    </p>
+                  )}
+
+                  <AppButton
+                    type="button"
+                    variant={
+                      !chapter.completed && chapterRequirementsMet(chapter)
+                        ? "primary"
+                        : "secondary"
+                    }
+                    onClick={handleCompleteChapter}
+                    disabled={
+                      chapter.completed ||
+                      isCompleting ||
+                      !chapterRequirementsMet(chapter)
+                    }
+                  >
+                    {isCompleting
+                      ? "Completamento in corso..."
+                      : chapter.completed
+                        ? "Capitolo completato"
+                        : "Completa capitolo"}
+                  </AppButton>
+                </div>
+              </AppCard>
               {chapter.rewardBadgeId !== null && (
                 <RewardCard
                   rewardBadgeName={chapter.rewardBadgeName}
                   completed={chapter.completed}
                 />
               )}
-            </div>
-
-            <AppCard>
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h3 className="text-xl font-black text-[var(--text-main)]">
-                    Completamento capitolo
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
-                    Il capitolo viene completato solo dopo aver soddisfatto
-                    tutti i requisiti: lezione, quiz e combattimento se
-                    presenti.
+              {chapter.completed && (
+                <AppCard className="space-y-3 border-[var(--primary)]">
+                  <p role="status">
+                    Capitolo completato! I tuoi progressi sono salvati.
                   </p>
-                </div>
-                {completeError && (
-                  <p role="alert" className="text-danger">
-                    {completeError}
-                  </p>
-                )}
-
-                <AppButton
-                  type="button"
-                  onClick={handleCompleteChapter}
-                  disabled={chapter.completed || isCompleting || !chapterRequirementsMet(chapter)}
-                >
-                  {isCompleting
-                    ? "Completamento in corso..."
-                    : chapter.completed
-                      ? "Capitolo completato"
-                      : "Completa capitolo"}
-                </AppButton>
-              </div>
-            </AppCard>
-          </>
-        )}
+                  {(() => {
+                    const next = [...chapters]
+                      .sort((a, b) => a.orderIndex - b.orderIndex)
+                      .find(
+                        (item) =>
+                          item.orderIndex > chapter.orderIndex &&
+                          item.unlocked &&
+                          !item.completed,
+                      )
+                    return next ? (
+                      <AppButton href={chapterHref(campaignId, next.chapterId)}>
+                        Vai al prossimo capitolo
+                      </AppButton>
+                    ) : (
+                      <AppButton
+                        href={`/campaigns/${campaignId}`}
+                        variant="secondary"
+                      >
+                        Torna alla campagna
+                      </AppButton>
+                    )
+                  })()}
+                </AppCard>
+              )}
+            </>
+          )}
       </section>
     </AppShell>
   )
@@ -284,6 +459,9 @@ type ActionCardProps = {
   href: string
   label: string
   completed: boolean
+  isNext: boolean
+  blocked?: boolean
+  prerequisiteHref?: string
   statusLabel: string
   hint: string
 }
@@ -295,11 +473,24 @@ function ActionCard({
   href,
   label,
   completed,
+  isNext,
+  blocked = false,
+  prerequisiteHref,
   statusLabel,
   hint,
 }: ActionCardProps) {
   return (
-    <AppCard role="region" aria-label={title} className={completed ? "border-[var(--primary)]/60" : ""}>
+    <AppCard
+      role="region"
+      aria-label={title}
+      className={
+        isNext
+          ? "border-[var(--border-gold)]"
+          : completed
+            ? "border-[var(--primary)]/60"
+            : ""
+      }
+    >
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--surface-muted)] text-[var(--accent)]">
           {icon}
@@ -309,9 +500,17 @@ function ActionCard({
           <h3 className="text-xl font-black text-[var(--text-main)]">
             {title}
           </h3>
+          {isNext && (
+            <p className="mt-2 text-sm font-bold text-[var(--accent-soft)]">
+              Prossima attività
+            </p>
+          )}
 
-          <p className={`mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${completed ? "bg-emerald-500/10 text-emerald-300" : "bg-[var(--surface-muted)] text-[var(--accent-soft)]"}`}>
-            {completed && <FiCheckCircle aria-hidden="true" />}{statusLabel}
+          <p
+            className={`mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ${completed ? "bg-emerald-500/10 text-emerald-300" : "bg-[var(--surface-muted)] text-[var(--accent-soft)]"}`}
+          >
+            {completed && <FiCheckCircle aria-hidden="true" />}
+            {statusLabel}
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
             {description}
@@ -319,7 +518,25 @@ function ActionCard({
 
           <p className="mt-2 text-sm text-[var(--text-soft)]">{hint}</p>
           <div className="mt-4">
-            <AppButton href={href} variant={completed ? "secondary" : "primary"}>{label}</AppButton>
+            {blocked ? (
+              <div className="flex flex-wrap gap-3">
+                <AppButton disabled variant="secondary">
+                  Prima completa la lezione
+                </AppButton>
+                {prerequisiteHref && (
+                  <AppButton
+                    href={prerequisiteHref}
+                    variant={isNext ? "primary" : "secondary"}
+                  >
+                    Leggi la lezione del quiz
+                  </AppButton>
+                )}
+              </div>
+            ) : (
+              <AppButton href={href} variant={isNext ? "primary" : "secondary"}>
+                {label}
+              </AppButton>
+            )}
           </div>
         </div>
       </div>

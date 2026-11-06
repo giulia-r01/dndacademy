@@ -8,16 +8,35 @@ import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { useChapterContext } from "@/hooks/useChapterContext"
-import { chapterBreadcrumbs, chapterHref, lessonHref, type ChapterContext } from "@/lib/navigation"
+import {
+  chapterBreadcrumbs,
+  chapterHref,
+  lessonHref,
+  type ChapterContext,
+} from "@/lib/navigation"
 import { quizService } from "@/services/quiz.service"
+import { lessonService } from "@/services/lesson.service"
 import type { Question, Quiz, QuizResult } from "@/types/quiz"
 
 type SelectedAnswers = Record<number, number>
 
-export default function LessonQuizPage({ lessonId, source }: { lessonId: number; source: ChapterContext | null }) {
+export default function LessonQuizPage({
+  lessonId,
+  source,
+}: {
+  lessonId: number
+  source: ChapterContext | null
+}) {
   const context = useChapterContext(lessonId, source, true)
-  const backToChapter = context.chapter ? chapterHref(context.chapter.campaignId, context.chapter.chapterId) : null
-  const validSource = context.chapter ? { campaignId: context.chapter.campaignId, chapterId: context.chapter.chapterId } : null
+  const backToChapter = context.chapter
+    ? chapterHref(context.chapter.campaignId, context.chapter.chapterId)
+    : null
+  const validSource = context.chapter
+    ? {
+        campaignId: context.chapter.campaignId,
+        chapterId: context.chapter.chapterId,
+      }
+    : null
 
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
@@ -27,9 +46,16 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [lessonCompleted, setLessonCompleted] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    if (context.loading || context.error) return
+    let active = true
     async function loadQuiz() {
+      setIsLoading(true)
+      setError("")
+      setLessonCompleted(false)
       if (Number.isNaN(lessonId)) {
         setError("ID lezione non valido")
         setIsLoading(false)
@@ -37,23 +63,37 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
       }
 
       try {
+        const progress = await lessonService.getMyProgress()
+        if (!active) return
+        if (
+          !progress.some(
+            (lesson) => lesson.lessonId === lessonId && lesson.completed,
+          )
+        )
+          return
+        setLessonCompleted(true)
         const quizData = await quizService.getByLesson(lessonId)
+        if (!active) return
         setQuiz(quizData)
 
         const questionsData = await quizService.getQuestionsByQuiz(quizData.id)
+        if (!active) return
         setQuestions(questionsData)
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Errore nel caricamento quiz"
 
-        setError(message)
+        if (active) setError(message)
       } finally {
-        setIsLoading(false)
+        if (active) setIsLoading(false)
       }
     }
 
     loadQuiz()
-  }, [lessonId])
+    return () => {
+      active = false
+    }
+  }, [lessonId, attempt, context.loading, context.error])
 
   function handleAnswerChange(questionId: number, answerId: number) {
     setSelectedAnswers((current) => ({
@@ -65,6 +105,8 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
+    if (!lessonCompleted || context.loading || context.error || isSubmitting)
+      return
     if (!quiz) {
       setError("Quiz non disponibile")
       return
@@ -100,7 +142,14 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
   }
 
   return (
-    <AppShell activeHref={context.chapter ? "/campaigns" : undefined} breadcrumbs={context.chapter ? [...chapterBreadcrumbs(context.chapter), { label: "Quiz" }] : undefined}>
+    <AppShell
+      activeHref={context.chapter ? "/campaigns" : undefined}
+      breadcrumbs={
+        context.chapter
+          ? [...chapterBreadcrumbs(context.chapter), { label: "Quiz" }]
+          : undefined
+      }
+    >
       <section className="space-y-6">
         <Link
           href={lessonHref(lessonId, validSource)}
@@ -110,8 +159,14 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
           Torna alla lezione
         </Link>
 
-        {context.error && <AppCard><p role="alert" className="text-[var(--danger)]">{context.error}</p></AppCard>}
-        {(isLoading || context.loading) && (
+        {context.error && (
+          <AppCard>
+            <p role="alert" className="text-[var(--danger)]">
+              {context.error}
+            </p>
+          </AppCard>
+        )}
+        {(isLoading || context.loading) && !context.error && (
           <AppCard>
             <p className="text-[var(--text-muted)]">Caricamento quiz...</p>
           </AppCard>
@@ -122,83 +177,115 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
             <p role="alert" className="text-danger">
               {error}
             </p>
+            <AppButton
+              className="mt-4"
+              variant="secondary"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Riprova
+            </AppButton>
           </AppCard>
         )}
 
-        {!isLoading && !context.loading && !error && quiz && !result && (
-          <>
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
-                Quiz
+        {!isLoading &&
+          !context.loading &&
+          !context.error &&
+          !error &&
+          !lessonCompleted && (
+            <AppCard className="space-y-4">
+              <h2 className="text-2xl font-black">Prima completa la lezione</h2>
+              <p className="text-[var(--text-soft)]">
+                Leggi la lezione collegata e premi Segna come letta. Poi potrai
+                affrontare il quiz.
               </p>
-
-              <h2 className="mt-2 text-3xl font-black text-[var(--text-main)]">
-                {quiz.title}
-              </h2>
-
-              <p className="mt-2 text-[var(--text-soft)]">
-                Punteggio minimo richiesto: {quiz.passingScore}%
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {questions.map((question, index) => (
-                <AppCard key={question.id} className="space-y-4">
-                  <div>
-                    <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--accent-soft)]">
-                      Domanda {index + 1}
-                    </p>
-
-                    <h3 className="mt-2 text-xl font-black text-[var(--text-main)]">
-                      {question.text}
-                    </h3>
-                  </div>
-
-                  <fieldset className="space-y-3">
-                    <legend className="sr-only">
-                      Risposte per la domanda {index + 1}
-                    </legend>
-
-                    {question.answers.map((answer) => {
-                      const inputId = `question-${question.id}-answer-${answer.id}`
-
-                      return (
-                        <label
-                          key={answer.id}
-                          htmlFor={inputId}
-                          className={[
-                            "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition",
-                            selectedAnswers[question.id] === answer.id
-                              ? "border-[var(--accent)] bg-[rgba(245,158,11,0.12)] text-[var(--text-main)]"
-                              : "border-[var(--border-teal-soft)] bg-[var(--surface-muted)] text-[var(--text-soft)] hover:border-[var(--accent)]",
-                          ].join(" ")}
-                        >
-                          <input
-                            id={inputId}
-                            type="radio"
-                            name={`question-${question.id}`}
-                            value={answer.id}
-                            checked={selectedAnswers[question.id] === answer.id}
-                            onChange={() =>
-                              handleAnswerChange(question.id, answer.id)
-                            }
-                            className="h-4 w-4 accent-[var(--accent)]"
-                          />
-
-                          <span>{answer.text}</span>
-                        </label>
-                      )
-                    })}
-                  </fieldset>
-                </AppCard>
-              ))}
-
-              <AppButton type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Invio risposte..." : "Invia quiz"}
+              <AppButton href={lessonHref(lessonId, validSource)}>
+                Leggi la lezione
               </AppButton>
-            </form>
-          </>
-        )}
+            </AppCard>
+          )}
+
+        {!isLoading &&
+          !context.loading &&
+          !context.error &&
+          !error &&
+          lessonCompleted &&
+          quiz &&
+          !result && (
+            <>
+              <div>
+                <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
+                  Quiz
+                </p>
+
+                <h2 className="mt-2 text-3xl font-black text-[var(--text-main)]">
+                  {quiz.title}
+                </h2>
+
+                <p className="mt-2 text-[var(--text-soft)]">
+                  Punteggio minimo richiesto: {quiz.passingScore}%
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {questions.map((question, index) => (
+                  <AppCard key={question.id} className="space-y-4">
+                    <div>
+                      <p className="text-sm font-bold uppercase tracking-[0.25em] text-[var(--accent-soft)]">
+                        Domanda {index + 1}
+                      </p>
+
+                      <h3 className="mt-2 text-xl font-black text-[var(--text-main)]">
+                        {question.text}
+                      </h3>
+                    </div>
+
+                    <fieldset className="space-y-3">
+                      <legend className="sr-only">
+                        Risposte per la domanda {index + 1}
+                      </legend>
+
+                      {question.answers.map((answer) => {
+                        const inputId = `question-${question.id}-answer-${answer.id}`
+
+                        return (
+                          <label
+                            key={answer.id}
+                            htmlFor={inputId}
+                            className={[
+                              "flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition",
+                              selectedAnswers[question.id] === answer.id
+                                ? "border-[var(--accent)] bg-[rgba(245,158,11,0.12)] text-[var(--text-main)]"
+                                : "border-[var(--border-teal-soft)] bg-[var(--surface-muted)] text-[var(--text-soft)] hover:border-[var(--accent)]",
+                            ].join(" ")}
+                          >
+                            <input
+                              id={inputId}
+                              type="radio"
+                              name={`question-${question.id}`}
+                              value={answer.id}
+                              checked={
+                                selectedAnswers[question.id] === answer.id
+                              }
+                              onChange={() =>
+                                handleAnswerChange(question.id, answer.id)
+                              }
+                              className="h-4 w-4 accent-[var(--accent)]"
+                            />
+
+                            <span>{answer.text}</span>
+                          </label>
+                        )
+                      })}
+                    </fieldset>
+                  </AppCard>
+                ))}
+
+                <AppButton type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Invio risposte..." : "Invia quiz"}
+                </AppButton>
+              </form>
+            </>
+          )}
 
         {result && (
           <AppCard className="space-y-5">
@@ -235,7 +322,11 @@ export default function LessonQuizPage({ lessonId, source }: { lessonId: number;
 
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link href={backToChapter ?? "/lessons"}>
-                <AppButton variant={result.passed ? "primary" : "secondary"}>{backToChapter ? "Torna al capitolo e prosegui" : "Torna alla biblioteca"}</AppButton>
+                <AppButton variant={result.passed ? "primary" : "secondary"}>
+                  {backToChapter
+                    ? "Torna al capitolo e prosegui"
+                    : "Torna alla biblioteca"}
+                </AppButton>
               </Link>
 
               {!result.passed && (

@@ -134,7 +134,11 @@ test("Validazione e retry: nessuna richiesta per file non validi; un errore cons
       await modal.getByRole("alert").filter({ hasText: "Scegli un’immagine" }).waitFor()
       assert.equal(counts().uploads, 0)
     }
-    await modal.getByRole("button", { name: "Sostituisci immagine", exact: true }).focus()
+    await page.bringToFront()
+    const uploadButton = modal.getByRole("button", { name: "Sostituisci immagine", exact: true })
+    await uploadButton.scrollIntoViewIfNeeded()
+    await uploadButton.focus()
+    assert.equal(await uploadButton.evaluate(element => element === document.activeElement), true)
     const [chooser] = await Promise.all([page.waitForEvent("filechooser"), page.keyboard.press("Enter")])
     await chooser.setFiles(file)
     await modal.getByRole("button", { name: "Riprova caricamento", exact: true }).waitFor()
