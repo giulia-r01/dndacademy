@@ -7,13 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:ui": "node --test tests/ui/admin-users.test.mjs tests/ui/combat-and-npcs.test.mjs tests/ui/profile-and-badges.test.mjs tests/ui/login-session.test.mjs tests/ui/navigation-flow.test.mjs tests/ui/tour.test.mjs tests/ui/character-images.test.mjs"
+    "test:ui": "node --test tests/ui/admin-users.test.mjs tests/ui/combat-and-npcs.test.mjs tests/ui/profile-and-badges.test.mjs tests/ui/login-session.test.mjs tests/ui/navigation-flow.test.mjs tests/ui/tour.test.mjs tests/ui/character-images.test.mjs tests/ui/rich-text.test.mjs"
   },
   "dependencies": {
+    "@tiptap/core": "^3.33.0",
+    "@tiptap/markdown": "^3.33.0",
+    "@tiptap/pm": "^3.33.0",
+    "@tiptap/react": "^3.33.0",
+    "@tiptap/starter-kit": "^3.33.0",
     "next": "16.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-icons": "^5.6.0"
+    "react-icons": "^5.6.0",
+    "react-markdown": "^10.1.0",
+    "remark-breaks": "^4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

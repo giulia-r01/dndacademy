@@ -1,5 +1,7 @@
 "use client"
 
+import RichText from "@/components/common/RichText"
+
 import Link from "next/link"
 import {
   FiArrowLeft,
@@ -169,9 +171,9 @@ export default function AdminLessonsPage() {
                       </div>
                     </div>
 
-                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--text-muted)]">
+                    <RichText className="mt-3 line-clamp-3 text-sm leading-6 text-[var(--text-muted)]">
                       {lesson.content}
-                    </p>
+                    </RichText>
 
                     <div className="mt-5 flex flex-wrap gap-3">
                       <AppButton

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import RichTextEditor from "@/components/common/RichTextEditor"
 import AppButton from "@/components/common/AppButton"
 import AppModal from "@/components/common/AppModal"
 import FormInput from "@/components/common/FormInput"
@@ -123,29 +124,16 @@ function LessonFormContent({
         }
       />
 
-      <div className="space-y-2">
-        <label
-          htmlFor="lessonContent"
-          className="block text-sm font-bold text-[var(--text-main)]"
-        >
-          Contenuto
-        </label>
-
-        <textarea
-          id="lessonContent"
-          name="lessonContent"
-          rows={10}
-          placeholder="Scrivi il contenuto didattico della lezione."
-          value={formValues.content}
-          onChange={(event) =>
-            setFormValues((current) => ({
-              ...current,
-              content: event.target.value,
-            }))
-          }
-          className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-        />
-      </div>
+      <RichTextEditor
+        label="Contenuto"
+        value={formValues.content}
+        onChange={(content) =>
+          setFormValues((current) => ({ ...current, content }))
+        }
+        maxLength={5000}
+        disabled={isSubmitting}
+        rows={10}
+      />
 
       <FormInput
         label="Ordine"

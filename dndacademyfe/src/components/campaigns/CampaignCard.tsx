@@ -1,3 +1,4 @@
+import RichText from "@/components/common/RichText"
 import { FiMap, FiUser } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
@@ -29,9 +30,9 @@ export default function CampaignCard({
               {campaign.name}
             </h3>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
+            <RichText className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-muted)]">
               {campaign.description || "Campagna tutorial senza descrizione."}
-            </p>
+            </RichText>
 
             <div className="mt-4 flex items-center gap-2 text-sm text-[var(--text-soft)]">
               <FiUser aria-hidden="true" />

@@ -1,5 +1,7 @@
 "use client"
 
+import RichText from "@/components/common/RichText"
+
 import Link from "next/link"
 import {
   FiArrowLeft,
@@ -159,9 +161,9 @@ export default function AdminBadgesPage() {
                       {badge.name}
                     </h3>
 
-                    <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+                    <RichText className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
                       {badge.description}
-                    </p>
+                    </RichText>
 
                     <div className="mt-5 flex flex-wrap gap-3">
                       <AppButton
@@ -179,7 +181,11 @@ export default function AdminBadgesPage() {
                         type="button"
                         variant="danger"
                         disabled={badge.system}
-                        title={badge.system ? "I badge di sistema non possono essere eliminati" : undefined}
+                        title={
+                          badge.system
+                            ? "I badge di sistema non possono essere eliminati"
+                            : undefined
+                        }
                         onClick={() => openDeleteModal(badge)}
                       >
                         <span className="inline-flex items-center gap-2">

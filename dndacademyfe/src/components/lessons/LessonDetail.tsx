@@ -5,6 +5,7 @@ import Link from "next/link"
 import { FiArrowLeft, FiBookOpen } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
+import RichText from "@/components/common/RichText"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { useChapterContext } from "@/hooks/useChapterContext"
@@ -152,31 +153,34 @@ export default function LessonDetailPage({
                 </p>
               </div>
 
-              <div className="whitespace-pre-line text-base leading-8 text-[var(--text-soft)]">
+              <RichText reading className="text-[var(--text-soft)]">
                 {lesson.content}
-              </div>
+              </RichText>
             </AppCard>
 
             <AppCard className="space-y-3">
               <h3 className="text-lg font-black">La tua lettura</h3>
-              {completed ? (
+              {completed && (
                 <p role="status" className="text-[var(--primary)]">
                   Lezione completata. Puoi rileggerla quando vuoi.
                 </p>
-              ) : (
-                <AppButton disabled={saving} onClick={markAsRead}>
-                  {saving ? "Salvataggio..." : "Segna come letta"}
-                </AppButton>
               )}
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+                {!completed && (
+                  <AppButton disabled={saving} onClick={markAsRead}>
+                    {saving ? "Salvataggio..." : "Segna come letta"}
+                  </AppButton>
+                )}
+                {backToChapter && (
+                  <AppButton href={backToChapter} variant="secondary">
+                    Continua il capitolo
+                  </AppButton>
+                )}
+              </div>
               {saveError && (
                 <p role="alert" className="text-[var(--danger)]">
                   {saveError}
                 </p>
-              )}
-              {backToChapter && (
-                <AppButton href={backToChapter} variant="secondary">
-                  Continua il capitolo
-                </AppButton>
               )}
             </AppCard>
             {lesson.quiz && (

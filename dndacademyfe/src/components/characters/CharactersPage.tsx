@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 
 import AppButton from "@/components/common/AppButton"
+import RichText from "@/components/common/RichText"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import CharacterCard from "@/components/characters/CharacterCard"
@@ -11,7 +12,11 @@ import { characterService } from "@/services/character.service"
 import type { Campaign } from "@/types/campaign"
 import type { Character } from "@/types/character"
 
-export default function CharactersPage({ initialCampaignId }: { initialCampaignId: number | null }) {
+export default function CharactersPage({
+  initialCampaignId,
+}: {
+  initialCampaignId: number | null
+}) {
   const [myCharacters, setMyCharacters] = useState<Character[]>([])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [availableCharacters, setAvailableCharacters] = useState<Character[]>(
@@ -45,13 +50,22 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
           campaignService.getMyProgress(),
         ])
 
-        const joined = new Set(progress.filter(item => item.joined && item.unlocked).map(item => item.campaignId))
-        const campaignsData = allCampaigns.filter(item => joined.has(item.id))
+        const joined = new Set(
+          progress
+            .filter((item) => item.joined && item.unlocked)
+            .map((item) => item.campaignId),
+        )
+        const campaignsData = allCampaigns.filter((item) => joined.has(item.id))
         setMyCharacters(charactersData)
         setCampaigns(campaignsData)
 
-        const requested = initialCampaignId ? campaignsData.find(item => item.id === initialCampaignId) : null
-        if (initialCampaignId && !requested) throw new Error("Per scegliere un personaggio devi prima unirti a questa campagna e sbloccarla.")
+        const requested = initialCampaignId
+          ? campaignsData.find((item) => item.id === initialCampaignId)
+          : null
+        if (initialCampaignId && !requested)
+          throw new Error(
+            "Per scegliere un personaggio devi prima unirti a questa campagna e sbloccarla.",
+          )
         if (requested || campaignsData.length === 1) {
           const onlyCampaign = requested ?? campaignsData[0]
 
@@ -101,11 +115,20 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
     }
   }
 
-  const selectedCharacter = myCharacters.find(character => character.campaignId === selectedCampaignId)
+  const selectedCharacter = myCharacters.find(
+    (character) => character.campaignId === selectedCampaignId,
+  )
 
   async function handleClaim(characterId: number) {
-    const character = availableCharacters.find(item => item.id === characterId)
-    if (!character || claimingCharacterId !== null || myCharacters.some(item => item.campaignId === character.campaignId)) return
+    const character = availableCharacters.find(
+      (item) => item.id === characterId,
+    )
+    if (
+      !character ||
+      claimingCharacterId !== null ||
+      myCharacters.some((item) => item.campaignId === character.campaignId)
+    )
+      return
     setError("")
     setSuccessMessage("")
     setClaimingCharacterId(characterId)
@@ -170,7 +193,15 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
           </AppCard>
         )}
 
-        {initialCampaignId && campaigns.some(item => item.id === initialCampaignId) && <AppButton href={`/campaigns/${initialCampaignId}`} variant="secondary">Torna alla campagna</AppButton>}
+        {initialCampaignId &&
+          campaigns.some((item) => item.id === initialCampaignId) && (
+            <AppButton
+              href={`/campaigns/${initialCampaignId}`}
+              variant="secondary"
+            >
+              Torna alla campagna
+            </AppButton>
+          )}
         {!isLoading && (
           <>
             <section className="space-y-4">
@@ -228,7 +259,9 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                     Prima di scegliere un personaggio devi unirti a una
                     campagna.
                   </p>
-                  <AppButton className="mt-4" href="/campaigns">Scegli una campagna</AppButton>
+                  <AppButton className="mt-4" href="/campaigns">
+                    Scegli una campagna
+                  </AppButton>
                 </AppCard>
               )}
 
@@ -242,10 +275,10 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                     {campaigns[0].name}
                   </h4>
 
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                  <RichText className="mt-2 text-sm text-[var(--text-muted)]">
                     {campaigns[0].description ||
                       "Scegli uno dei personaggi disponibili per iniziare l'avventura."}
-                  </p>
+                  </RichText>
                 </AppCard>
               )}
 
@@ -277,20 +310,34 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                       </option>
                     ))}
                   </select>
-                  {campaigns.find(campaign => campaign.id === selectedCampaignId)?.description && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[var(--text-soft)]">{campaigns.find(campaign => campaign.id === selectedCampaignId)?.description}</p>}
+                  {campaigns.find(
+                    (campaign) => campaign.id === selectedCampaignId,
+                  )?.description && (
+                    <RichText className="mt-3 text-sm text-[var(--text-soft)]">
+                      {campaigns.find(
+                        (campaign) => campaign.id === selectedCampaignId,
+                      )?.description ?? ""}
+                    </RichText>
+                  )}
                 </AppCard>
               )}
 
               {selectedCharacter && (
                 <AppCard>
                   <p role="status" className="text-sm text-[var(--text-soft)]">
-                    Per questa campagna hai già scelto <strong>{selectedCharacter.name}</strong>.
-                    Puoi consultare gli altri personaggi, ma puoi sceglierne solo uno per campagna.
+                    Per questa campagna hai già scelto{" "}
+                    <strong>{selectedCharacter.name}</strong>. Puoi consultare
+                    gli altri personaggi, ma puoi sceglierne solo uno per
+                    campagna.
                   </p>
                 </AppCard>
               )}
 
-              {selectedCampaignId && selectedCharacter && <AppButton href={`/campaigns/${selectedCampaignId}`}>Continua la campagna</AppButton>}
+              {selectedCampaignId && selectedCharacter && (
+                <AppButton href={`/campaigns/${selectedCampaignId}`}>
+                  Continua la campagna
+                </AppButton>
+              )}
               {selectedCampaignId && isLoadingAvailable && (
                 <AppCard>
                   <p className="text-[var(--text-muted)]">
@@ -308,7 +355,9 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                     </p>
 
                     <p className="mt-2 text-sm text-[var(--text-muted)]">
-                      {selectedCharacter ? "Hai già scelto il tuo personaggio per questa campagna." : "Quando saranno disponibili nuovi personaggi, potrai sceglierli da qui."}
+                      {selectedCharacter
+                        ? "Hai già scelto il tuo personaggio per questa campagna."
+                        : "Quando saranno disponibili nuovi personaggi, potrai sceglierli da qui."}
                     </p>
                   </AppCard>
                 )}
@@ -322,9 +371,16 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                       campaignName={getCampaignName(character.campaignId)}
                       mode="available"
                       isClaiming={claimingCharacterId === character.id}
-                      claimDisabledReason={myCharacters.some(item => item.campaignId === character.campaignId)
-                        ? "Hai già scelto un personaggio per questa campagna."
-                        : claimingCharacterId !== null && claimingCharacterId !== character.id ? "Attendi la scelta in corso." : undefined}
+                      claimDisabledReason={
+                        myCharacters.some(
+                          (item) => item.campaignId === character.campaignId,
+                        )
+                          ? "Hai già scelto un personaggio per questa campagna."
+                          : claimingCharacterId !== null &&
+                              claimingCharacterId !== character.id
+                            ? "Attendi la scelta in corso."
+                            : undefined
+                      }
                       onClaim={handleClaim}
                     />
                   ))}

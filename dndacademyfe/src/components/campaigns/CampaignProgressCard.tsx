@@ -1,3 +1,4 @@
+import RichText from "@/components/common/RichText"
 import Link from "next/link"
 import { FiCheckCircle, FiLock, FiPlayCircle } from "react-icons/fi"
 
@@ -61,9 +62,9 @@ export default function CampaignProgressCard({
             {campaign.campaignName}
           </h3>
 
-          <p className="mt-3 line-clamp-4 text-sm leading-6 text-[var(--text-muted)]">
+          <RichText className="mt-3 line-clamp-4 text-sm leading-6 text-[var(--text-muted)]">
             {campaign.campaignDescription}
-          </p>
+          </RichText>
 
           {campaign.completedAt && (
             <p className="mt-3 text-xs font-bold text-[var(--primary)]">

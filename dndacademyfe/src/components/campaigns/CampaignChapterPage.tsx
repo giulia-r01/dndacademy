@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
+import RichText from "@/components/common/RichText"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { campaignService } from "@/services/campaign.service"
@@ -227,9 +228,9 @@ export default function CampaignChapterDetailPage({
                 </h2>
 
                 {chapter.description && (
-                  <p className="mt-2 max-w-3xl text-[var(--text-soft)]">
+                  <RichText className="mt-2 max-w-3xl text-[var(--text-soft)]">
                     {chapter.description}
-                  </p>
+                  </RichText>
                 )}
               </div>
 
@@ -242,9 +243,9 @@ export default function CampaignChapterDetailPage({
                   personaggio. Dopo la storia trovi le attività del capitolo.
                 </p>
 
-                <p className="mt-4 whitespace-pre-line text-base leading-8 text-[var(--text-soft)]">
+                <RichText reading className="mt-4 text-[var(--text-soft)]">
                   {chapter.storyText}
-                </p>
+                </RichText>
               </AppCard>
 
               {hasActivities && (

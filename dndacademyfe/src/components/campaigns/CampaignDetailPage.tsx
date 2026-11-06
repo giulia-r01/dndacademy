@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi"
 
 import AppButton from "@/components/common/AppButton"
+import RichText from "@/components/common/RichText"
 import AppCard from "@/components/common/AppCard"
 import AppShell from "@/components/layout/AppShell"
 import { campaignService } from "@/services/campaign.service"
@@ -20,8 +21,11 @@ import type { CampaignProgress } from "@/types/campaign-progress"
 import type { CampaignChapterPlayer } from "@/types/campaign-chapter"
 import { chapterHref } from "@/lib/navigation"
 
-export default function CampaignDetailPage({ campaignId }: { campaignId: number }) {
-
+export default function CampaignDetailPage({
+  campaignId,
+}: {
+  campaignId: number
+}) {
   const [chapters, setChapters] = useState<CampaignChapterPlayer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
@@ -42,8 +46,12 @@ export default function CampaignDetailPage({ campaignId }: { campaignId: number 
         ])
         if (!active) return
         setChapters(data)
-        setCampaign(progress.find(item => item.campaignId === campaignId) ?? null)
-        setCharacter(characters.find(item => item.campaignId === campaignId) ?? null)
+        setCampaign(
+          progress.find((item) => item.campaignId === campaignId) ?? null,
+        )
+        setCharacter(
+          characters.find((item) => item.campaignId === campaignId) ?? null,
+        )
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Errore nel caricamento capitoli"
@@ -57,14 +65,24 @@ export default function CampaignDetailPage({ campaignId }: { campaignId: number 
     if (!Number.isNaN(campaignId)) {
       loadChapters()
     }
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [campaignId, attempt])
 
-  const campaignTitle = campaign?.campaignName ?? chapters[0]?.campaignName ?? "Campagna"
-  const orderedChapters = [...chapters].sort((a, b) => a.orderIndex - b.orderIndex)
+  const campaignTitle =
+    campaign?.campaignName ?? chapters[0]?.campaignName ?? "Campagna"
+  const orderedChapters = [...chapters].sort(
+    (a, b) => a.orderIndex - b.orderIndex,
+  )
 
   return (
-    <AppShell breadcrumbs={[{ label: "Campagne", href: "/campaigns" }, { label: campaignTitle }]}>
+    <AppShell
+      breadcrumbs={[
+        { label: "Campagne", href: "/campaigns" },
+        { label: campaignTitle },
+      ]}
+    >
       <section className="space-y-6">
         <Link
           href="/campaigns"
@@ -100,7 +118,13 @@ export default function CampaignDetailPage({ campaignId }: { campaignId: number 
             <p role="alert" className="text-danger">
               {error}
             </p>
-            <AppButton className="mt-4" variant="secondary" onClick={() => setAttempt(value => value + 1)}>Riprova</AppButton>
+            <AppButton
+              className="mt-4"
+              variant="secondary"
+              onClick={() => setAttempt((value) => value + 1)}
+            >
+              Riprova
+            </AppButton>
           </AppCard>
         )}
 
@@ -108,16 +132,43 @@ export default function CampaignDetailPage({ campaignId }: { campaignId: number 
           <AppCard className="space-y-5">
             <div>
               <h3 className="text-xl font-black">La tua avventura</h3>
-              <p className="mt-2 whitespace-pre-line leading-7 text-[var(--text-soft)]">{campaign?.campaignDescription?.trim() || "Scopri la storia attraverso i capitoli e metti in pratica ciò che impari."}</p>
-              <p className="mt-3 text-sm text-[var(--text-muted)]">{chapters.filter(chapter => chapter.completed).length} capitoli completati su {chapters.length}</p>
+              <RichText className="mt-2 text-[var(--text-soft)]">
+                {campaign?.campaignDescription?.trim() ||
+                  "Scopri la storia attraverso i capitoli e metti in pratica ciò che impari."}
+              </RichText>
+              <p className="mt-3 text-sm text-[var(--text-muted)]">
+                {chapters.filter((chapter) => chapter.completed).length}{" "}
+                capitoli completati su {chapters.length}
+              </p>
             </div>
             <div className="flex flex-col gap-4 rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] p-4 sm:flex-row sm:items-center">
-              {character && <EntityPortrait name={character.name} imageUrl={character.imageUrl} className="h-24 w-20 shrink-0" />}
+              {character && (
+                <EntityPortrait
+                  name={character.name}
+                  imageUrl={character.imageUrl}
+                  className="h-24 w-20 shrink-0"
+                />
+              )}
               <div className="min-w-0 flex-1">
-                <h4 className="text-lg font-black">{character ? `Il tuo personaggio: ${character.name}` : "1. Scegli il tuo personaggio"}</h4>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">{character ? `${character.race} · ${character.characterClass} · Livello ${character.level}. Sei pronto per entrare nella storia.` : "Prima di iniziare, scegli chi interpreterai tra i personaggi preparati dal Master. Poi torna qui per aprire il primo capitolo."}</p>
+                <h4 className="text-lg font-black">
+                  {character
+                    ? `Il tuo personaggio: ${character.name}`
+                    : "1. Scegli il tuo personaggio"}
+                </h4>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-soft)]">
+                  {character
+                    ? `${character.race} · ${character.characterClass} · Livello ${character.level}. Sei pronto per entrare nella storia.`
+                    : "Prima di iniziare, scegli chi interpreterai tra i personaggi preparati dal Master. Poi torna qui per aprire il primo capitolo."}
+                </p>
               </div>
-              <AppButton href={`/characters?campaignId=${campaignId}`} variant={character ? "secondary" : "primary"}>{character ? "Vedi il tuo personaggio" : "Scegli il tuo personaggio"}</AppButton>
+              <AppButton
+                href={`/characters?campaignId=${campaignId}`}
+                variant={character ? "secondary" : "primary"}
+              >
+                {character
+                  ? "Vedi il tuo personaggio"
+                  : "Scegli il tuo personaggio"}
+              </AppButton>
             </div>
           </AppCard>
         )}
@@ -132,9 +183,21 @@ export default function CampaignDetailPage({ campaignId }: { campaignId: number 
 
         {!isLoading && !error && chapters.length > 0 && (
           <div className="space-y-4">
-            <div><h3 className="text-xl font-black">2. Segui i capitoli</h3><p className="mt-2 text-sm text-[var(--text-muted)]">{!character ? "Scegli prima il personaggio per iniziare. I capitoli si sbloccano in ordine." : "Apri il primo capitolo disponibile e segui le attività indicate. I capitoli completati restano consultabili."}</p></div>
+            <div>
+              <h3 className="text-xl font-black">2. Segui i capitoli</h3>
+              <p className="mt-2 text-sm text-[var(--text-muted)]">
+                {!character
+                  ? "Scegli prima il personaggio per iniziare. I capitoli si sbloccano in ordine."
+                  : "Apri il primo capitolo disponibile e segui le attività indicate. I capitoli completati restano consultabili."}
+              </p>
+            </div>
             {orderedChapters.map((chapter, index) => (
-              <ChapterCard key={chapter.chapterId} chapter={chapter} first={index === 0} hasCharacter={character !== null} />
+              <ChapterCard
+                key={chapter.chapterId}
+                chapter={chapter}
+                first={index === 0}
+                hasCharacter={character !== null}
+              />
             ))}
           </div>
         )}
@@ -143,7 +206,15 @@ export default function CampaignDetailPage({ campaignId }: { campaignId: number 
   )
 }
 
-function ChapterCard({ chapter, first, hasCharacter }: { chapter: CampaignChapterPlayer; first: boolean; hasCharacter: boolean }) {
+function ChapterCard({
+  chapter,
+  first,
+  hasCharacter,
+}: {
+  chapter: CampaignChapterPlayer
+  first: boolean
+  hasCharacter: boolean
+}) {
   const status = chapter.completed
     ? "completed"
     : chapter.unlocked
@@ -184,9 +255,9 @@ function ChapterCard({ chapter, first, hasCharacter }: { chapter: CampaignChapte
           </h3>
 
           {chapter.description && (
-            <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+            <RichText className="mt-3 text-sm text-[var(--text-muted)]">
               {chapter.description}
-            </p>
+            </RichText>
           )}
 
           <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[var(--text-soft)]">
@@ -199,8 +270,17 @@ function ChapterCard({ chapter, first, hasCharacter }: { chapter: CampaignChapte
 
         <div className="shrink-0">
           {chapter.unlocked && (hasCharacter || chapter.completed) ? (
-            <AppButton href={chapterHref(chapter.campaignId, chapter.chapterId)}>
-              {chapter.completed ? "Rivedi" : first && !chapter.lessonCompleted && !chapter.quizPassed && !chapter.combatWon ? "Inizia" : "Continua"}
+            <AppButton
+              href={chapterHref(chapter.campaignId, chapter.chapterId)}
+            >
+              {chapter.completed
+                ? "Rivedi"
+                : first &&
+                    !chapter.lessonCompleted &&
+                    !chapter.quizPassed &&
+                    !chapter.combatWon
+                  ? "Inizia"
+                  : "Continua"}
             </AppButton>
           ) : (
             <AppButton type="button" variant="secondary" disabled>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import RichTextEditor from "@/components/common/RichTextEditor"
 import AppButton from "@/components/common/AppButton"
 import type { Encounter, EncounterRequest } from "@/types/encounter"
 import type { Npc } from "@/types/npc"
@@ -76,17 +77,14 @@ export default function EncounterForm({
           onChange={(e) => setTitle(e.target.value)}
         />
       </label>
-      <label className="block text-sm font-bold">
-        Descrizione
-        <textarea
-          rows={3}
-          maxLength={2000}
-          className={inputClass}
-          value={description}
-          disabled={isSaving}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </label>
+      <RichTextEditor
+        label="Descrizione"
+        value={description}
+        onChange={setDescription}
+        maxLength={2000}
+        disabled={isSaving}
+        rows={3}
+      />
       <fieldset className="space-y-3">
         <legend className="font-bold">NPC partecipanti</legend>
         {npcs.length === 0 ? (

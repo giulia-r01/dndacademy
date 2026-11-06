@@ -1,5 +1,7 @@
 "use client"
 
+import RichText from "@/components/common/RichText"
+
 import { type FormEvent, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -129,7 +131,13 @@ export default function AdminCampaignChaptersPage() {
   }
 
   return (
-    <AppShell breadcrumbs={[{ label: "Area Master", href: "/admin" }, { label: "Campagne", href: "/admin/campaigns" }, { label: campaignName }]}>
+    <AppShell
+      breadcrumbs={[
+        { label: "Area Master", href: "/admin" },
+        { label: "Campagne", href: "/admin/campaigns" },
+        { label: campaignName },
+      ]}
+    >
       <section className="space-y-6">
         <Link
           href="/admin/campaigns"
@@ -139,7 +147,24 @@ export default function AdminCampaignChaptersPage() {
           Torna alle campagne
         </Link>
 
-        <AppCard className="space-y-3"><h3 className="font-black">Prepara le risorse del capitolo</h3><p className="text-sm text-[var(--text-soft)]">Crea le lezioni prima dei quiz, poi collega le attività al capitolo. Per un incontro prepara almeno un PNG nemico.</p><div className="flex flex-wrap gap-3"><AppButton href="/admin/lessons" variant="secondary">Gestisci lezioni</AppButton><AppButton href="/admin/quizzes" variant="secondary">Gestisci quiz</AppButton><AppButton href="/admin/npcs" variant="secondary">Gestisci PNG</AppButton></div></AppCard>
+        <AppCard className="space-y-3">
+          <h3 className="font-black">Prepara le risorse del capitolo</h3>
+          <p className="text-sm text-[var(--text-soft)]">
+            Crea le lezioni prima dei quiz, poi collega le attività al capitolo.
+            Per un incontro prepara almeno un PNG nemico.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <AppButton href="/admin/lessons" variant="secondary">
+              Gestisci lezioni
+            </AppButton>
+            <AppButton href="/admin/quizzes" variant="secondary">
+              Gestisci quiz
+            </AppButton>
+            <AppButton href="/admin/npcs" variant="secondary">
+              Gestisci PNG
+            </AppButton>
+          </div>
+        </AppCard>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-[var(--accent-soft)]">
@@ -228,9 +253,9 @@ export default function AdminCampaignChaptersPage() {
                         {chapter.title}
                       </h3>
 
-                      <p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
+                      <RichText className="mt-3 text-sm leading-6 text-[var(--text-muted)]">
                         {chapter.description || "Nessuna descrizione."}
-                      </p>
+                      </RichText>
 
                       <div className="mt-4 flex flex-wrap gap-2">
                         {chapter.lessonId && <ChapterTag label="Lezione" />}

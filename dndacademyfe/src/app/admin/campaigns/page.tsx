@@ -1,5 +1,7 @@
 "use client"
 
+import RichText from "@/components/common/RichText"
+
 import { useEffect, useState, type FormEvent } from "react"
 import Link from "next/link"
 import {
@@ -12,6 +14,7 @@ import {
 } from "react-icons/fi"
 import AppModal from "@/components/common/AppModal"
 
+import RichTextEditor from "@/components/common/RichTextEditor"
 import AppButton from "@/components/common/AppButton"
 import AppCard from "@/components/common/AppCard"
 import FormInput from "@/components/common/FormInput"
@@ -337,24 +340,14 @@ export default function AdminCampaignsPage() {
                 onChange={(event) => setName(event.target.value)}
               />
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="description"
-                  className="block text-sm font-bold text-[var(--text-main)]"
-                >
-                  Descrizione
-                </label>
-
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={9}
-                  placeholder="Descrivi l'ambientazione e l'obiettivo della campagna."
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-                />
-              </div>
+              <RichTextEditor
+                label="Descrizione"
+                value={description}
+                onChange={setDescription}
+                maxLength={2000}
+                disabled={isCreating}
+                rows={6}
+              />
 
               <div className="space-y-2">
                 <label
@@ -431,9 +424,9 @@ export default function AdminCampaignsPage() {
                           {getDifficultyLabel(campaign.difficulty)}
                         </p>
 
-                        <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
+                        <RichText className="mt-2 text-sm leading-6 text-[var(--text-muted)]">
                           {campaign.description || "Nessuna descrizione."}
-                        </p>
+                        </RichText>
 
                         <p className="mt-3 text-xs font-bold text-[var(--accent-soft)]">
                           Master: {campaign.masterUsername}
@@ -496,23 +489,14 @@ export default function AdminCampaignsPage() {
               onChange={(event) => setEditName(event.target.value)}
             />
 
-            <div className="space-y-2">
-              <label
-                htmlFor="editDescription"
-                className="block text-sm font-bold text-[var(--text-main)]"
-              >
-                Descrizione
-              </label>
-
-              <textarea
-                id="editDescription"
-                name="editDescription"
-                rows={8}
-                value={editDescription}
-                onChange={(event) => setEditDescription(event.target.value)}
-                className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-              />
-            </div>
+            <RichTextEditor
+              label="Descrizione"
+              value={editDescription}
+              onChange={setEditDescription}
+              maxLength={2000}
+              disabled={isUpdating}
+              rows={6}
+            />
 
             <div className="space-y-2">
               <label

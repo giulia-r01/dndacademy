@@ -1,5 +1,6 @@
 "use client"
 
+import RichTextEditor from "@/components/common/RichTextEditor"
 import AppButton from "@/components/common/AppButton"
 import AppModal from "@/components/common/AppModal"
 import FormInput from "@/components/common/FormInput"
@@ -78,39 +79,23 @@ export default function CampaignChapterFormModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="chapterDescription"
-              className="block text-sm font-bold text-[var(--text-main)]"
-            >
-              Descrizione breve
-            </label>
+          <RichTextEditor
+            label="Descrizione breve"
+            value={values.description}
+            onChange={(value) => onChange("description", value)}
+            maxLength={1000}
+            disabled={isSubmitting}
+            rows={3}
+          />
 
-            <textarea
-              id="chapterDescription"
-              rows={4}
-              value={values.description}
-              onChange={(event) => onChange("description", event.target.value)}
-              className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label
-              htmlFor="storyText"
-              className="block text-sm font-bold text-[var(--text-main)]"
-            >
-              Testo narrativo
-            </label>
-
-            <textarea
-              id="storyText"
-              rows={8}
-              value={values.storyText}
-              onChange={(event) => onChange("storyText", event.target.value)}
-              className="w-full resize-y rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-            />
-          </div>
+          <RichTextEditor
+            label="Testo narrativo"
+            value={values.storyText}
+            onChange={(value) => onChange("storyText", value)}
+            maxLength={8000}
+            disabled={isSubmitting}
+            rows={8}
+          />
         </section>
 
         <section className="space-y-4">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import RichTextEditor from "@/components/common/RichTextEditor"
 import AppButton from "@/components/common/AppButton"
 import AppModal from "@/components/common/AppModal"
 import FormInput from "@/components/common/FormInput"
@@ -111,31 +112,16 @@ function BadgeFormContent({
         }
       />
 
-      <div className="space-y-2">
-        <label
-          htmlFor="badgeDescription"
-          className="block text-sm font-bold text-[var(--text-main)]"
-        >
-          Descrizione
-        </label>
-
-        <textarea
-          required
-          maxLength={1000}
-          id="badgeDescription"
-          name="badgeDescription"
-          rows={5}
-          placeholder="Descrivi quando e perché viene assegnato questo badge."
-          value={formValues.description}
-          onChange={(event) =>
-            setFormValues((current) => ({
-              ...current,
-              description: event.target.value,
-            }))
-          }
-          className="w-full resize-none rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
-        />
-      </div>
+      <RichTextEditor
+        label="Descrizione"
+        value={formValues.description}
+        onChange={(description) =>
+          setFormValues((current) => ({ ...current, description }))
+        }
+        maxLength={1000}
+        disabled={isSubmitting}
+        rows={5}
+      />
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <AppButton type="button" variant="secondary" onClick={onClose}>

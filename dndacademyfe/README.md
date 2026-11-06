@@ -91,6 +91,16 @@ Il Master prepara personaggi delle campagne e PNG nemici o aiutanti, anche guari
 
 Nei personaggi esistenti, scegliere un ritratto valido avvia subito il caricamento, indipendentemente dalle modifiche alla scheda. Spinner, messaggio di stato e comandi temporaneamente disabilitati segnalano l'operazione; al termine compare la conferma. Riaprendo Modifica restano anteprima, nome della risorsa salvata e collegamento all'immagine attuale. Il nome originale del file viene mostrato nella conferma dell'upload, mentre il riferimento persistente proviene dall'URL restituito dalle API. Sono accettati JPG, PNG e WEBP fino a 5 MB. Per un nuovo personaggio, l'immagine selezionata viene mostrata in anteprima e caricata dopo la creazione; se il caricamento fallisce, la scheda resta disponibile per riprovare da Modifica senza duplicarla.
 
+## Leggibilità e contenuti formattati
+
+La scala tipografica usa 17 px per il testo base, 15 px per i testi piccoli e 13 px per le etichette più compatte. Storie e lezioni hanno una dimensione adattiva di 17–18 px e interlinea 1,7. Il testo occupa la larghezza disponibile della scheda e va a capo in base allo schermo, senza una colonna stretta che lasci vuota la parte destra.
+
+Il Master scrive descrizioni di campagne e capitoli, storie, lezioni, PNG, incontri e badge con un editor visuale condiviso: grassetto, corsivo, titoli, elenchi e annulla/ripristina. Anche il tour riutilizza l'editor per campagna, lezione e storia. I titoli delle risorse restano campi di testo semplice.
+
+Il contenuto viene salvato come Markdown negli attuali campi stringa; non servono nuovi campi o reset del database. I limiti esistenti comprendono la formattazione e vengono applicati prima di accettare una modifica: campagne/incontri 2000, descrizioni dei capitoli/PNG/badge 1000, storie 8000 e lezioni 5000 caratteri. Il renderer condiviso supporta testo semplice e a capo dei contenuti già presenti, senza eseguire HTML o caricare immagini inserite nel testo. Il formato e i controlli sono gli stessi nelle schede, nelle anteprime Master e nelle pagine Player.
+
+L'editor usa [Tiptap](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage); la lettura usa `react-markdown` con una lista di elementi consentiti, senza plugin per HTML grezzo. Il file `tests/ui/rich-text.test.mjs` verifica salvataggio e riapertura, formattazione, limiti, contenuto vuoto, resa Player, testo precedente, HTML non eseguibile e layout mobile.
+
 ## Personaggi Player
 
 Le schede Player dei personaggi disponibili e posseduti mostrano identità, livello, HP, Classe Armatura, sei caratteristiche con punteggio e modificatore, arma e attacco magico quando configurato. Le icone info aprono spiegazioni nel relativo box con clic, tocco o tastiera; Escape richiude la spiegazione e mantiene il focus sul comando. I testi chiariscono anche la differenza tra tiro per colpire e dado del danno. Le statistiche assenti sono indicate come non disponibili. La scelta conserva il contesto della campagna e permette di confrontarne la descrizione con le capacità, senza assegnare automaticamente un ruolo o una raccomandazione al personaggio.
@@ -169,6 +179,7 @@ Il comando comprende tutti i file della suite:
 | `tests/ui/combat-and-npcs.test.mjs` | Arena, PNG, guaritori, incontri, storico, personaggi, layout e modali |
 | `tests/ui/profile-and-badges.test.mjs` | Profilo, password, upload automatico e rallentato, errori e badge |
 | `tests/ui/character-images.test.mjs` | Ritratto Master su desktop e mobile, risorsa persistente, upload automatico, spinner, validazione, retry e creazione con upload fallito |
+| `tests/ui/rich-text.test.mjs` | Editor visuale Master, salvataggio e riapertura, resa Player, limiti, testo vuoto, compatibilità, HTML non eseguibile e font mobile |
 | `tests/ui/login-session.test.mjs` | Primo login, accesso dopo cambio password e profilo non disponibile |
 | `tests/ui/navigation-flow.test.mjs` | Percorsi Player/Master, contesto, vecchie rotte, ripresa, menu account e livelli |
 | `tests/ui/tour.test.mjs` | Percorsi guidati Player/Master, azioni obbligatorie, validazione, nessuna scrittura API, replay, focus, mobile e ritorno all'URL iniziale |
