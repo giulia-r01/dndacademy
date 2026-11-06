@@ -11,7 +11,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const { user } = useCurrentUser()
   const [selectedArea, rememberArea] = useState<Workspace | null>(null)
-  const area: Workspace = user?.role !== "MASTER" ? "player" : pathname.startsWith("/admin") ? "master" : pathname === "/profile" ? selectedArea ?? "master" : "player"
+  const area: Workspace = user?.role !== "MASTER" ? "player" : pathname.startsWith("/admin") || pathname.startsWith("/tour/master/") ? "master" : pathname === "/profile" ? selectedArea ?? "master" : "player"
   return <NavigationContext.Provider value={{ area, rememberArea }}>{children}</NavigationContext.Provider>
 }
 

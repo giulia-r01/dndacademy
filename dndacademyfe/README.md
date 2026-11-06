@@ -99,6 +99,16 @@ Dopo il cambio password si torna al login con una conferma; le sessioni preceden
 
 La pagina Badge mostra ottenuti e bloccati, data di sblocco, ricerca, filtri e riepilogo della collezione. I badge automatici sono identificati da codici stabili, inizializzati all'avvio e protetti dall'eliminazione. Contratti API e dettagli di collaudo sono in [Profilo e badge](docs/profile-and-badges.md).
 
+## Tour di primo avvio
+
+Il primo accesso autenticato apre automaticamente un tour distinto per Player e Master. Il prototipo guidato attraversa pagine dimostrative interne all'app: 22 passi per il Player e 19 per il Master. Un box vicino al comando spiega cosa fare, il comando è evidenziato e il resto della pagina è inerte. L'avanzamento segue l'azione richiesta o un salvataggio riuscito; **Ho capito** compare soltanto nei passi informativi. **Esci dal tour** ed Escape permettono di interrompere sempre la prova. Dal menu dell'avatar **Ripeti il tour** riapre il percorso dell'area corrente; un passo dedicato prima della conclusione ricorda questa possibilità. Il Master può aprire anche il tour dell'altra area.
+
+**Indietro** permette di rivedere i passaggi completati senza annullare i progressi; durante la revisione **Avanti** riporta fino al punto raggiunto. I vecchi passaggi sono in sola lettura e le nuove azioni restano obbligatorie. Il box ha testo più grande e comandi sempre visibili; l'oscuramento leggero mantiene leggibile il contesto della pagina.
+
+Le rotte `/tour/[audience]/[screen]` usano la struttura di navigazione dell'app e contenuti di esempio condivisi solo in memoria. Le azioni dimostrative non chiamano API, non caricano immagini e non modificano dati reali. Chiudere o terminare riporta all'URL di partenza, inclusi query e frammento; i moduli non salvati della pagina lasciata seguono il normale ciclo di navigazione e non sono conservati dal tour. Chiudere o ricaricare elimina le prove; su una rotta dimostrativa senza prova attiva viene offerta la ripartenza dall'inizio.
+
+La chiusura o il completamento sono ricordati nel `localStorage` del browser per account, ruolo, percorso e versione del tour. Su un altro browser, dopo la cancellazione dello storage o con un altro account/ruolo, il primo avvio viene riproposto. Non è una preferenza sincronizzata dal backend. Dettagli tecnici e collaudo: [Tour frontend](docs/tour-system.md).
+
 ## Combattimento, storico e immagini
 
 La preparazione mostra personaggio e incontro senza avviare una sessione. Il pulsante di avvio crea un nuovo tentativo; **Riprendi combattimento** carica invece quello salvato e verifica la corrispondenza con campagna e capitolo.
@@ -127,7 +137,7 @@ tests/ui/       Flussi e regressioni browser con API simulate
 docs/           Contratti e approfondimenti di navigazione e collaudo
 ```
 
-`CurrentUserProvider` condivide il profilo ed evita richieste iniziali duplicate. `NavigationProvider` mantiene l'area di navigazione. `AppShell` compone sidebar, barra superiore, menu account e breadcrumb. `services/api.ts` gestisce URL base, token, JSON/multipart ed errori HTTP. I componenti di schermata sono condivisi dalle rotte senza duplicare la logica delle attività.
+`CurrentUserProvider` condivide il profilo ed evita richieste iniziali duplicate. `NavigationProvider` mantiene l'area di navigazione. `TourProvider` coordina il primo avvio e le richieste dal menu account. `AppShell` compone sidebar, barra superiore, menu account e breadcrumb. `services/api.ts` gestisce URL base, token, JSON/multipart ed errori HTTP. I componenti di schermata sono condivisi dalle rotte senza duplicare la logica delle attività.
 
 ## Verifiche automatiche
 
@@ -154,13 +164,18 @@ Il comando comprende tutti i file della suite:
 | `tests/ui/profile-and-badges.test.mjs` | Profilo, password, upload automatico e rallentato, errori e badge |
 | `tests/ui/login-session.test.mjs` | Primo login, accesso dopo cambio password e profilo non disponibile |
 | `tests/ui/navigation-flow.test.mjs` | Percorsi Player/Master, contesto, vecchie rotte, ripresa, menu account e livelli |
+| `tests/ui/tour.test.mjs` | Percorsi guidati Player/Master, azioni obbligatorie, validazione, nessuna scrittura API, replay, focus, mobile e ritorno all'URL iniziale |
 
 Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSER_PATH` (eseguibile Chromium, Chrome o Edge) e `UI_SCREENSHOT_DIR` (cartella per gli screenshot). Le API e i servizi esterni sono simulati: questi test non modificano il database applicativo o Cloudinary. Non sostituiscono il collaudo con backend, PostgreSQL, SMTP e Cloudinary reali.
 
 ## Collaudo preproduzione e sviluppi previsti
 
+Per inserire contenuti reali dalle schermate Master e provarli come Player è disponibile [Il faro di Pietraluce](docs/campaigns/il-faro-di-pietraluce.md): cinque capitoli, cinque lezioni su D&D 5e 2014, venti domande sulle lezioni, tre incontri e cinque ricompense. Le [otto schede dei personaggi](docs/campaigns/personaggi-pietraluce.md) conservano nomi, razze, classi e riferimenti visivi forniti dall'utente. Le tabelle sono proposte ridotte per l'arena, non schede ufficiali complete. Le [istruzioni di inserimento e collaudo](docs/campaigns/collaudo-pietraluce.md) sono separate dalla didattica e documentano le differenze tra le regole insegnate e la simulazione attuale. I documenti non importano dati.
+
+Una prima partita è stata confermata dall'utente con esito positivo il 6 novembre 2026. Le spiegazioni sono state poi rese più graduali per principianti, introducendo i termini prima dei calcoli e distinguendo punteggio, modificatore, competenza, tiro per colpire, danno, stabilità e coscienza.
+
 Prima del rilascio verificare con account Player e Master reali il percorso completo, permessi, progressione, ritorno dalle attività, ripresa dello stato salvato, cambio password su più sessioni, immagini ed email. Il database e lo schema `public` devono esistere ed essere accessibili all'utente del backend. Il reset dell'ambiente di test è un'operazione esplicita e separata dalla build del frontend.
 
-Il tour di primo avvio, distinto per ruolo e richiamabile dall'utente, è il prossimo intervento concordato e **non è ancora implementato**. Restano la gestione versionata delle migrazioni backend, le verifiche dei servizi reali e la preparazione del deploy. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
+Il tour di primo avvio è implementato interamente nel frontend. Restano la gestione versionata delle migrazioni backend, le verifiche dei servizi reali e la preparazione del deploy. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
 
 Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.

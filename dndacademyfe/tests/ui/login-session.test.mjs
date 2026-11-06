@@ -1,3 +1,4 @@
+import { skipAutomaticTour } from "./helpers/tour.mjs"
 import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { chromium } from "playwright"
@@ -9,6 +10,7 @@ after(async () => { await browser?.close() })
 
 async function setup() {
   const context = await browser.newContext()
+  await skipAutomaticTour(context)
   const page = await context.newPage()
   const profile = { id: 1, username: "alice", email: "alice@example.test", role: "PLAYER", learningLevel: "BEGINNER", avatarUrl: null }
   let releaseProfile, profileStarted, loginCount = 0, profileFailure = false

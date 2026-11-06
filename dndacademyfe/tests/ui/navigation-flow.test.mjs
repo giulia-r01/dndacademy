@@ -1,3 +1,4 @@
+import { skipAutomaticTour } from "./helpers/tour.mjs"
 import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { chromium } from "playwright"
@@ -11,6 +12,7 @@ after(async () => { await browser?.close() })
 async function setup(options = {}) {
   const context = await browser.newContext({ viewport: options.mobile ? { width: 390, height: 844 } : { width: 1440, height: 1100 } })
   if (!options.login) await context.addInitScript(() => localStorage.setItem("token", "navigation-fixture"))
+  await skipAutomaticTour(context)
   const page = await context.newPage()
   const profile = { id: 1, username: "tester", email: "test@example.test", role: options.master ? "MASTER" : "PLAYER", learningLevel: options.level ?? "BEGINNER", avatarUrl: null }
   let joined = !options.newPlayer, completed = false, quizPassed = false, lessonRead = false, claimed = false, starts = 0
@@ -251,7 +253,7 @@ test("Menu account: tastiera, Escape, Tab e chiusura cliccando fuori", async () 
     const profile = page.getByRole("menuitem", { name: "Profilo", exact: true })
     await profile.waitFor()
     assert.equal(await profile.evaluate(element => element === document.activeElement), true)
-    await page.keyboard.press("ArrowDown")
+    await page.keyboard.press("End")
     assert.equal(await page.getByRole("menuitem", { name: "Esci", exact: true }).evaluate(element => element === document.activeElement), true)
     await page.keyboard.press("Escape")
     assert.equal(await page.getByRole("menu").count(), 0)

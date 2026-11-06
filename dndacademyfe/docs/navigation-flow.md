@@ -43,4 +43,4 @@ La panoramica presenta l'ordine di preparazione: campagna e personaggi, contenut
 
 `npm run test:ui` comprende i test dei flussi Player e Master, del login, del combattimento, del profilo e dei badge. Il server deve essere avviato; `UI_BASE_URL` e `UI_BROWSER_PATH` permettono di indicare server e browser. Le API sono simulate nei test browser.
 
-Questa riorganizzazione non modifica backend, schema del database o autorizzazioni e non introduce ancora il tour di primo avvio.
+Questa riorganizzazione non modifica backend, schema del database o autorizzazioni. Il menu account permette anche di richiamare il [tour frontend](tour-system.md), disponibile automaticamente al primo accesso autenticato. Il prototipo guidato usa rotte dimostrative `/tour/[audience]/[screen]` con sidebar, barra superiore e breadcrumb condivisi; una guida contestuale limita l'interazione al comando richiesto. Le rotte reali e i loro servizi continuano a essere separati dalle prove.

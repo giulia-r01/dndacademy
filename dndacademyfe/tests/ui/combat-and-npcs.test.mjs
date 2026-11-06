@@ -1,3 +1,4 @@
+import { skipAutomaticTour } from "./helpers/tour.mjs"
 import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { chromium } from "playwright"
@@ -16,6 +17,7 @@ const goblin = { ...player, participantId: 2, characterId: null, npcId: 20, name
 
 async function setup(viewport = { width: 1600, height: 1000 }, options = {}) {
   const context = await browser.newContext({ viewport, reducedMotion: "reduce" })
+  await skipAutomaticTour(context)
   const page = await context.newPage()
   await context.addInitScript(() => localStorage.setItem("token", "ui-test-fixture"))
   let fighters = [{ ...goblin }, { ...player }, { ...goblin, participantId: 3, initiative: 5 }]

@@ -4,7 +4,7 @@ Piattaforma didattica per imparare le basi di Dungeons & Dragons attraverso lezi
 
 ## Stato del progetto
 
-Backend Spring Boot e frontend Next.js sono integrati. Sono disponibili Area Player, Area Master, gestione utenti, profilo, badge, combattimenti narrativi e storico. Il progetto è in preparazione al collaudo preproduzione; il tour di primo avvio e la preparazione del deploy restano da completare. Le meccaniche di D&D sono semplificate.
+Backend Spring Boot e frontend Next.js sono integrati. Sono disponibili Area Player, Area Master, gestione utenti, profilo, badge, combattimenti narrativi e storico. Il progetto è in preparazione al collaudo preproduzione; è disponibile un prototipo di tour frontend guidato e restano da completare le verifiche dei servizi reali e la preparazione del deploy. Le meccaniche di D&D sono semplificate.
 
 | Componente | Contenuto | Stack |
 | --- | --- | --- |
@@ -38,6 +38,10 @@ La sezione Utenti offre statistiche, ricerca e filtri e consente di assegnare o 
 Il profilo permette di aggiornare username ed email confermando la password attuale, caricare o rimuovere l'avatar e cambiare password. Il caricamento parte alla scelta di un'immagine valida e mostra uno stato di avanzamento; un errore conserva l'immagine precedente. I dati aggiornano subito anche la barra superiore.
 
 I token identificano l'utente tramite l'ID immutabile: il cambio username conserva identità e progressi. Il cambio password invalida le sessioni precedenti e i link di recupero, e richiede un nuovo login. I badge automatici usano codici stabili, sono inizializzati all'avvio e non possono essere eliminati.
+
+## Tour di primo avvio
+
+Il prototipo guidato accompagna Player e Master tra pagine dimostrative interne all'app. Un box vicino al comando evidenziato indica l'azione richiesta; il resto della pagina è inerte. Il percorso avanza solo dopo l'azione o un salvataggio riuscito. Esci dal tour è sempre disponibile. I contenuti sono temporanei e non modificano dati reali. L'avvio è automatico al primo accesso e il menu dell'avatar permette di ricominciare; il Master può esplorare anche il percorso Player. La chiusura è ricordata per browser, account e ruolo. Dettagli: [Tour frontend](dndacademyfe/docs/tour-system.md).
 
 ## Navigazione e rotte
 
@@ -98,13 +102,12 @@ Nel backend:
 .\mvnw.cmd test
 ```
 
-I test browser coprono navigazione Player/Master, login, profilo, password, menu account, livelli, utenti, badge, personaggi, combattimenti, PNG e incontri su desktop e mobile. Le API sono simulate: la suite non modifica database applicativo, SMTP o Cloudinary. Il backend dispone di una configurazione test isolata con H2 come default; eventuali override `TEST_DATABASE_*` cambiano il database di test.
+I test browser coprono navigazione Player/Master, login, profilo, password, menu account, tour di primo avvio, livelli, utenti, badge, personaggi, combattimenti, PNG e incontri su desktop e mobile. Le API sono simulate: la suite non modifica database applicativo, SMTP o Cloudinary. Il backend dispone di una configurazione test isolata con H2 come default; eventuali override `TEST_DATABASE_*` cambiano il database di test.
 
 Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero percorso, permessi, progressione, immagini, email, revoca delle sessioni e ripresa degli scontri. I comandi e i dettagli sono nei README dei componenti e in [Profilo e badge: verifica prima del rilascio](dndacademyfe/docs/profile-and-badges.md). I risultati delle verifiche precedenti sono conservati come documenti datati in [Revisione pre merge del 30 ottobre 2026](dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [Collaudo storico](dndacademyBE/docs/COLLAUDO.md).
 
 ## Limiti e prossimi interventi
 
-- Il tour di primo avvio per Player e Master, richiamabile dall'utente e solo frontend, non è ancora implementato.
 - Le migrazioni versionate, la configurazione di rilascio e il collaudo dei servizi reali restano da completare prima della produzione.
 - La ripresa al ricaricamento funziona con un URL contenente `combatId`. L'avvio di un nuovo tentativo non aggiunge ancora l'ID all'URL: ricaricare una rotta priva di ID riapre la preparazione; il tentativo salvato resta recuperabile dallo storico.
 - I combattimenti sono individuali contro PNG: il party della campagna non implica sincronizzazione multiplayer in tempo reale.

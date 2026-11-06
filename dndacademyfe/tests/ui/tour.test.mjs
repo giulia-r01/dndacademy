@@ -1,0 +1,293 @@
+﻿import { test, before, after } from "node:test"
+import assert from "node:assert/strict"
+import { chromium } from "playwright"
+import { mkdir } from "node:fs/promises"
+
+const baseURL = process.env.UI_BASE_URL ?? "http://localhost:3000"
+let browser
+before(async () => { browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_PATH ? { executablePath: process.env.UI_BROWSER_PATH } : {}) }) })
+after(async () => { await browser?.close() })
+async function setup({ master = false, mobile = false, login = false } = {}) {
+  const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 667 } : { width: 1440, height: 1000 } })
+  if (!login) await context.addInitScript(() => localStorage.setItem("token", "tour-fixture"))
+  const page = await context.newPage(), writes = [], errors = []
+  let profile = { id: 1, username: "tester", email: "test@example.test", role: master ? "MASTER" : "PLAYER", learningLevel: "BEGINNER", avatarUrl: null }
+  await page.route("**/auth/login", route => route.fulfill({ contentType: "application/json", body: JSON.stringify({ token: "tour-fixture" }) }))
+  page.on("pageerror", error => errors.push(error.message))
+  await page.route("**/api/**", async route => {
+    const request = route.request(), path = new URL(request.url()).pathname
+    if (!["GET", "OPTIONS"].includes(request.method())) writes.push(path)
+    const reply = data => route.fulfill({ contentType: "application/json", body: JSON.stringify(data) })
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 204 })
+    if (path === "/api/users/me") return reply(profile)
+    if (path === "/api/combat/history") return reply({ items: [], page: 0, size: 12, totalPages: 0, totalElements: 0 })
+    return reply([])
+  })
+  return { context, page, writes, errors, changeProfile: patch => { profile = { ...profile, ...patch } } }
+}
+const coach = page => page.getByRole("region", { name: "Guida del tour", exact: true })
+async function step(page, id) {
+  await page.locator(`[data-tour-step="${id}"]`).waitFor()
+  await page.waitForFunction(() => !!document.querySelector("[data-tour-shade]"))
+}
+async function click(page, action) { await page.locator(`[data-tour-action="${action}"]`).click() }
+async function screenshot(page, name) {
+  if (!process.env.UI_SCREENSHOT_DIR) return
+  await mkdir(process.env.UI_SCREENSHOT_DIR, { recursive: true })
+  await page.screenshot({ path: `${process.env.UI_SCREENSHOT_DIR}/${name}.png` })
+}
+async function accountFlow(page) {
+  await step(page, "account")
+  await click(page, "account-menu")
+  await step(page, "open-profile")
+  await click(page, "profile-link")
+  await step(page, "avatar")
+  await coach(page).getByRole("button", { name: "Indietro", exact: true }).click()
+  await step(page, "open-profile")
+  assert.equal(await page.locator('[data-tour-action="profile-link"]').evaluate(element => !!element.closest("[inert]")), true)
+  await coach(page).getByRole("button", { name: "Avanti", exact: true }).click()
+  await step(page, "avatar")
+  await click(page, "avatar")
+  await step(page, "profile-save")
+  await page.getByLabel("Username dimostrativo", { exact: true }).fill("solo_demo")
+  await page.getByLabel("Email dimostrativa", { exact: true }).fill("invalid")
+  await page.getByRole("button", { name: "Salva profilo di esempio" }).click()
+  assert.equal(await coach(page).getAttribute("data-tour-step"), "profile-save")
+  await page.getByLabel("Email dimostrativa", { exact: true }).fill("demo@example.test")
+  await page.getByRole("button", { name: "Salva profilo di esempio" }).click()
+  await step(page, "password")
+  await click(page, "password")
+  await step(page, "replay-reminder")
+  await coach(page).getByRole("button", { name: "Ho capito", exact: true }).click()
+  await step(page, "finish")
+  await coach(page).getByRole("button", { name: "Termina tour" }).click()
+  await coach(page).waitFor({ state: "detached" })
+}
+async function playerFlow(page, mobile) {
+  await step(page, "start")
+  assert.equal(await page.getByRole("button", { name: "Avanti", exact: true }).count(), 0)
+  assert.equal(await page.locator('a[href="/campaigns"]').first().evaluate(el => !!el.closest("[inert]")), true)
+  await screenshot(page, mobile ? "guided-player-mobile-start" : "guided-player-start")
+  await click(page, "choose-campaign")
+  await step(page, "join")
+  assert.equal(new URL(page.url()).pathname, "/tour/player/campaigns")
+  await click(page, "join")
+  await step(page, "open-campaign")
+  await click(page, "open-campaign")
+  await step(page, "open-lesson")
+  await click(page, "open-lesson")
+  await step(page, "read")
+  await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
+  await step(page, "open-quiz")
+  await click(page, "open-quiz")
+  await step(page, "quiz")
+  await page.getByRole("radio", { name: "d4", exact: true }).check()
+  await page.getByRole("button", { name: "Invia quiz di esempio" }).click()
+  await coach(page).getByRole("alert").waitFor()
+  assert.equal(await coach(page).getAttribute("data-tour-step"), "quiz")
+  await page.getByRole("radio", { name: "d20", exact: true }).check()
+  await page.getByRole("button", { name: "Invia quiz di esempio" }).click()
+  await step(page, "character")
+  await page.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
+  await step(page, "start-combat")
+  await click(page, "start-combat")
+  await step(page, "attack")
+  assert.equal(await page.getByRole("button", { name: "Attacca", exact: true }).isDisabled(), true)
+  await page.getByLabel("Bersaglio", { exact: true }).selectOption("goblin")
+  await page.getByRole("button", { name: "Attacca", exact: true }).click()
+  await step(page, "return")
+  await screenshot(page, mobile ? "guided-player-mobile-victory" : "guided-player-victory")
+  await click(page, "return-chapter")
+  await step(page, "complete-chapter")
+  await click(page, "complete-chapter")
+  await step(page, "badges")
+  await page.getByLabel("Stato dei badge di esempio").selectOption("unlocked")
+  assert.equal(await page.getByRole("heading", { name: "Primo Quiz", exact: true }).count(), 1)
+  assert.equal(await page.getByRole("heading", { name: "Luce nelle miniere", exact: true }).count(), 1)
+  await coach(page).getByRole("button", { name: "Ho capito" }).click()
+  await step(page, "history")
+  await click(page, "history-details")
+  await step(page, "history-result")
+  await coach(page).getByRole("button", { name: "Ho capito" }).click()
+  await accountFlow(page)
+}
+for (const mobile of [false, true]) test(`Player guidato: azioni obbligatorie, pagine, quiz errato e completamento, mobile=${mobile}`, async () => {
+  const { context, page, writes, errors } = await setup({ mobile })
+  try {
+    await page.goto(`${baseURL}/dashboard`)
+    await playerFlow(page, mobile)
+    await page.waitForURL(`${baseURL}/dashboard`)
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("dndacademy:tour:v2:1:PLAYER:player"))), { version: 2, status: "completed" })
+    assert.equal(await page.evaluate(() => document.querySelectorAll("[inert]").length), 0)
+    assert.deepEqual(writes, [])
+    assert.deepEqual(errors, [])
+  } finally { await context.close() }
+})
+for (const mobile of [false, true]) test(`Master guidato: gestione campagne, moduli validati e conferma ruolo, mobile=${mobile}`, async () => {
+  const { context, page, writes, errors } = await setup({ master: true, mobile })
+  try {
+    await page.goto(`${baseURL}/admin`)
+    await step(page, "start")
+    await screenshot(page, mobile ? "guided-master-mobile-start" : "guided-master-start")
+    await click(page, "manage-campaigns")
+    await step(page, "new-campaign")
+    await click(page, "new-campaign")
+    await step(page, "campaign")
+    await page.getByLabel("Nome campagna", { exact: true }).fill("")
+    await page.getByRole("button", { name: "Salva esempio", exact: true }).click()
+    assert.equal(await coach(page).getAttribute("data-tour-step"), "campaign")
+    await page.getByLabel("Nome campagna", { exact: true }).fill("La prova del Master")
+    await screenshot(page, mobile ? "guided-master-mobile-form" : "guided-master-form")
+    for (const id of ["campaign", "character", "lesson", "quiz", "npc", "badge", "chapter", "encounter"]) {
+      await step(page, id)
+      if (id === "character") await page.getByText("Campagna: La prova del Master", { exact: true }).waitFor()
+      await page.getByRole("button", { name: "Salva esempio", exact: true }).click()
+    }
+    await step(page, "request-role")
+    await click(page, "promote-user")
+    await step(page, "confirm-role")
+    await page.getByRole("button", { name: "Conferma cambio di esempio" }).click()
+    await step(page, "account")
+    await coach(page).getByRole("button", { name: "Indietro", exact: true }).click()
+    await step(page, "confirm-role")
+    await page.getByRole("group", { name: "Conferma cambio ruolo dimostrativo" }).waitFor()
+    await coach(page).getByRole("button", { name: "Avanti", exact: true }).click()
+    await accountFlow(page)
+    await page.waitForURL(`${baseURL}/admin`)
+    assert.deepEqual(writes, [])
+    assert.deepEqual(errors, [])
+  } finally { await context.close() }
+})
+test("Uscita, riapertura pulita e chiusura ricordata per account", async () => {
+  const { context, page, changeProfile, errors } = await setup()
+  try {
+    await page.goto(`${baseURL}/profile?from=tour-test`)
+    await step(page, "start")
+    await click(page, "choose-campaign")
+    await step(page, "join")
+    await click(page, "join")
+    await step(page, "open-campaign")
+    await page.keyboard.press("Escape")
+    await page.waitForURL(`${baseURL}/profile?from=tour-test`)
+    await page.getByRole("button", { name: "Apri menu account" }).click()
+    await page.getByRole("menuitem", { name: "Ripeti il tour", exact: true }).click()
+    await step(page, "start")
+    await click(page, "choose-campaign")
+    await step(page, "join")
+    await coach(page).getByRole("button", { name: "Esci dal tour" }).click()
+    await page.waitForURL(`${baseURL}/profile?from=tour-test`)
+    await page.reload()
+    await page.getByLabel("Username", { exact: true }).waitFor()
+    assert.equal(await coach(page).count(), 0)
+    changeProfile({ id: 2 })
+    await page.reload()
+    await step(page, "start")
+    assert.deepEqual(errors, [])
+  } finally { await context.close() }
+})
+test("Ricaricamento e ritorno del browser non consentono di saltare le azioni", async () => {
+  const { context, page, errors } = await setup()
+  try {
+    await page.goto(`${baseURL}/dashboard`)
+    await step(page, "start")
+    await page.evaluate(() => history.pushState(null, "", "/tour/player/finish"))
+    await page.waitForURL(`${baseURL}/tour/player/home`)
+    await step(page, "start")
+    await page.reload()
+    await page.getByRole("heading", { name: "La prova non è attiva", exact: true }).waitFor()
+    assert.equal(await coach(page).count(), 0)
+    await page.getByRole("button", { name: "Inizia il tour Player", exact: true }).click()
+    await step(page, "start")
+    await page.goBack()
+    await coach(page).waitFor({ state: "detached" })
+    assert.equal(await page.evaluate(() => document.querySelectorAll("[inert]").length), 0)
+    assert.deepEqual(errors, [])
+  } finally { await context.close() }
+})
+test("Primo login e scadenza della sessione durante il tour", async () => {
+  const { context, page, errors } = await setup({ login: true })
+  try {
+    await page.goto(`${baseURL}/login`)
+    await page.getByLabel("Username", { exact: true }).fill("tester")
+    await page.getByLabel("Password", { exact: true }).fill("Example1!")
+    await page.getByRole("button", { name: "Accedi", exact: true }).click()
+    await step(page, "start")
+    await page.evaluate(() => window.dispatchEvent(new Event("session-expired")))
+    await page.waitForURL(`${baseURL}/login`)
+    assert.equal(await coach(page).count(), 0)
+    assert.equal(await page.evaluate(() => document.querySelectorAll("[inert]").length), 0)
+    assert.deepEqual(errors, [])
+  } finally { await context.close() }
+})
+test("Un Player non avvia il percorso Master da un collegamento diretto", async () => {
+  const { context, page, writes } = await setup()
+  try {
+    await page.goto(`${baseURL}/tour/master/master-home`)
+    await page.getByText("Questo percorso è riservato ai Master.", { exact: true }).waitFor()
+    assert.equal(await coach(page).count(), 0)
+    assert.deepEqual(writes, [])
+  } finally { await context.close() }
+})
+
+for (const mobile of [false, true]) test(`Indietro rivede le azioni senza annullarle e Avanti si ferma al passo da completare, mobile=${mobile}`, async () => {
+  const { context, page, writes, errors } = await setup({ mobile })
+  try {
+    await page.goto(`${baseURL}/dashboard`)
+    await step(page, "start")
+    assert.equal(await coach(page).getByRole("button", { name: "Indietro", exact: true }).isDisabled(), true)
+    await click(page, "choose-campaign")
+    await step(page, "join")
+    await click(page, "join")
+    await step(page, "open-campaign")
+    await coach(page).getByRole("button", { name: "Indietro", exact: true }).click()
+    await step(page, "join")
+    assert.equal(await page.locator('[data-tour-action="join"]').evaluate(element => !!element.closest("[inert]")), true)
+    await coach(page).getByRole("button", { name: "Indietro", exact: true }).click()
+    await step(page, "start")
+    await coach(page).getByRole("button", { name: "Avanti", exact: true }).click()
+    await step(page, "join")
+    await coach(page).getByRole("button", { name: "Avanti", exact: true }).click()
+    await step(page, "open-campaign")
+    assert.equal(await coach(page).getByRole("button", { name: "Avanti", exact: true }).count(), 0)
+    await click(page, "open-campaign")
+    await step(page, "open-lesson")
+    const box = await coach(page).boundingBox()
+    const viewport = page.viewportSize()
+    assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= viewport.width && box.y + box.height <= viewport.height)
+    assert.equal(await coach(page).locator("p[id]").evaluate(element => getComputedStyle(element).fontSize), "16px")
+    assert.deepEqual(writes, [])
+    assert.deepEqual(errors, [])
+    await screenshot(page, mobile ? "review-mobile" : "review-desktop")
+  } finally { await context.close() }
+})
+
+for (const mobile of [false, true]) test(`Transizioni senza box visibile in posizione provvisoria, mobile=${mobile}`, async () => {
+  const { context, page, errors } = await setup({ mobile })
+  await context.addInitScript(() => {
+    window.tourPositionFlashes = []
+    function sample() {
+      const box = document.querySelector('[data-tour-step]')
+      if (box && getComputedStyle(box).visibility === "visible" && !document.querySelector('[data-tour-shade]') && window.tourPositionFlashes.length < 10) window.tourPositionFlashes.push(box.getAttribute('data-tour-step'))
+      requestAnimationFrame(sample)
+    }
+    requestAnimationFrame(sample)
+  })
+  try {
+    await page.goto(`${baseURL}/dashboard`)
+    await step(page, "start")
+    await click(page, "choose-campaign")
+    await step(page, "join")
+    await click(page, "join")
+    await step(page, "open-campaign")
+    await click(page, "open-campaign")
+    await step(page, "open-lesson")
+    await click(page, "open-lesson")
+    await step(page, "read")
+    await page.getByRole("button", { name: "Segna come letta", exact: true }).click()
+    await step(page, "open-quiz")
+    assert.equal(await page.locator('[data-tour-action="open-quiz"]').evaluate(element => element === document.activeElement), true)
+    assert.deepEqual(await page.evaluate(() => window.tourPositionFlashes), [])
+    assert.deepEqual(errors, [])
+  } finally { await context.close() }
+})
+

@@ -38,7 +38,7 @@ export default function Sidebar({ user, onClose, showCloseButton = false, active
       {user?.role === "MASTER" && <nav aria-label="Scegli area" className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-[var(--surface-muted)] p-1">
         {(["player", "master"] as const).map(value => <Link key={value} href={value === "master" ? "/admin" : "/dashboard"} onClick={() => { rememberArea(value); onClose?.() }} aria-current={area === value ? "true" : undefined} className={`rounded-lg px-2 py-2 text-center text-sm font-bold ${area === value ? "bg-[var(--surface)] text-[var(--accent-soft)]" : "text-[var(--text-soft)]"}`}>{value === "master" ? "Area Master" : "Area Player"}</Link>)}
       </nav>}
-      <nav aria-label="Navigazione principale" className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
+      <nav aria-label="Navigazione principale" className="custom-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
         {groups.map(group => <div key={group.title}><p className="mb-1 px-3 text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">{group.title}</p><ul className="space-y-1">
           {group.items.map(item => {
             const active = item.href === "/admin" ? currentPath === item.href : currentPath === item.href || currentPath.startsWith(`${item.href}/`)

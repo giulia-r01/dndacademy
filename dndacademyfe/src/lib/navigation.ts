@@ -1,4 +1,5 @@
 import type { CampaignChapterPlayer } from "@/types/campaign-chapter"
+import { tourPageTitle } from "@/lib/tour"
 
 export type Workspace = "player" | "master"
 export type Breadcrumb = { label: string; href?: string }
@@ -43,6 +44,7 @@ const titles: Record<string, string> = {
   "/admin/badges": "Gestione badge", "/admin/users": "Utenti e statistiche", "/admin/encounters": "Gestione incontro",
 }
 export function pageTitle(pathname: string) {
+  if (pathname.startsWith("/tour/")) return tourPageTitle(pathname.split("/").at(-1) ?? "")
   if (titles[pathname]) return titles[pathname]
   if (pathname.endsWith("/encounter")) return "Gestione incontro"
   if (pathname.endsWith("/combat")) return "Combattimento del capitolo"

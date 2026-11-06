@@ -1,3 +1,4 @@
+import { skipAutomaticTour } from "./helpers/tour.mjs"
 import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { chromium } from "playwright"
@@ -11,6 +12,7 @@ after(async () => { await browser?.close() })
 async function setup(options = {}) {
   const context = await browser.newContext({ viewport: options.mobile ? { width: 390, height: 844 } : { width: 1440, height: 1100 } })
   await context.addInitScript(() => localStorage.setItem("token", "profile-test-token"))
+  await skipAutomaticTour(context)
   const page = await context.newPage()
   let profile = { id: 1, username: "alice", email: "alice@example.test", role: "PLAYER", learningLevel: "INTERMEDIATE", avatarUrl: options.avatarUrl ?? null }
   let avatarGate = Promise.resolve()

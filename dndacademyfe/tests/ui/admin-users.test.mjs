@@ -1,3 +1,4 @@
+import { skipAutomaticTour } from "./helpers/tour.mjs"
 import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { chromium } from "playwright"
@@ -10,6 +11,7 @@ after(async () => { await browser?.close() })
 async function setup({ role = "MASTER", listError = false, mobile = false } = {}) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } })
   await context.addInitScript(() => localStorage.setItem("token", "test-token"))
+  await skipAutomaticTour(context)
   const page = await context.newPage()
   const me = { id: 1, username: "master", email: "master@example.test", role, learningLevel: "ADVANCED" }
   let users = [me, { id: 2, username: "alice", email: "alice@example.test", role: "PLAYER", learningLevel: "BEGINNER" }, { id: 3, username: "bob", email: "bob@example.test", role: "MASTER", learningLevel: "INTERMEDIATE" }]
