@@ -13,7 +13,6 @@ import type { CombatPreview, CombatPreviewNpc } from "@/types/combat"
 import styles from "./CombatPreparation.module.css"
 
 type Props = { campaignId: number; chapterId: number; isBusy: boolean; onStart: () => Promise<void>; onPreviewLoaded?: (preview: CombatPreview) => void }
-const abilityLabels = { strength: "Forza", dexterity: "Destrezza", constitution: "Costituzione", intelligence: "Intelligenza", wisdom: "Saggezza", charisma: "Carisma" } as const
 const signed = (value: number) => `${value >= 0 ? "+" : ""}${value}`
 
 function NpcPreview({ participant }: { participant: CombatPreviewNpc }) {
@@ -91,7 +90,6 @@ export default function CombatPreparation({ campaignId, chapterId, isBusy, onSta
           <h3 className="text-lg font-black">Il tuo personaggio</h3>
           {character ? <>
             <CharacterCard character={character} campaignName={preview.campaignName} />
-            {character.stats && <AppCard><h4 className="mb-3 text-sm font-bold">Caratteristiche</h4><dl className="grid grid-cols-3 gap-3 sm:grid-cols-6">{Object.entries(abilityLabels).map(([key, label]) => <div key={key} className="rounded-xl bg-[var(--surface-muted)] p-2 text-center"><dt className="text-xs text-[var(--text-muted)]">{label}</dt><dd className="mt-1 text-lg font-black">{character.stats![key as keyof typeof abilityLabels]}</dd></div>)}</dl></AppCard>}
             {character.currentHp <= 0 && <p role="alert" className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">Questo personaggio non può combattere con 0 HP. Recupera i punti vita prima di iniziare.</p>}
           </> : <AppCard><p className="font-bold">Scegli il personaggio con cui affrontare lo scontro.</p><p className="mt-2 text-sm text-[var(--text-soft)]">La scelta lo assegna a questa campagna.</p>{available.length === 0 && <p className="mt-4">Non ci sono personaggi disponibili per questa campagna.</p>}</AppCard>}
           {!character && available.map(item => <CharacterCard key={item.id} character={item} campaignName={preview.campaignName} mode="available" isClaiming={claiming || item.currentHp <= 0} onClaim={id => { void claim(id) }} />)}

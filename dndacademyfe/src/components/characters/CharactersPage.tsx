@@ -191,7 +191,7 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                   </p>
                 </AppCard>
               ) : (
-                <div className="grid gap-5 xl:grid-cols-2">
+                <div className="grid items-start gap-5 xl:grid-cols-2">
                   {myCharacters.map((character) => (
                     <CharacterCard
                       key={character.id}
@@ -212,7 +212,9 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
 
                 <p className="mt-2 text-[var(--text-soft)]">
                   Seleziona una campagna e scegli uno dei personaggi preparati
-                  dal Master.
+                  dal Master. Confronta caratteristiche, difesa e attacchi con
+                  le sfide dell’avventura. Tocca o clicca le icone info per
+                  capire cosa indicano i valori.
                 </p>
               </div>
 
@@ -275,6 +277,7 @@ export default function CharactersPage({ initialCampaignId }: { initialCampaignI
                       </option>
                     ))}
                   </select>
+                  {campaigns.find(campaign => campaign.id === selectedCampaignId)?.description && <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[var(--text-soft)]">{campaigns.find(campaign => campaign.id === selectedCampaignId)?.description}</p>}
                 </AppCard>
               )}
 

@@ -281,7 +281,7 @@ test("preparazione: scheda completa, ritratto grande e nemici senza avviare lo s
     assert.ok(portrait.width >= 240 && portrait.height >= 380)
     await hero.getByText("Stocco", { exact: true }).waitFor()
     await hero.getByText("Incantesimo", { exact: true }).first().waitFor()
-    await hero.getByText("Caratteristiche", { exact: true }).waitFor()
+    await hero.getByRole("region", { name: "Caratteristiche", exact: true }).waitFor()
     const enemies = page.getByRole("region", { name: "Nemici dell'incontro", exact: true })
     await enemies.getByRole("heading", { name: "Goblin delle Miniere", exact: true }).waitFor()
     await page.getByText("2 nemici", { exact: true }).waitFor()
@@ -308,7 +308,7 @@ test("preparazione: scelta personaggio nella stessa pagina prima di iniziare", a
     await page.getByRole("button", { name: "Scegli personaggio", exact: true }).waitFor()
     assert.ok(await start.isDisabled())
     await page.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
-    await page.getByRole("heading", { name: "Caratteristiche", exact: true }).waitFor()
+    await page.getByRole("region", { name: "Caratteristiche", exact: true }).waitFor()
     assert.equal(await start.isDisabled(), false)
     assert.equal(starts(), 0)
   } finally { await context.close() }
@@ -464,8 +464,8 @@ test("storico: aperto inizialmente e richiudibile da tastiera", async () => {
 })
 
 
-async function setupCharacters({ owned = true, multipleCampaigns = false } = {}) {
-  const session = await setup(undefined, { role: "PLAYER" })
+async function setupCharacters({ owned = true, multipleCampaigns = false, viewport, missingStats = false, noMagic = false } = {}) {
+  const session = await setup(viewport, { role: "PLAYER" })
   let mine = owned ? [{ ...ownCharacter }] : [], claims = 0
   await session.page.route("**/api/campaigns/me/progress", route => route.fulfill({ contentType: "application/json", body: JSON.stringify([
     { campaignId: 1, joined: true, unlocked: true, completed: false },
@@ -480,7 +480,7 @@ async function setupCharacters({ owned = true, multipleCampaigns = false } = {})
     const reply = value => route.fulfill({ contentType: "application/json", body: JSON.stringify(value) })
     if (path.endsWith("/me")) return reply(mine)
     const available = path.match(/campaign\/(\d+)\/available$/)
-    if (available) return reply([11, 12].map(id => ({ ...ownCharacter, id, campaignId: Number(available[1]), name: id === 11 ? "Kael" : "Elion", playerUsername: null })))
+    if (available) return reply([11, 12].map(id => ({ ...ownCharacter, id, campaignId: Number(available[1]), name: id === 11 ? "Kael" : "Elion", playerUsername: null, stats: missingStats ? undefined : { ...ownCharacter.stats, intelligence: 9 }, spellcaster: !noMagic })))
     if (path.endsWith("/claim")) {
       claims++
       const id = Number(path.split("/").at(-2))
@@ -492,6 +492,55 @@ async function setupCharacters({ owned = true, multipleCampaigns = false } = {})
   })
   return { ...session, claims: () => claims }
 }
+
+for (const width of [390, 1024, 1600]) {
+  test(`Personaggi: scheda completa e spiegazioni accessibili prima della scelta, ${width}px`, async () => {
+    const { context, page, claims } = await setupCharacters({ owned: false, viewport: { width, height: 1000 } })
+    try {
+      await page.goto(`${baseURL}/characters?campaignId=1`)
+      const card = page.getByRole("article", { name: "Scheda di Kael", exact: true })
+      await card.waitFor()
+      const characteristics = card.getByRole("region", { name: "Caratteristiche", exact: true })
+      assert.equal(await characteristics.locator("dl > div").count(), 6)
+      await characteristics.getByText("Modificatore -1", { exact: true }).waitFor()
+      await characteristics.getByText("Modificatore +3", { exact: true }).waitFor()
+      await card.getByText("Danno d8 · Destrezza", { exact: true }).waitFor()
+      await card.getByText("Danno d4 · Carisma", { exact: true }).waitFor()
+      const info = card.locator('summary[aria-label="Informazioni su Caratteristiche"]')
+      await info.focus()
+      await page.keyboard.press("Enter")
+      await card.getByText(/I sei punteggi descrivono/).waitFor()
+      await page.keyboard.press("Escape")
+      assert.equal(await info.locator("..").getAttribute("open"), null)
+      assert.equal(await info.evaluate(el => el === document.activeElement), true)
+      for (const label of ["Forza", "Destrezza", "Costituzione", "Intelligenza", "Saggezza", "Carisma", "Classe Armatura", "HP · Punti vita", "Arma", "Incantesimo"]) {
+        const trigger = card.locator(`summary[aria-label="Informazioni su ${label}"]`)
+        await trigger.click()
+        assert.notEqual(await trigger.locator("..").getAttribute("open"), null)
+        assert.equal(await trigger.locator("..").locator("p").isVisible(), true)
+      }
+      assert.equal(claims(), 0)
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false)
+      await screenshot(page, `character-learning-${width}`)
+      await card.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
+      await page.getByRole("link", { name: "Continua la campagna", exact: true }).waitFor()
+      assert.equal(claims(), 1)
+      await page.getByRole("article", { name: "Scheda di Kael", exact: true }).first().getByRole("region", { name: "Caratteristiche", exact: true }).waitFor()
+    } finally { await context.close() }
+  })
+}
+
+test("Personaggi: statistiche assenti e personaggio senza magia non mostrano valori inventati", async () => {
+  const { context, page } = await setupCharacters({ owned: false, missingStats: true, noMagic: true })
+  try {
+    await page.goto(`${baseURL}/characters?campaignId=1`)
+    const card = page.getByRole("article", { name: "Scheda di Kael", exact: true })
+    await card.waitFor()
+    assert.equal(await card.getByText("Non disponibile", { exact: true }).count(), 6)
+    await card.getByText("Nessun attacco con incantesimo disponibile.", { exact: true }).waitFor()
+    assert.equal(await card.getByText(/NaN/).count(), 0)
+  } finally { await context.close() }
+})
 
 test("personaggi: scelta disabilitata se esiste un personaggio per la campagna", async () => {
   const { context, page, claims } = await setupCharacters()

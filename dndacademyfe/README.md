@@ -91,6 +91,10 @@ Il Master prepara personaggi delle campagne e PNG nemici o aiutanti, anche guari
 
 Nei personaggi esistenti, scegliere un ritratto valido avvia subito il caricamento, indipendentemente dalle modifiche alla scheda. Spinner, messaggio di stato e comandi temporaneamente disabilitati segnalano l'operazione; al termine compare la conferma. Riaprendo Modifica restano anteprima, nome della risorsa salvata e collegamento all'immagine attuale. Il nome originale del file viene mostrato nella conferma dell'upload, mentre il riferimento persistente proviene dall'URL restituito dalle API. Sono accettati JPG, PNG e WEBP fino a 5 MB. Per un nuovo personaggio, l'immagine selezionata viene mostrata in anteprima e caricata dopo la creazione; se il caricamento fallisce, la scheda resta disponibile per riprovare da Modifica senza duplicarla.
 
+## Personaggi Player
+
+Le schede Player dei personaggi disponibili e posseduti mostrano identità, livello, HP, Classe Armatura, sei caratteristiche con punteggio e modificatore, arma e attacco magico quando configurato. Le icone info aprono spiegazioni nel relativo box con clic, tocco o tastiera; Escape richiude la spiegazione e mantiene il focus sul comando. I testi chiariscono anche la differenza tra tiro per colpire e dado del danno. Le statistiche assenti sono indicate come non disponibili. La scelta conserva il contesto della campagna e permette di confrontarne la descrizione con le capacità, senza assegnare automaticamente un ruolo o una raccomandazione al personaggio.
+
 ## Profilo e badge
 
 Il profilo consente di modificare username ed email confermando la password attuale, caricare o rimuovere l'avatar e cambiare password. Ruolo e livello sono in sola lettura.
