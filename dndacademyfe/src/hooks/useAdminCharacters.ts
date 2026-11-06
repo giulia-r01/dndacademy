@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { campaignService } from "@/services/campaign.service"
 import { characterService } from "@/services/character.service"
@@ -25,6 +25,35 @@ export function useAdminCharacters() {
 
   const [isUpdating, setIsUpdating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const mutation = useRef(false)
+
+  async function uploadPortrait(characterId: number, file: File) {
+    setIsUploadingImage(true)
+    try {
+      return await characterService.uploadImage(characterId, file)
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
+  async function uploadCharacterImage(characterId: number, file: File) {
+    if (mutation.current)
+      throw new Error("Attendi il completamento dell’operazione in corso.")
+    mutation.current = true
+    setError("")
+    setSuccessMessage("")
+    try {
+      const updated = await uploadPortrait(characterId, file)
+      setCharacters((current) =>
+        current.map((character) =>
+          character.id === updated.id ? updated : character,
+        ),
+      )
+    } finally {
+      mutation.current = false
+    }
+  }
 
   useEffect(() => {
     async function loadCampaigns() {
@@ -83,24 +112,36 @@ export function useAdminCharacters() {
     payload: CreateCharacterRequest,
     imageFile: File | null,
   ) {
+    if (mutation.current) return false
+    mutation.current = true
     setError("")
     setSuccessMessage("")
     setIsCreating(true)
 
     try {
       const createdCharacter = await characterService.create(payload)
-
-      let finalCharacter = createdCharacter
+      setCharacters((current) => [createdCharacter, ...current])
 
       if (imageFile) {
-        finalCharacter = await characterService.uploadImage(
-          createdCharacter.id,
-          imageFile,
-        )
+        try {
+          const uploaded = await uploadPortrait(createdCharacter.id, imageFile)
+          setCharacters((current) =>
+            current.map((character) =>
+              character.id === uploaded.id ? uploaded : character,
+            ),
+          )
+        } catch (err) {
+          setError(
+            `Personaggio creato, ma il ritratto non è stato caricato. Apri Modifica per riprovare. ${err instanceof Error ? err.message : ""}`,
+          )
+          return true
+        }
       }
-
-      setCharacters((current) => [finalCharacter, ...current])
-      setSuccessMessage("Personaggio creato correttamente.")
+      setSuccessMessage(
+        imageFile
+          ? "Personaggio creato e immagine caricata correttamente."
+          : "Personaggio creato correttamente.",
+      )
 
       return true
     } catch (err) {
@@ -112,6 +153,7 @@ export function useAdminCharacters() {
 
       return false
     } finally {
+      mutation.current = false
       setIsCreating(false)
     }
   }
@@ -123,8 +165,9 @@ export function useAdminCharacters() {
   async function updateCharacter(
     characterId: number,
     payload: UpdateCharacterRequest,
-    imageFile: File | null,
   ) {
+    if (mutation.current) return false
+    mutation.current = true
     setError("")
     setSuccessMessage("")
     setIsUpdating(true)
@@ -135,18 +178,9 @@ export function useAdminCharacters() {
         payload,
       )
 
-      let finalCharacter = updatedCharacter
-
-      if (imageFile) {
-        finalCharacter = await characterService.uploadImage(
-          updatedCharacter.id,
-          imageFile,
-        )
-      }
-
       setCharacters((current) =>
         current.map((character) =>
-          character.id === finalCharacter.id ? finalCharacter : character,
+          character.id === updatedCharacter.id ? updatedCharacter : character,
         ),
       )
 
@@ -162,11 +196,14 @@ export function useAdminCharacters() {
 
       return false
     } finally {
+      mutation.current = false
       setIsUpdating(false)
     }
   }
 
   async function deleteCharacter(characterId: number) {
+    if (mutation.current) return false
+    mutation.current = true
     setError("")
     setSuccessMessage("")
     setIsDeleting(true)
@@ -190,6 +227,7 @@ export function useAdminCharacters() {
 
       return false
     } finally {
+      mutation.current = false
       setIsDeleting(false)
     }
   }
@@ -215,5 +253,8 @@ export function useAdminCharacters() {
     isDeleting,
     updateCharacter,
     deleteCharacter,
+    uploadCharacterImage,
+    isUploadingImage,
+    isBusy: isCreating || isUpdating || isDeleting || isUploadingImage,
   }
 }

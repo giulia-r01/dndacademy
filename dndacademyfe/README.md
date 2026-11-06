@@ -89,6 +89,8 @@ La sezione Utenti mostra statistiche, ricerca e filtri e permette il cambio Mast
 
 Il Master prepara personaggi delle campagne e PNG nemici o aiutanti, anche guaritori con dado, bonus e utilizzi limitati per scontro. La gestione incontri presenta contesto del capitolo, partecipanti, quantità e statistiche. Le modali gestiscono focus iniziale, confinamento, Escape e ripristino del focus. Le schede e le API proteggono le modifiche incompatibili con personaggi già usati in combattimento.
 
+Nei personaggi esistenti, scegliere un ritratto valido avvia subito il caricamento, indipendentemente dalle modifiche alla scheda. Spinner, messaggio di stato e comandi temporaneamente disabilitati segnalano l'operazione; al termine compare la conferma. Riaprendo Modifica restano anteprima, nome della risorsa salvata e collegamento all'immagine attuale. Il nome originale del file viene mostrato nella conferma dell'upload, mentre il riferimento persistente proviene dall'URL restituito dalle API. Sono accettati JPG, PNG e WEBP fino a 5 MB. Per un nuovo personaggio, l'immagine selezionata viene mostrata in anteprima e caricata dopo la creazione; se il caricamento fallisce, la scheda resta disponibile per riprovare da Modifica senza duplicarla.
+
 ## Profilo e badge
 
 Il profilo consente di modificare username ed email confermando la password attuale, caricare o rimuovere l'avatar e cambiare password. Ruolo e livello sono in sola lettura.
@@ -162,6 +164,7 @@ Il comando comprende tutti i file della suite:
 | `tests/ui/admin-users.test.mjs` | Statistiche, filtri, cambio ruolo e accesso riservato |
 | `tests/ui/combat-and-npcs.test.mjs` | Arena, PNG, guaritori, incontri, storico, personaggi, layout e modali |
 | `tests/ui/profile-and-badges.test.mjs` | Profilo, password, upload automatico e rallentato, errori e badge |
+| `tests/ui/character-images.test.mjs` | Ritratto Master su desktop e mobile, risorsa persistente, upload automatico, spinner, validazione, retry e creazione con upload fallito |
 | `tests/ui/login-session.test.mjs` | Primo login, accesso dopo cambio password e profilo non disponibile |
 | `tests/ui/navigation-flow.test.mjs` | Percorsi Player/Master, contesto, vecchie rotte, ripresa, menu account e livelli |
 | `tests/ui/tour.test.mjs` | Percorsi guidati Player/Master, azioni obbligatorie, validazione, nessuna scrittura API, replay, focus, mobile e ritorno all'URL iniziale |

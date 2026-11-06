@@ -74,6 +74,7 @@ export default function AdminCharactersPage() {
   }
 
   function closeCreateModal() {
+    if (adminCharacters.isBusy) return
     setIsCreateModalOpen(false)
     characterForm.resetForm()
     setModalError("")
@@ -117,6 +118,7 @@ export default function AdminCharactersPage() {
   }
 
   function closeEditModal() {
+    if (adminCharacters.isBusy) return
     setCharacterToEdit(null)
     characterForm.resetForm()
     setModalError("")
@@ -139,7 +141,6 @@ export default function AdminCharactersPage() {
     const wasUpdated = await adminCharacters.updateCharacter(
       characterToEdit.id,
       characterForm.buildUpdatePayload(),
-      characterForm.values.imageFile,
     )
 
     if (wasUpdated) {
@@ -200,7 +201,11 @@ export default function AdminCharactersPage() {
 
           <AppButton
             type="button"
-            disabled={!adminCharacters.selectedCampaignId}
+            disabled={
+              !adminCharacters.selectedCampaignId ||
+              adminCharacters.isBusy ||
+              adminCharacters.isLoadingCharacters
+            }
             onClick={openCreateModal}
           >
             <span className="inline-flex items-center gap-2">
@@ -237,7 +242,9 @@ export default function AdminCharactersPage() {
           <select
             id="campaign"
             value={adminCharacters.selectedCampaignId ?? ""}
-            disabled={adminCharacters.isLoadingCampaigns}
+            disabled={
+              adminCharacters.isLoadingCampaigns || adminCharacters.isBusy
+            }
             onChange={(event) => {
               const value = event.target.value
               adminCharacters.setSelectedCampaignId(
@@ -346,23 +353,38 @@ export default function AdminCharactersPage() {
           description="Crea un personaggio collegato alla campagna selezionata. I player potranno sceglierlo se non è già assegnato."
           values={characterForm.values}
           isSubmitting={adminCharacters.isCreating}
+          isUploadingImage={adminCharacters.isUploadingImage}
           submitLabel="Crea personaggio"
           onClose={closeCreateModal}
           onSubmit={handleCreateCharacter}
           onChange={characterForm.updateField}
-          error={modalError}
+          error={modalError || adminCharacters.error}
         />
         <CharacterFormModal
           isOpen={characterToEdit !== null}
           title="Modifica personaggio"
-          description="Aggiorna i dati del personaggio. Se scegli una nuova immagine, sostituirà quella precedente."
+          description="Aggiorna i dati del personaggio. L’immagine viene salvata subito quando scegli un nuovo file."
           values={characterForm.values}
           isSubmitting={adminCharacters.isUpdating}
+          isUploadingImage={adminCharacters.isUploadingImage}
+          imageUrl={
+            adminCharacters.characters.find(
+              (character) => character.id === characterToEdit?.id,
+            )?.imageUrl ??
+            characterToEdit?.imageUrl ??
+            null
+          }
+          onUploadImage={
+            characterToEdit
+              ? (file) =>
+                  adminCharacters.uploadCharacterImage(characterToEdit.id, file)
+              : undefined
+          }
           submitLabel="Salva modifiche"
           onClose={closeEditModal}
           onSubmit={handleUpdateCharacter}
           onChange={characterForm.updateField}
-          error={modalError}
+          error={modalError || adminCharacters.error}
         />
         <AppModal
           isOpen={characterToDelete !== null}

@@ -1,6 +1,12 @@
 "use client"
 
-import { type ReactNode, useEffect, useLayoutEffect, useId, useRef } from "react"
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useId,
+  useRef,
+} from "react"
 import { FiX } from "react-icons/fi"
 
 type AppModalSize = "sm" | "md" | "lg" | "xl"
@@ -12,6 +18,7 @@ type AppModalProps = {
   children: ReactNode
   onClose: () => void
   size?: AppModalSize
+  disableClose?: boolean
 }
 
 const sizeClasses: Record<AppModalSize, string> = {
@@ -28,30 +35,50 @@ export default function AppModal({
   children,
   onClose,
   size = "md",
+  disableClose = false,
 }: AppModalProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
+  const disableCloseRef = useRef(disableClose)
   const titleId = useId()
   const descriptionId = useId()
 
-  useEffect(() => { closeRef.current = onClose }, [onClose])
+  useEffect(() => {
+    closeRef.current = onClose
+  }, [onClose])
+  useEffect(() => {
+    disableCloseRef.current = disableClose
+  }, [disableClose])
 
   useLayoutEffect(() => {
     if (!isOpen) return
     const panel = panelRef.current
     if (!panel) return
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const opener =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
     const previousOverflow = document.body.style.overflow
-    const focusable = () => Array.from(panel.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )).filter(element => element.getClientRects().length > 0 && !element.closest('[inert]'))
-    const initial = focusable().find(element => element.matches('input, select, textarea'))
+    const focusable = () =>
+      Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter(
+        (element) =>
+          !element.matches(":disabled") &&
+          element.getClientRects().length > 0 &&
+          !element.closest("[inert]"),
+      )
+    const initial = focusable().find((element) =>
+      element.matches("input, select, textarea"),
+    )
     ;(initial ?? focusable()[0] ?? panel).focus()
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault()
-        closeRef.current()
+        if (!disableCloseRef.current) closeRef.current()
       }
       if (event.key === "Tab") {
         const items = focusable()
@@ -62,14 +89,18 @@ export default function AppModal({
         } else if (event.shiftKey && index <= 0) {
           event.preventDefault()
           items.at(-1)!.focus()
-        } else if (!event.shiftKey && (index < 0 || index === items.length - 1)) {
+        } else if (
+          !event.shiftKey &&
+          (index < 0 || index === items.length - 1)
+        ) {
           event.preventDefault()
           items[0].focus()
         }
       }
     }
     function containFocus(event: FocusEvent) {
-      if (!panel!.contains(event.target as Node)) (focusable()[0] ?? panel!).focus()
+      if (!panel!.contains(event.target as Node))
+        (focusable()[0] ?? panel!).focus()
     }
     document.addEventListener("keydown", handleKeyDown)
     document.addEventListener("focusin", containFocus)
@@ -92,7 +123,11 @@ export default function AppModal({
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
     >
-      <div className="fixed inset-0" aria-hidden="true" onClick={onClose} />
+      <div
+        className="fixed inset-0"
+        aria-hidden="true"
+        onClick={disableClose ? undefined : onClose}
+      />
 
       <div
         ref={panelRef}
@@ -124,6 +159,7 @@ export default function AppModal({
           <button
             type="button"
             onClick={onClose}
+            disabled={disableClose}
             className="rounded-xl p-2 text-[var(--text-soft)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text-main)]"
             aria-label="Chiudi modale"
           >
