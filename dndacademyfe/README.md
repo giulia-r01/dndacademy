@@ -192,6 +192,8 @@ Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSE
 
 ## Collaudo preproduzione e sviluppi previsti
 
+La [verifica del main per Railway e Vercel](docs/preproduzione-railway-vercel.md) documenta la pulizia del repository, gli interventi ancora necessari, la scelta del database iniziale e l'ordine del rilascio. La configurazione cloud descritta è una procedura da completare: non indica che l'ambiente sia già pubblicato o approvato per la produzione. Per le variabili pubbliche frontend è disponibile [.env.example](.env.example), privo di segreti.
+
 Per inserire contenuti reali dalle schermate Master e provarli come Player è disponibile [Il faro di Pietraluce](docs/campaigns/il-faro-di-pietraluce.md): cinque capitoli, cinque lezioni su D&D 5e 2014, venti domande sulle lezioni, tre incontri e cinque ricompense. Le [otto schede dei personaggi](docs/campaigns/personaggi-pietraluce.md) conservano nomi, razze, classi e riferimenti visivi forniti dall'utente. Le tabelle sono proposte ridotte per l'arena, non schede ufficiali complete. Le [istruzioni di inserimento e collaudo](docs/campaigns/collaudo-pietraluce.md) sono separate dalla didattica e documentano le differenze tra le regole insegnate e la simulazione attuale. I documenti non importano dati.
 
 Una prima partita è stata confermata dall'utente con esito positivo il 6 novembre 2026. Le spiegazioni sono state poi rese più graduali per principianti, introducendo i termini prima dei calcoli e distinguendo punteggio, modificatore, competenza, tiro per colpire, danno, stabilità e coscienza.

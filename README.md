@@ -118,3 +118,7 @@ Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero p
 - Gli HP dello scontro sono separati da quelli permanenti del personaggio; la strategia PNG rimane semplificata.
 
 Il progetto ha finalità educative e di portfolio.
+
+## Preparazione Railway e Vercel
+
+[Verifica del main per Railway e Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.

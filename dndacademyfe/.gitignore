@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local review artifacts (not application sources)
+/.tmp/
+/_frontend_analysis_export/
 
 # vercel
 .vercel

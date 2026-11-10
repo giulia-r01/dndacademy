@@ -196,3 +196,7 @@ Surefire carica src/test/resources/application-test.properties, con H2 in modali
 ```
 
 TEST_DATABASE_PASSWORD puo essere passato allo stesso modo quando necessario. I vincoli nuovi sono stati verificati su schema pulito H2 e PostgreSQL; su database preesistenti controllare eventuali duplicati prima di aggiornare lo schema, senza cancellare automaticamente dati storici. Nessun reset del database dell'utente e incluso in queste modifiche. Dettagli e limiti: [revisione pre merge](docs/REVISIONE_PRE_MERGE_2026-10-30.md).
+
+## Preparazione Railway e Vercel
+
+[Verifica del main per Railway e Vercel](../dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.

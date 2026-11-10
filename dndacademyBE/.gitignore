@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local credentials must never be versioned
+/src/main/resources/env.properties
+.env*
+!.env.example
