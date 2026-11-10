@@ -87,14 +87,14 @@ public class CombatServiceImpl implements CombatService {
         Encounter encounter = chapterEncounter(chapterId);
         Character character = characterRepository.findLockedByCampaignIdAndPlayerId(campaign.getId(), user.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Scegli prima un personaggio"));
-        if (character.getStats() == null || !character.isAlive() || character.getCurrentHp() <= 0)
+        if (character.getStats() == null || character.getMaxHp() <= 0)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Personaggio non pronto al combattimento");
         List<EncounterNpc> configured = configuredNpcs(encounter);
         Combat combat = combatRepository.save(Combat.builder()
                 .campaign(campaign).chapter(chapter).encounter(encounter).user(user)
                 .currentTurnIndex(0).completed(false).build());
         combatParticipantRepository.save(CombatParticipant.builder().combat(combat).character(character)
-                .maxHp(character.getMaxHp()).currentHp(character.getCurrentHp())
+                .maxHp(character.getMaxHp()).currentHp(character.getMaxHp())
                 .initiative(roll(20) + modifier(character.getStats().getDexterity()))
                 .alive(true).enemy(false).build());
         for (EncounterNpc en : configured) for (int i = 0; i < en.getQuantity(); i++) {

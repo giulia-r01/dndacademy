@@ -23,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class QuizServiceImpl implements QuizService {
 
+    private final com.giulia.dndacademy.service.QuizAccessService quizAccess;
     private final QuizRepository quizRepository;
     private final LessonRepository lessonRepository;
     private final QuestionRepository questionRepository;
@@ -73,14 +74,16 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
-    public QuizDTO getQuizByLesson(Long lessonId) {
+    public QuizDTO getQuizByLesson(Long lessonId, String username) {
         Quiz quiz = quizRepository.findByLessonId(lessonId)
                 .orElseThrow(() -> new RuntimeException("Quiz non trovato per questa lezione."));
 
+        quizAccess.requireReadable(quiz, username);
         return mapToDTO(quiz);
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public QuizResultDTO submitQuiz(SubmitQuizRequest request, String username) {
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
@@ -90,7 +93,10 @@ public class QuizServiceImpl implements QuizService {
             throw new RuntimeException("Devi inviare almeno una risposta");
         }
 
+        quizAccess.requireCompletedLesson(quiz, username);
+
         int totalQuestions = questionRepository.findByQuizId(quiz.getId()).size();
+        if (totalQuestions == 0) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "Questo quiz non contiene domande.");
 
         long distinctQuestionsAnswered = request.getAnswers()
                 .stream()
@@ -98,8 +104,8 @@ public class QuizServiceImpl implements QuizService {
                 .distinct()
                 .count();
 
-        if (distinctQuestionsAnswered != totalQuestions) {
-            throw new RuntimeException("Devi rispondere a tutte le domande del quiz");
+        if (distinctQuestionsAnswered != totalQuestions || request.getAnswers().size() != totalQuestions) {
+            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invia una sola risposta per ciascuna domanda del quiz.");
         }
 
         int correctAnswers = 0;

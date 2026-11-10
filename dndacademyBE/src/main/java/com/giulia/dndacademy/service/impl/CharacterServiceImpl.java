@@ -43,6 +43,7 @@ public class CharacterServiceImpl implements CharacterService {
 
 
     @Override
+    @Transactional
     public CharacterDTO createCharacter(CreateCharacterRequest request, String username) {
         User master = userService.getByUsername(username);
 
@@ -91,7 +92,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .character(saved)
                 .build();
 
-        characterStatsRepository.save(stats);
+        saved.setStats(characterStatsRepository.save(stats));
 
         return mapToDTO(saved);
     }
@@ -132,29 +133,40 @@ public class CharacterServiceImpl implements CharacterService {
             );
         }
 
-        character.setPlayer(player);
-        character.setCurrentHp(character.getMaxHp());
-        character.setAlive(true);
-
-        Character saved = characterRepository.save(character);
+        if (character.getStats() == null) throw new ResponseStatusException(HttpStatus.CONFLICT, "Il modello non ha le caratteristiche complete.");
+        Character copy = Character.builder()
+                .name(character.getName()).race(character.getRace()).characterClass(character.getCharacterClass())
+                .level(character.getLevel()).maxHp(character.getMaxHp()).currentHp(character.getMaxHp())
+                .armorClass(character.getArmorClass()).alive(true).player(player).campaign(campaign)
+                .sourceTemplate(character).imageUrl(character.getImageUrl())
+                .weaponName(character.getWeaponName()).damageDie(character.getDamageDie()).attackAbility(character.getAttackAbility())
+                .spellcaster(character.isSpellcaster()).spellName(character.getSpellName())
+                .spellDamageDie(character.getSpellDamageDie()).spellAbility(character.getSpellAbility()).build();
+        CharacterStats original = character.getStats();
+        copy.setStats(CharacterStats.builder().character(copy).strength(original.getStrength()).dexterity(original.getDexterity())
+                .constitution(original.getConstitution()).intelligence(original.getIntelligence())
+                .wisdom(original.getWisdom()).charisma(original.getCharisma()).build());
+        Character saved = characterRepository.save(copy);
 
         return mapToDTO(saved);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CharacterDTO> getAvailableCharactersByCampaign(Long campaignId, String username) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
 
         checkCampaignAccess(campaign, username);
 
-        return characterRepository.findByCampaignIdAndPlayerIsNull(campaignId)
+        return characterRepository.findByCampaignIdAndPlayerIsNullAndSourceTemplateIsNull(campaignId)
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CharacterDTO> getCharactersByCampaign(Long campaignId, String username) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
@@ -168,6 +180,7 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CharacterDTO> getMyCharacters(String username) {
         return characterRepository.findByPlayerUsername(username)
                 .stream()
@@ -244,6 +257,8 @@ public class CharacterServiceImpl implements CharacterService {
     private CharacterDTO mapToDTO(Character c) {
         return CharacterDTO.builder()
                 .id(c.getId())
+                .templateId(c.getSourceTemplate() == null ? null : c.getSourceTemplate().getId())
+                .assignedCount(c.getPlayer() == null ? characterRepository.countBySourceTemplateId(c.getId()) : 0)
                 .usedInCombat(participants.existsByCharacterId(c.getId()))
                 .name(c.getName())
                 .race(c.getRace())
@@ -295,10 +310,11 @@ public class CharacterServiceImpl implements CharacterService {
 
 
     @Override
+    @Transactional
     public CharacterDTO uploadCharacterImage(Long characterId, MultipartFile file, String username) {
         User master = userService.getByUsername(username);
 
-        Character character = characterRepository.findById(characterId)
+        Character character = characterRepository.findLockedById(characterId)
                 .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
 
         boolean isCampaignMaster = character.getCampaign()
@@ -310,6 +326,7 @@ public class CharacterServiceImpl implements CharacterService {
             throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
         }
 
+        requireTemplate(character);
         String imageUrl = imageUploadService.uploadCharacterImage(file);
 
         character.setImageUrl(imageUrl);
@@ -317,6 +334,11 @@ public class CharacterServiceImpl implements CharacterService {
         Character saved = characterRepository.save(character);
 
         return mapToDTO(saved);
+    }
+
+    private void requireTemplate(Character character) {
+        if (character.getPlayer() != null || character.getSourceTemplate() != null)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Le copie personali non possono essere modificate dal catalogo Master.");
     }
 
     private void validateUpdateCharacterRequest(UpdateCharacterRequest request) {
@@ -368,6 +390,7 @@ public class CharacterServiceImpl implements CharacterService {
             throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
         }
 
+        requireTemplate(character);
         if (participants.existsByCharacterId(characterId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Non puoi modificare un personaggio gia utilizzato in un combattimento");
@@ -381,11 +404,8 @@ public class CharacterServiceImpl implements CharacterService {
         character.setMaxHp(request.getMaxHp());
         character.setArmorClass(request.getArmorClass());
 
-        // Unclaimed characters are templates ready to be chosen at full health.
-        // Editing an assigned character must not heal existing damage.
-        if (character.getPlayer() == null || character.getCurrentHp() > request.getMaxHp()) {
-            character.setCurrentHp(request.getMaxHp());
-        }
+        // Only the reusable model is edited; existing personal snapshots are untouched.
+        character.setCurrentHp(request.getMaxHp());
 
         character.setWeaponName(request.getWeaponName().trim());
         character.setDamageDie(request.getDamageDie());
@@ -429,10 +449,11 @@ public class CharacterServiceImpl implements CharacterService {
     }
 
     @Override
+    @Transactional
     public void deleteCharacter(Long characterId, String username) {
         User master = userService.getByUsername(username);
 
-        Character character = characterRepository.findById(characterId)
+        Character character = characterRepository.findLockedById(characterId)
                 .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
 
         boolean isCampaignMaster = character.getCampaign()
@@ -444,14 +465,13 @@ public class CharacterServiceImpl implements CharacterService {
             throw new RuntimeException("Puoi eliminare solo personaggi delle tue campagne");
         }
 
-        if (character.getPlayer() != null) {
-            throw new RuntimeException("Non puoi eliminare un personaggio già scelto da un player");
-        }
-
+        requireTemplate(character);
+        if (characterRepository.existsBySourceTemplateId(characterId)) throw new ResponseStatusException(HttpStatus.CONFLICT, "Questo modello ha copie personali: puoi modificarlo per le scelte future, ma non eliminarlo.");
         characterRepository.delete(character);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CharacterDTO> getAllCharactersByCampaignForMaster(
             Long campaignId,
             String username
@@ -467,7 +487,7 @@ public class CharacterServiceImpl implements CharacterService {
             throw new RuntimeException("Puoi visualizzare solo personaggi delle tue campagne");
         }
 
-        return characterRepository.findByCampaignId(campaignId)
+        return characterRepository.findByCampaignIdAndPlayerIsNullAndSourceTemplateIsNull(campaignId)
                 .stream()
                 .map(this::mapToDTO)
                 .toList();

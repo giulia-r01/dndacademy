@@ -50,6 +50,8 @@ export interface UpdateCharacterRequest {
 }
 
 export interface Character {
+  templateId?: number | null
+  assignedCount?: number
   usedInCombat?: boolean
   id: number
   name: string

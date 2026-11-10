@@ -20,7 +20,8 @@ Le lezioni insegnano D&D 5e, regole base 2014. L’arena attuale ne rappresenta 
 | Zero punti vita | Si applicano incoscienza, stabilizzazione e tiri salvezza contro morte, salvo eccezioni | Il flag fuori combattimento dell’arena non simula l’intera procedura. Non insegnare che zero HP equivalgano automaticamente a morte o sconfitta della squadra. |
 | Magia | Ogni incantesimo specifica tempo, bersagli, eventuali attacchi o tiri salvezza ed effetti | L’arena modella attacchi magici semplificati, non slot, concentrazione, intere liste di incantesimi o tutte le cure. Aggiunge inoltre il modificatore al danno del proprio attacco magico: non è una regola generale degli incantesimi. |
 | Esplorazione | Il DM può richiedere prove e risolvere approcci diversi | Le scelte narrative e le prove descritte nella quinta lezione non hanno un modulo interattivo dedicato. Il quiz ne verifica la comprensione. |
-| Schede e incontri | Un gruppo al tavolo può avere più personaggi ed equipaggiamento completo | Le otto schede sono alternative per account Player distinti. Le tabelle di inserimento restano una configurazione ridotta, non schede ufficiali complete o incontri con un grado di sfida certificato. |
+| Schede e incontri | Un gruppo al tavolo può avere più personaggi ed equipaggiamento completo | Le otto schede sono modelli riutilizzabili: ogni account sceglie una copia personale e lo stesso eroe può essere scelto da più Player. Le tabelle restano una configurazione ridotta, non schede ufficiali complete o incontri con un grado di sfida certificato. |
+| Recupero tra scontri | Gli HP si recuperano tramite cure e riposi secondo le regole | Ogni nuovo incontro o tentativo parte a HP pieni per permettere esercizi indipendenti. La ripresa dello stesso tentativo mantiene gli HP salvati. Il reset didattico non va insegnato come una regola di D&D. |
 | Avanzamento | Il livello del personaggio segue le regole della campagna al tavolo | Livello di apprendimento, quiz, badge, sblocco campagne e pulsante Completa capitolo sono funzionalità didattiche dell’app. |
 
 Queste differenze sono limiti da valutare per il prodotto, non correzioni alle regole insegnate. Questa revisione modifica contenuti e documentazione, non il motore di combattimento. Prima di usare un risultato dell’arena come dimostrazione numerica di una regola completa, occorre allinearne il calcolo o indicare chiaramente la semplificazione nella relativa attività.
@@ -51,6 +52,9 @@ Usa un **account Player nuovo** per verificare la progressione da zero. Se usi u
 | PL01, nuovo tentativo | Rispondi correttamente ad almeno tre domande | Quiz superato, Primo Quiz ottenuto, lezione PL02 sbloccata |
 | Chiusura capitolo 1 | Torna e completa il capitolo | Badge Chiamata di Pietraluce; capitolo 2 disponibile |
 | Prima del primo scontro | Scegli uno degli otto eroi | Una sola scelta per campagna; altre schede non assegnabili allo stesso Player |
+| Secondo Player | Scegli lo stesso eroe del primo account | Nuovo ID e scheda personale; nessun esaurimento del modello e nessuna modifica alla prima copia |
+| Quiz prima della lettura | Apri il capitolo o l'URL del quiz senza aver completato la lezione | Accesso alle domande e invio bloccati anche dal backend; Segna come letta sblocca il quiz |
+| Nuovo tentativo dopo danni o sconfitta | Avvia uno scontro nuovo | HP iniziali al massimo; lo storico del tentativo precedente conserva gli HP e l'esito effettivi |
 | Capitolo 2 | Completa PL02 e il suo quiz | Su account nuovo: livello Intermedio e badge Studente di D&D |
 | Scontro al ponte | Apri la preparazione senza avviare | Puoi controllare i partecipanti prima del nuovo tentativo |
 | Primo avvio | Avvia e segui i turni | Un eroe e un goblin; bersaglio richiesto nel turno del Player |

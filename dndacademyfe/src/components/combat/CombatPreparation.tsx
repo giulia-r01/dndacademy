@@ -161,7 +161,7 @@ export default function CombatPreparation({
   const allies = preview?.participants.filter((p) => !p.npc.enemy) ?? []
   const enemyCount = enemies.reduce((total, p) => total + p.quantity, 0)
   const ready = Boolean(
-    character && character.currentHp > 0 && preview && !error,
+    character && character.maxHp > 0 && preview && !error,
   )
 
   return (
@@ -206,6 +206,11 @@ export default function CombatPreparation({
               {enemyCount === 1 ? "nemico" : "nemici"}
             </p>
           </div>
+          <AppCard className="space-y-2">
+            <h3 className="font-black">Combattimento didattico</h3>
+            <p className="text-sm leading-6 text-[var(--text-soft)]">Ogni nuovo tentativo inizia con tutti i punti vita: puoi esercitarti senza trascinare i danni degli incontri precedenti. Riprendere uno scontro aperto conserva invece gli HP e le azioni già salvati.</p>
+            <p className="text-sm leading-6 text-[var(--text-muted)]">È una semplificazione per imparare. Nelle avventure di D&amp;D il recupero dei punti vita dipende da cure e riposi.</p>
+          </AppCard>
           <div className={styles.grid}>
             <section
               aria-label="Il tuo personaggio"
@@ -215,18 +220,9 @@ export default function CombatPreparation({
               {character ? (
                 <>
                   <CharacterCard
-                    character={character}
+                    character={{ ...character, currentHp: character.maxHp }}
                     campaignName={preview.campaignName}
                   />
-                  {character.currentHp <= 0 && (
-                    <p
-                      role="alert"
-                      className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300"
-                    >
-                      Questo personaggio non può combattere con 0 HP. Recupera i
-                      punti vita prima di iniziare.
-                    </p>
-                  )}
                 </>
               ) : (
                 <AppCard>
@@ -234,7 +230,7 @@ export default function CombatPreparation({
                     Scegli il personaggio con cui affrontare lo scontro.
                   </p>
                   <p className="mt-2 text-sm text-[var(--text-soft)]">
-                    La scelta lo assegna a questa campagna.
+                    La scelta crea la tua copia personale per questa campagna.
                   </p>
                   {available.length === 0 && (
                     <p className="mt-4">
@@ -250,7 +246,7 @@ export default function CombatPreparation({
                     character={item}
                     campaignName={preview.campaignName}
                     mode="available"
-                    isClaiming={claiming || item.currentHp <= 0}
+                    isClaiming={claiming}
                     onClaim={(id) => {
                       void claim(id)
                     }}

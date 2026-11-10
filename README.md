@@ -21,7 +21,11 @@ Il login apre **Il tuo percorso**: la home propone di iniziare un'avventura o ri
 
 L'iscrizione apre direttamente la campagna. I capitoli guidano tra storia, lezioni, quiz e combattimenti opzionali. Le attività aperte dalla campagna mantengono il collegamento di ritorno al capitolo. La biblioteca resta consultabile per studio e ripasso; le lezioni possono essere segnate come lette, anche senza un quiz.
 
-Il personaggio è scelto tra quelli preparati dal Master per la campagna, anche nella preparazione dello scontro quando necessario. È consentita una scelta per campagna. I requisiti acquisiti e le ricompense restano salvati e consultabili; le campagne si riaprono quando vengono aggiunti capitoli da completare, conservando i progressi precedenti.
+Il Master prepara modelli riutilizzabili; ogni Player sceglie un eroe e riceve una copia personale con statistiche e stato indipendenti. Più Player possono scegliere lo stesso modello; rimane una sola scelta per account e campagna. Le modifiche successive del modello valgono solo per le nuove scelte. I requisiti acquisiti e le ricompense restano salvati e consultabili.
+
+I quiz richiedono il completamento della lettura anche sul backend: il controllo protegge consultazione e invio; una risposta duplicata per la stessa domanda viene rifiutata. Il Master può consultare i contenuti durante la preparazione, ma per inviare il quiz deve completare la lettura come gli altri utenti.
+
+Ogni nuovo combattimento è un esercizio indipendente e parte a HP pieni; riprendere uno scontro aperto conserva invece esattamente HP e azioni salvati. Questa scelta viene dichiarata nella preparazione e nel tour: non è la regola generale del recupero in D&D, che dipende da cure e riposi. Motivazioni, contratto API e aggiornamento del database sono documentati in [Regole didattiche e assegnazioni](dndacademyBE/docs/REGOLE_DIDATTICHE_E_ASSEGNAZIONI.md).
 
 Nel combattimento il Player sceglie bersaglio e azione con arma o incantesimo. Il pulsante **Mostra l'azione di…** fa avanzare un singolo turno PNG; tiri, bersagli PNG, danni e cure vengono decisi dal backend. Gli aiutanti guaritori possono soccorrere gli alleati a 0 HP e curare i feriti con utilizzi limitati. Dopo la vittoria si torna al capitolo per completarlo.
 

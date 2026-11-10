@@ -41,6 +41,7 @@ class PreMergeIntegrationTest {
     @Autowired EncounterService encounterService;
     @Autowired CampaignProgressService campaignProgressService;
     @Autowired CombatService combatService;
+    @Autowired CombatParticipantRepository participants;
     @Autowired PlatformTransactionManager transactions;
     User master, outsider, player, otherPlayer;
     Campaign campaign;
@@ -63,7 +64,8 @@ class PreMergeIntegrationTest {
         Character c = characters.save(Character.builder().name(name).race("Nano").characterClass("Guerriero")
                 .campaign(campaign).maxHp(15).currentHp(15).armorClass(16).level(1)
                 .weaponName("Ascia").damageDie(10).attackAbility(AttackAbility.STRENGTH).build());
-        return c;
+        c.setStats(CharacterStats.builder().character(c).strength(16).dexterity(12).constitution(14).intelligence(10).wisdom(12).charisma(10).build());
+        return characters.save(c);
     }
     CampaignChapter chapter(boolean combat) {
         return chapters.save(CampaignChapter.builder().campaign(campaign).title("Capitolo")
@@ -118,15 +120,44 @@ class PreMergeIntegrationTest {
         assertEquals(List.of(200, 409), outcomes.stream().sorted().toList());
         assertEquals(1, characters.findByPlayerUsername(player.getUsername()).size());
     }
-    @Test void simultaneousPlayersCannotBothClaimTheSameCharacter() throws Exception {
+    @Test void simultaneousPlayersReceiveIndependentCopiesOfTheSameTemplate() throws Exception {
         Character a = hero("A");
         List<Integer> outcomes = concurrently(List.of(
                 () -> claim(a.getId(), player), () -> claim(a.getId(), otherPlayer)));
-        assertEquals(List.of(200, 409), outcomes.stream().sorted().toList());
+        assertEquals(List.of(200, 200), outcomes.stream().sorted().toList());
+        var first = characters.findByCampaignIdAndPlayerId(campaign.getId(), player.getId()).orElseThrow();
+        var second = characters.findByCampaignIdAndPlayerId(campaign.getId(), otherPlayer.getId()).orElseThrow();
+        assertNotEquals(first.getId(), second.getId());
+        assertNotEquals(first.getStats().getId(), second.getStats().getId());
+        assertNotEquals(a.getStats().getId(), first.getStats().getId());
+        assertEquals(a.getId(), first.getSourceTemplate().getId());
+        assertEquals(a.getId(), second.getSourceTemplate().getId());
+        assertEquals(1, characterService.getAvailableCharactersByCampaign(campaign.getId(), player.getUsername()).size());
     }
     int claim(Long id, User user) {
         try { characterService.claimCharacter(id, user.getUsername()); return 200; }
         catch (ResponseStatusException e) { return e.getStatusCode().value(); }
+    }
+    @Test void templateEditsAffectOnlyFutureCopiesAndPersonalCopiesCannotBeClaimed() {
+        Character model = hero("Snapshot");
+        CharacterDTO first = characterService.claimCharacter(model.getId(), player.getUsername());
+        CharacterDTO second = characterService.claimCharacter(model.getId(), otherPlayer.getUsername());
+        assertThrows(ResponseStatusException.class, () -> characterService.claimCharacter(first.getId(), otherPlayer.getUsername()));
+        User future = account("future", Role.PLAYER);
+        new TransactionTemplate(transactions).executeWithoutResult(tx -> {
+            Character stored = characters.findById(model.getId()).orElseThrow();
+            stored.setName("Future snapshot"); stored.getStats().setStrength(20); characters.save(stored);
+            Campaign joined = campaigns.findById(campaign.getId()).orElseThrow();
+            joined.getPlayers().add(future); campaigns.save(joined);
+        });
+        CharacterDTO third = characterService.claimCharacter(model.getId(), future.getUsername());
+        assertEquals("Future snapshot", third.getName());
+        assertEquals(20, third.getStats().getStrength());
+        assertEquals("Snapshot", characterService.getMyCharacters(player.getUsername()).get(0).getName());
+        assertEquals(16, characterService.getMyCharacters(player.getUsername()).get(0).getStats().getStrength());
+        assertEquals(16, characterService.getMyCharacters(otherPlayer.getUsername()).get(0).getStats().getStrength());
+        assertEquals(3, characterService.getAllCharactersByCampaignForMaster(campaign.getId(), master.getUsername()).get(0).getAssignedCount());
+        assertNotEquals(first.getId(), second.getId());
     }
     @Test void simultaneousEncounterCreationLeavesExactlyOneEncounter() throws Exception {
         CampaignChapter chapter = chapter(true);
@@ -147,9 +178,9 @@ class PreMergeIntegrationTest {
     }
     @Test void databaseAlsoRejectsDuplicateAssignmentsWithoutServiceLocks() {
         Character a = hero("A"), b = hero("B");
-        a.setPlayer(player);
-        characters.saveAndFlush(a);
+        characterService.claimCharacter(a.getId(), player.getUsername());
         b.setPlayer(player);
+        b.setSourceTemplate(a);
         assertThrows(org.springframework.dao.DataIntegrityViolationException.class,
                 () -> characters.saveAndFlush(b));
     }
@@ -177,29 +208,48 @@ class PreMergeIntegrationTest {
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("SQL"))));
         assertTrue(chapters.existsById(chapter.getId()));
     }
-    @Test void charactersUsedInCombatCannotRewriteHistory() throws Exception {
-        Character c = hero("Thorin");
-        characterService.claimCharacter(c.getId(), player.getUsername());
+    @Test void trainingRestartsAtFullHpButResumeAndPersonalCopiesRemainIndependent() throws Exception {
+        Character model = hero("Thorin");
+        CharacterDTO chosen = characterService.claimCharacter(model.getId(), player.getUsername());
+        CharacterDTO other = characterService.claimCharacter(model.getId(), otherPlayer.getUsername());
         CampaignChapter chapter = chapter(true);
         Npc npc = npcs.save(Npc.builder().name("Goblin").owner(master).enemy(true).maxHp(10)
                 .armorClass(13).dexterity(12).attackModifier(2).damageDie(6).build());
-        EncounterRequest request = json.readValue("{\"title\":\"Incontro\",\"chapterId\":" + chapter.getId()
-                + ",\"npcs\":[{\"npcId\":" + npc.getId() + ",\"quantity\":1}]}", EncounterRequest.class);
-        encounterService.createEncounter(request, master.getUsername());
+        EncounterRequest encounter = new EncounterRequest();
+        encounter.setTitle("Incontro"); encounter.setChapterId(chapter.getId());
+        EncounterNpcRequest entry = new EncounterNpcRequest(); entry.setNpcId(npc.getId()); entry.setQuantity(1);
+        encounter.setNpcs(List.of(entry));
+        encounterService.createEncounter(encounter, master.getUsername());
         new TransactionTemplate(transactions).executeWithoutResult(tx -> {
-            Character managed = characters.findById(c.getId()).orElseThrow();
-            managed.setStats(CharacterStats.builder().character(managed).strength(16).dexterity(12)
-                    .constitution(14).intelligence(10).wisdom(12).charisma(10).build());
-            characters.save(managed);
+            Character copy = characters.findById(chosen.getId()).orElseThrow();
+            copy.setCurrentHp(0); copy.setAlive(false); characters.save(copy);
         });
         campaignProgressService.getMyCampaignProgress(player.getUsername());
         chapterProgress.save(CampaignChapterProgress.builder().user(player).chapter(chapter).unlocked(true).build());
         CombatDTO combat = combatService.startChapterCombat(chapter.getId(), player.getUsername());
-        mvc.perform(put("/api/characters/{id}", c.getId()).with(user(master)).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"Changed\",\"race\":\"Nano\",\"characterClass\":\"Guerriero\",\"level\":1,\"maxHp\":15,\"armorClass\":25,\"weaponName\":\"Ascia\",\"damageDie\":10,\"attackAbility\":\"STRENGTH\",\"stats\":{\"strength\":16,\"dexterity\":12,\"constitution\":14,\"intelligence\":10,\"wisdom\":12,\"charisma\":10}}"))
-                .andExpect(status().isConflict());
-        assertEquals("Thorin", characters.findById(c.getId()).orElseThrow().getName());
-        assertNotNull(combat.getId());
+        assertEquals(15, combatService.getCombatStatus(combat.getId(), player.getUsername()).getFighters().stream()
+                .filter(f -> chosen.getId().equals(f.getCharacterId())).findFirst().orElseThrow().getCurrentHp());
+        new TransactionTemplate(transactions).executeWithoutResult(tx -> {
+            CombatParticipant fighter = participants.findByCombatId(combat.getId()).stream().filter(f -> f.getCharacter() != null).findFirst().orElseThrow();
+            fighter.setCurrentHp(7); participants.save(fighter);
+        });
+        CombatDTO retry = combatService.startChapterCombat(chapter.getId(), player.getUsername());
+        assertEquals(7, combatService.getCombatStatus(combat.getId(), player.getUsername()).getFighters().stream()
+                .filter(f -> chosen.getId().equals(f.getCharacterId())).findFirst().orElseThrow().getCurrentHp());
+        assertEquals(15, combatService.getCombatStatus(retry.getId(), player.getUsername()).getFighters().stream()
+                .filter(f -> chosen.getId().equals(f.getCharacterId())).findFirst().orElseThrow().getCurrentHp());
+        assertEquals(15, characters.findById(other.getId()).orElseThrow().getCurrentHp());
+        UpdateCharacterRequest update = new UpdateCharacterRequest();
+        update.setName("Future Thorin"); update.setRace("Nano"); update.setCharacterClass("Guerriero"); update.setLevel(1);
+        update.setMaxHp(15); update.setArmorClass(25); update.setWeaponName("Ascia"); update.setDamageDie(10);
+        update.setAttackAbility(AttackAbility.STRENGTH); update.setStats(new CharacterStatsDTO(16,12,14,10,12,10));
+        mvc.perform(put("/api/characters/{id}", chosen.getId()).with(user(master)).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(update))).andExpect(status().isConflict());
+        mvc.perform(put("/api/characters/{id}", model.getId()).with(user(master)).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(update))).andExpect(status().isOk());
+        assertEquals("Thorin", characters.findById(chosen.getId()).orElseThrow().getName());
+        assertEquals("Thorin", characters.findById(other.getId()).orElseThrow().getName());
+        mvc.perform(delete("/api/characters/{id}", model.getId()).with(user(master))).andExpect(status().isConflict());
     }
     <T> List<T> concurrently(List<Callable<T>> calls) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(calls.size());

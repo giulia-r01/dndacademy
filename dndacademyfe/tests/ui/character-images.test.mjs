@@ -14,12 +14,12 @@ let browser
 before(async () => { browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_PATH ? { executablePath: process.env.UI_BROWSER_PATH } : {}) }) })
 after(async () => { await browser?.close() })
 
-async function setup({ mobile = false, empty = false, failUpload = false, slow = false } = {}) {
+async function setup({ mobile = false, empty = false, failUpload = false, slow = false, assignedCount = 0 } = {}) {
   const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 1000 } })
   await context.addInitScript(() => localStorage.setItem("token", "character-image-fixture"))
   await skipAutomaticTour(context)
   const page = await context.newPage()
-  let characters = empty ? [] : [{ ...original }], uploads = 0, creates = 0, updates = 0, failing = failUpload
+  let characters = empty ? [] : [{ ...original, assignedCount }], uploads = 0, creates = 0, updates = 0, failing = failUpload
   let release
   const gate = slow ? new Promise(resolve => { release = resolve }) : Promise.resolve()
   const errors = []
@@ -170,6 +170,18 @@ test("Creazione con ritratto: anteprima prima del salvataggio e spinner durante 
     await page.getByRole("dialog").getByRole("link", { name: "Apri immagine attuale" }).waitFor()
     assert.deepEqual(errors, [])
   } finally { release(); await context.close() }
+})
+
+test("Modello con copie personali: modificabile per nuove scelte, eliminazione protetta", async () => {
+  const { context, page } = await setup({ assignedCount: 2 })
+  try {
+    await page.goto(`${baseURL}/admin/characters`)
+    await page.getByText(/2 copie personali create/).waitFor()
+    assert.equal(await page.getByRole("button", { name: "Elimina", exact: true }).isDisabled(), true)
+    assert.equal(await page.getByRole("button", { name: "Modifica", exact: true }).isDisabled(), false)
+    await page.getByRole("button", { name: "Modifica", exact: true }).click()
+    await page.getByRole("dialog").getByText(/le copie personali gi/).waitFor()
+  } finally { await context.close() }
 })
 
 test("Creazione riuscita con upload fallito: la scheda resta recuperabile senza duplicare il personaggio", async () => {

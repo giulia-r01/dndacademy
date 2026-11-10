@@ -294,7 +294,7 @@ export default function PlayerDemo({
             onClaim={() => {
               setDemo((current) => ({ ...current, chosenCharacter: true }))
               notify(
-                "Personaggio scelto nell’esempio. Puoi averne uno per campagna.",
+                "Copia personale creata nell’esempio. Ogni Player può scegliere lo stesso eroe; puoi averne uno per campagna.",
               )
             }}
           />

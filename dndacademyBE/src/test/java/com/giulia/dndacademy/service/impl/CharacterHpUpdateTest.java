@@ -60,6 +60,13 @@ class CharacterHpUpdateTest {
         request.setAttackAbility(AttackAbility.STRENGTH);
         request.setStats(new CharacterStatsDTO(16, 12, 14, 10, 12, 10));
 
+        if (assigned) {
+            org.junit.jupiter.api.Assertions.assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                    () -> service.updateCharacter(10L, request, "master"));
+            assertEquals(currentHp, character.getCurrentHp());
+            verify(characters, never()).save(character);
+            return;
+        }
         var result = service.updateCharacter(10L, request, "master");
 
         assertEquals(newMaxHp, result.getMaxHp());

@@ -21,6 +21,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final QuizRepository quizRepository;
+    private final com.giulia.dndacademy.service.QuizAccessService quizAccess;
 
     @Override
     public QuestionDTO createQuestion(CreateQuestionRequest request) {
@@ -61,7 +62,9 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
-    public List<QuestionDTO> getQuestionsByQuiz(Long quizId) {
+    public List<QuestionDTO> getQuestionsByQuiz(Long quizId, String username) {
+        Quiz quiz = quizRepository.findById(quizId).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz non trovato"));
+        quizAccess.requireReadable(quiz, username);
         return questionRepository.findByQuizId(quizId)
                 .stream()
                 .map(this::mapToDTO)

@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/questions")
@@ -24,8 +25,8 @@ public class QuestionController {
     }
 
     @GetMapping("/quiz/{quizId}")
-    public List<QuestionDTO> getQuestionsByQuiz(@PathVariable Long quizId) {
-        return questionService.getQuestionsByQuiz(quizId);
+    public List<QuestionDTO> getQuestionsByQuiz(@PathVariable Long quizId, Authentication authentication) {
+        return questionService.getQuestionsByQuiz(quizId, authentication.getName());
     }
 
     @PreAuthorize("hasRole('MASTER')")

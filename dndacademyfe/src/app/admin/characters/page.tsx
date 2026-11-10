@@ -350,7 +350,7 @@ export default function AdminCharactersPage() {
         <CharacterFormModal
           isOpen={isCreateModalOpen}
           title="Nuovo personaggio"
-          description="Crea un personaggio collegato alla campagna selezionata. I player potranno sceglierlo se non è già assegnato."
+          description="Crea un modello per la campagna. Ogni Player potrà sceglierlo e ricevere una copia personale indipendente."
           values={characterForm.values}
           isSubmitting={adminCharacters.isCreating}
           isUploadingImage={adminCharacters.isUploadingImage}
@@ -363,7 +363,7 @@ export default function AdminCharactersPage() {
         <CharacterFormModal
           isOpen={characterToEdit !== null}
           title="Modifica personaggio"
-          description="Aggiorna i dati del personaggio. L’immagine viene salvata subito quando scegli un nuovo file."
+          description="Aggiorna il modello per le nuove scelte: le copie personali già create restano invariate. L’immagine viene salvata subito quando scegli un nuovo file."
           values={characterForm.values}
           isSubmitting={adminCharacters.isUpdating}
           isUploadingImage={adminCharacters.isUploadingImage}
@@ -403,7 +403,7 @@ export default function AdminCharactersPage() {
             </p>
 
             <p className="rounded-xl bg-[rgba(239,68,68,0.12)] px-4 py-3 text-sm font-bold text-[var(--text-danger)]">
-              Puoi eliminare solo personaggi non ancora scelti da un player.
+              Puoi eliminare solo modelli che non hanno ancora copie personali.
             </p>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

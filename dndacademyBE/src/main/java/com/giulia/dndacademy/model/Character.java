@@ -5,7 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "characters", uniqueConstraints = @UniqueConstraint(
+@org.hibernate.annotations.Check(name = "ck_character_model_instance", constraints = "(player_id is null and source_template_id is null) or (player_id is not null and source_template_id is not null and source_template_id <> id)")
+@Table(name = "characters", indexes = @Index(name = "ix_characters_source_template", columnList = "source_template_id"), uniqueConstraints = @UniqueConstraint(
         name = "uk_character_campaign_player", columnNames = {"campaign_id", "player_id"}))
 @Getter
 @Setter
@@ -61,6 +62,11 @@ public class Character {
     @ManyToOne
     @JoinColumn(name = "player_id")
     private User player;
+
+    // Personal instances retain an immutable snapshot and point to their reusable model.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_template_id", foreignKey = @ForeignKey(name = "fk_character_source_template"))
+    private Character sourceTemplate;
 
     @ManyToOne
     @JoinColumn(name = "campaign_id")

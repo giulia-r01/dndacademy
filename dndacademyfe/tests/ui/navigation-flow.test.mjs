@@ -47,10 +47,10 @@ async function setup(options = {}) {
     if (path === "/api/quizzes/me/results" || path === "/api/badges/me" || path === "/api/npcs" || path === "/api/encounters/chapter/3") return reply([])
     if (path === "/api/characters/me") {
       if (characterLookupFailed) return reply({ message: "Personaggio non disponibile" }, 503)
-      return reply(claimed ? [{ ...hero, campaignId: options.characterCampaignId ?? 1, playerUsername: "tester" }] : [])
+      return reply(claimed ? [{ ...hero, id: 111, templateId: 11, campaignId: options.characterCampaignId ?? 1, playerUsername: "tester" }] : [])
     }
     if (path === "/api/characters/campaign/1/available") return reply([{ ...hero }])
-    if (path === "/api/characters/11/claim") { claimed = true; return reply({ ...hero, playerUsername: "tester" }) }
+    if (path === "/api/characters/11/claim") { claimed = true; return reply({ ...hero, id: 111, templateId: 11, playerUsername: "tester" }) }
     if (path === "/api/combat/history") return reply({ items: options.resume ? [{ combatId: 9, campaignId: 1, chapterId: 3, campaignName: "Le Miniere", chapterTitle: "Il sentiero", encounterTitle: "Lo scontro aperto", completed: false }] : [], page: 0, size: 12, totalPages: 1, totalElements: options.resume ? 1 : 0 })
     if (path === "/api/combat/9/status") return reply({ combatId: 9, campaignId: options.wrongResume ? 2 : 1, chapterId: 3, completed: false, combatOver: false, currentTurnParticipantId: 1, events: [], fighters: [{ participantId: 1, characterId: 11, npcId: null, name: "Kael", characterClass: "Guerriero", imageUrl: null, currentHp: 15, maxHp: 15, armorClass: 14, alive: true, enemy: false, currentTurn: true, initiative: 12, spellcaster: false, weaponName: "Ascia", damageDie: 6 }, { participantId: 2, characterId: null, npcId: 1, name: "Goblin", imageUrl: null, currentHp: 10, maxHp: 10, armorClass: 12, alive: true, enemy: true, currentTurn: false, initiative: 10 }] })
     if (path.includes("/start")) { starts++; return reply({ message: "Non deve essere creato un nuovo scontro" }, 400) }

@@ -103,6 +103,8 @@ L'editor usa [Tiptap](https://tiptap.dev/docs/editor/markdown/getting-started/ba
 
 ## Personaggi Player
 
+Il catalogo contiene modelli riutilizzabili. Scegliere un modello crea una copia personale con un ID distinto, riferita al modello tramite `templateId`. Più Player possono scegliere lo stesso eroe, ma ogni account può avere una sola copia per campagna. Il frontend conserva i modelli nel catalogo dopo la scelta e ne impedisce una seconda allo stesso account. Il Master modifica i modelli per le scelte future; le copie già create restano invariate. `assignedCount` protegge l'eliminazione dei modelli con copie. Decisioni, vincoli, test e migrazione sono in [Regole didattiche e assegnazioni](../dndacademyBE/docs/REGOLE_DIDATTICHE_E_ASSEGNAZIONI.md).
+
 Le schede Player dei personaggi disponibili e posseduti mostrano identità, livello, HP, Classe Armatura, sei caratteristiche con punteggio e modificatore, arma e attacco magico quando configurato. Le icone info aprono spiegazioni nel relativo box con clic, tocco o tastiera; Escape richiude la spiegazione e mantiene il focus sul comando. I testi chiariscono anche la differenza tra tiro per colpire e dado del danno. Le statistiche assenti sono indicate come non disponibili. La scelta conserva il contesto della campagna e permette di confrontarne la descrizione con le capacità, senza assegnare automaticamente un ruolo o una raccomandazione al personaggio.
 
 ## Profilo e badge
@@ -126,6 +128,8 @@ Le rotte `/tour/[audience]/[screen]` usano la struttura di navigazione dell'app 
 La chiusura o il completamento sono ricordati nel `localStorage` del browser per account, ruolo, percorso e versione del tour. Su un altro browser, dopo la cancellazione dello storage o con un altro account/ruolo, il primo avvio viene riproposto. Non è una preferenza sincronizzata dal backend. Dettagli tecnici e collaudo: [Tour frontend](docs/tour-system.md).
 
 ## Combattimento, storico e immagini
+
+Gli incontri di questa versione sono esercizi indipendenti: ogni nuovo tentativo parte dagli HP massimi della copia personale. La preparazione mostra gli HP con cui si entrerà nello scontro e dichiara la semplificazione rispetto a cure e riposi di D&D. Riprendere un combattimento aperto recupera invece gli HP e gli eventi effettivamente salvati, senza alcun reset. Il tour presenta la stessa distinzione.
 
 La preparazione mostra personaggio e incontro senza avviare una sessione. Il pulsante di avvio crea un nuovo tentativo; **Riprendi combattimento** carica invece quello salvato e verifica la corrispondenza con campagna e capitolo.
 

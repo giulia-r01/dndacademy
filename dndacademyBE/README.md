@@ -6,6 +6,8 @@ API REST per account, didattica, campagne a capitoli, personaggi, NPC e combatti
 
 ## Stack
 
+Le scelte correnti su accesso ai quiz, modelli riutilizzabili, copie personali e HP didattici sono descritte in [Regole didattiche e assegnazioni](docs/REGOLE_DIDATTICHE_E_ASSEGNAZIONI.md). Per un database già popolato è richiesta la migrazione indicata nel documento prima dell'avvio della nuova versione; nessuno script svuota automaticamente il database.
+
 Java 17 come versione target, Spring Boot 3.5.11, Spring Security, JWT, BCrypt, Spring Data JPA / Hibernate, PostgreSQL, Jakarta Validation e Maven Wrapper. Cloudinary per le immagini, Spring Mail per le email, JUnit 5 e Mockito per i test.
 
 ## Funzionalità presenti
@@ -115,7 +117,7 @@ Il client richiede le azioni di nemici e aiutanti una alla volta. Il backend dec
 
 Lo stato include `fighters`, con HP, iniziativa, schieramento e immagini, ed `events`, registro cronologico persistito in `combat_events`. Gli eventi mostrano attaccante, bersaglio, tiro, totale, CA, esito, danni e HP prima/dopo. Gli esiti sono `PLAYER_VICTORY` ed `ENEMY_VICTORY`. La vittoria soddisfa il requisito di combattimento; il Player completa poi il capitolo tramite la relativa API.
 
-Gli HP dello scontro appartengono ai partecipanti: i danni non vengono copiati sugli HP permanenti del personaggio. La UI non ripristina ancora una sessione al ricaricamento della pagina, anche se lo stato è persistito.
+Gli HP dello scontro appartengono ai partecipanti. Ogni nuovo tentativo è un esercizio indipendente e parte dagli HP massimi della copia personale; danni e cure restano in quel tentativo. La UI spiega la semplificazione rispetto alle regole di cure e riposi di D&D. La ripresa tramite `combatId` recupera HP ed eventi salvati e non avvia un nuovo tentativo.
 
 ## Storico dei combattimenti
 
@@ -141,22 +143,22 @@ Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. I di
 .\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-I sessantacinque test coprono aggiornamento HP dei personaggi assegnati e non assegnati, turni separati, danni, mancati, critici, sconfitta, aiutanti, richieste ripetute, autorizzazioni, immagini NPC, gestione degli errori e coerenza della progressione delle campagne e stato individuale dei requisiti del capitolo. La suite completa aggiunge 12 regressioni di integrazione (`PreMergeIntegrationTest`) e `DndacademyApplicationTests`: 78 test totali. Spring Security, repository, transazioni e vincoli vengono esercitati senza mock dei repository.
+La suite completa comprende 101 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. Il profilo di test usa H2 in memoria; la migrazione PostgreSQL e i servizi esterni richiedono il collaudo dell'ambiente reale.
 
-Il frontend include anche quarantaquattro test browser Playwright con API simulate per il layout e le interazioni di combattimento e creazione NPC (vedere il relativo README). Non sostituiscono i test di integrazione: restano da eseguire la prova completa con backend reale e l’upload reale su Cloudinary.
+Il frontend include test browser Playwright con API simulate per i flussi Player/Master, combattimenti, immagini, profilo, navigazione, tour ed editor (vedere il relativo README). Non sostituiscono i test di integrazione o la prova completa con i servizi reali.
 
 ## Struttura e prossimi sviluppi
 
 Il codice si trova in `src/main/java/com/giulia/dndacademy/`, suddiviso in `controllers`, `service`, `repository`, `model`, `dto`, `security`, `exceptions` e `config`. Configurazione in `src/main/resources/`, test in `src/test/java/`.
 
-Prossimi sviluppi: migrazioni e profili per ambiente, ripresa degli scontri dalla UI, strategie NPC più articolate, magie e condizioni avanzate, ulteriori test di integrazione e preparazione al deploy.
+Prossimi sviluppi: gestione automatizzata e versionata delle migrazioni, profili per ambiente, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate e preparazione al deploy.
 
 Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
 
 
 ### Modifica HP dei personaggi
 
-Per i personaggi non ancora assegnati, il salvataggio della scheda riallinea gli HP attuali al massimo configurato, anche quando il massimo resta invariato: questo corregge le schede precedenti mostrando subito gli HP pieni. Per i personaggi assegnati gli HP attuali restano invariati, limitati al nuovo massimo in caso di riduzione; modificare la scheda non cura danni e non rianima un personaggio. Nessuna migrazione o correzione massiva dei dati: le schede non assegnate vengono riallineate al successivo salvataggio.
+Il catalogo Master modifica i modelli e riallinea i loro HP al massimo configurato. Le copie personali già assegnate sono snapshot indipendenti e non vengono riscritte da queste modifiche. Gli endpoint Master di danno/cura restano protetti per proprietario della campagna; gli HP di un combattimento sono però dati del partecipante e ogni nuovo esercizio parte al massimo. Vedere le regole e la migrazione collegate all'inizio del documento.
 
 
 ### Sincronizzazione degli sblocchi delle campagne

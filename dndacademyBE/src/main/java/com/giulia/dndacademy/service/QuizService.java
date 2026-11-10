@@ -7,7 +7,7 @@ public interface QuizService {
 
     QuizDTO createQuiz(CreateQuizRequest request);
 
-    QuizDTO getQuizByLesson(Long lessonId);
+    QuizDTO getQuizByLesson(Long lessonId, String username);
 
     QuizResultDTO submitQuiz(SubmitQuizRequest request, String username);
 

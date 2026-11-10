@@ -8,7 +8,7 @@ public interface QuestionService {
 
     QuestionDTO createQuestion(CreateQuestionRequest request);
 
-    List<QuestionDTO> getQuestionsByQuiz(Long quizId);
+    List<QuestionDTO> getQuestionsByQuiz(Long quizId, String username);
 
     QuestionDTO updateQuestion(Long questionId, UpdateQuestionRequest request);
 

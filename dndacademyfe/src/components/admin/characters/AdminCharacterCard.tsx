@@ -20,6 +20,7 @@ export default function AdminCharacterCard({
   onDelete,
 }: AdminCharacterCardProps) {
   const isAlreadyChosen = character.playerUsername !== null
+  const assignedCount = character.assignedCount ?? 0
 
   return (
     <div className="space-y-3">
@@ -36,7 +37,9 @@ export default function AdminCharacterCard({
               ? "Personaggio utilizzato in combattimento: la scheda resta protetta per conservare lo storico."
               : isAlreadyChosen
               ? `Scelto da ${character.playerUsername}. Può essere modificato, ma non eliminato.`
-              : "Personaggio disponibile. Può essere modificato o eliminato."}
+              : assignedCount > 0
+              ? `${assignedCount} copie personali create. Le modifiche al modello valgono solo per le nuove scelte; le copie esistenti restano invariate.`
+              : "Modello riutilizzabile: ogni Player che lo sceglie riceve la propria copia personale."}
           </p>
         </div>
 
@@ -56,7 +59,7 @@ export default function AdminCharacterCard({
           <AppButton
             type="button"
             variant="danger"
-            disabled={isAlreadyChosen}
+            disabled={isAlreadyChosen || assignedCount > 0}
             onClick={() => onDelete(character)}
           >
             <span className="inline-flex items-center gap-2">

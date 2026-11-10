@@ -24,8 +24,8 @@ public class QuizController {
     }
 
     @GetMapping("/lesson/{lessonId}")
-    public QuizDTO getQuizByLesson(@PathVariable Long lessonId) {
-        return quizService.getQuizByLesson(lessonId);
+    public QuizDTO getQuizByLesson(@PathVariable Long lessonId, Authentication authentication) {
+        return quizService.getQuizByLesson(lessonId, authentication.getName());
     }
 
     @PostMapping("/submit")

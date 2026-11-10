@@ -62,7 +62,7 @@ async function setup(viewport = { width: 1600, height: 1000 }, options = {}) {
       combatWon: options.combatWon ?? false, rewardBadgeId: null, rewardBadgeName: null,
       unlocked: true, completed: false, completedAt: null,
     }])
-    if (path.endsWith("/api/characters/me")) return reply(options.noCharacter ? [] : [ownCharacter])
+    if (path.endsWith("/api/characters/me")) return reply(options.noCharacter ? [] : [{ ...ownCharacter, currentHp: options.wounded ? 0 : ownCharacter.currentHp }])
     if (/\/characters\/campaign\/1\/available$/.test(path)) return reply([{ ...ownCharacter, playerUsername: null }])
     if (/\/characters\/10\/claim$/.test(path)) return reply(ownCharacter)
     if (/\/combat\/chapter\/3\/preview$/.test(path)) {
@@ -326,6 +326,19 @@ test("preparazione: scheda completa, ritratto grande e nemici senza avviare lo s
   } finally { await context.close() }
 })
 
+test("preparazione didattica: nuovo tentativo a HP pieni anche se la scheda conserva zero HP", async () => {
+  const { context, page, starts } = await setup(undefined, { wounded: true, role: "PLAYER" })
+  try {
+    await page.goto(`${baseURL}/campaigns/1/chapters/3/combat`)
+    await page.getByRole("heading", { name: "Combattimento didattico", exact: true }).waitFor()
+    await page.getByText(/Ogni nuovo tentativo inizia con tutti i punti vita/).waitFor()
+    const hero = page.getByRole("region", { name: "Il tuo personaggio", exact: true })
+    await hero.getByRole("progressbar", { name: "Punti vita 10 su 10", exact: true }).waitFor()
+    assert.equal(await page.getByRole("button", { name: "Inizia il combattimento", exact: true }).isDisabled(), false)
+    assert.equal(starts(), 0)
+  } finally { await context.close() }
+})
+
 test("preparazione: aiutanti distinti dai nemici", async () => {
   const { context, page } = await setup(undefined, { withAlly: true })
   try {
@@ -519,7 +532,7 @@ async function setupCharacters({ owned = true, multipleCampaigns = false, viewpo
     if (path.endsWith("/claim")) {
       claims++
       const id = Number(path.split("/").at(-2))
-      const character = { ...ownCharacter, id, campaignId: multipleCampaigns ? 2 : 1, name: id === 11 ? "Kael" : "Elion" }
+      const character = { ...ownCharacter, campaignId: multipleCampaigns ? 2 : 1, name: id === 11 ? "Kael" : "Elion", id: id + 100, templateId: id }
       mine = [...mine, character]
       return reply(character)
     }
@@ -597,10 +610,10 @@ test("personaggi: dopo la prima scelta blocca subito le altre schede", async () 
   try {
     await page.goto(`${baseURL}/characters`)
     await page.getByRole("button", { name: "Scegli personaggio", exact: true }).first().click()
-    await page.getByText("Personaggio scelto correttamente.", { exact: true }).waitFor()
+    await page.getByText("La tua copia personale del personaggio è pronta.", { exact: true }).waitFor()
     const remaining = page.getByRole("button", { name: "Scelta non disponibile", exact: true })
-    assert.equal(await remaining.count(), 1)
-    assert.ok(await remaining.isDisabled())
+    assert.equal(await remaining.count(), 2)
+    for (const button of await remaining.all()) assert.ok(await button.isDisabled())
     assert.equal(claims(), 1)
   } finally { await context.close() }
 })
@@ -616,8 +629,8 @@ test("personaggi: la scelta resta disponibile nelle altre campagne", async () =>
     await choice.waitFor()
     assert.equal(await choice.isDisabled(), false)
     await choice.click()
-    await page.getByText("Personaggio scelto correttamente.", { exact: true }).waitFor()
-    assert.ok(await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).isDisabled())
+    await page.getByText("La tua copia personale del personaggio è pronta.", { exact: true }).waitFor()
+    assert.ok(await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).first().isDisabled())
     assert.equal(claims(), 1)
     await page.getByLabel("Scegli campagna", { exact: true }).selectOption("1")
     await page.getByRole("button", { name: "Scelta non disponibile", exact: true }).first().waitFor()

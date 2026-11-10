@@ -138,11 +138,7 @@ export default function CharactersPage({
 
       setMyCharacters((current) => [...current, claimedCharacter])
 
-      setAvailableCharacters((current) =>
-        current.filter((character) => character.id !== characterId),
-      )
-
-      setSuccessMessage("Personaggio scelto correttamente.")
+      setSuccessMessage("La tua copia personale del personaggio è pronta.")
     } catch (err) {
       const message =
         err instanceof Error
@@ -165,7 +161,8 @@ export default function CharactersPage({
 
           <p className="mt-2 max-w-2xl text-[var(--text-soft)]">
             Consulta i personaggi già scelti e seleziona quelli disponibili per
-            le campagne tutorial.
+            le campagne tutorial. Ogni giocatore riceve una scheda personale:
+            lo stesso eroe può essere scelto anche dagli altri.
           </p>
         </div>
 
