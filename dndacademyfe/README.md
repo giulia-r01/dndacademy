@@ -15,7 +15,7 @@ Il JWT è conservato in `localStorage` e inviato come Bearer token. Il backend r
 Servono Node.js 20.9 o superiore, npm e il backend configurato. Da questa cartella creare `.env.local`:
 
 ```dotenv
-NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:8081
 ```
 
 La base non deve includere `/api`: i servizi specificano già i percorsi completi, compresi quelli `/auth`. Nel backend impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per allineare CORS e collegamenti delle email.
@@ -36,7 +36,9 @@ npm run build
 npm run start
 ```
 
-`NEXT_PUBLIC_API_URL` deve essere disponibile durante la build. Il server di sviluppo e quello di produzione usano normalmente la porta 3000: avviarne uno alla volta su quella porta. Database, servizio email e Cloudinary sono configurati nel backend. Le email di benvenuto e recupero password usano una coda persistente e Gmail API HTTPS in produzione; configurazione del mittente e consenso OAuth restano esclusivamente nel backend.
+`NEXT_PUBLIC_API_URL` deve essere disponibile durante la build. L'esempio usa il backend Docker sulla porta 8081; per Spring Boot avviato direttamente usare 8080. La configurazione Next.js interrompe avvio e build se il valore manca o non è un'origine canonica HTTP/HTTPS: niente credenziali, `/api`, slash finale, query o frammenti. HTTP è ammesso solo su localhost, 127.0.0.1 o [::1] in locale, anche per una build di produzione locale. Su Vercel (`VERCEL=1`), comprese le preview, è obbligatoria un'origine HTTPS non locale. Nessuna chiamata al backend viene effettuata dalla validazione: raggiungibilità e CORS si collaudano dopo il deploy. Dopo un cambio di URL serve una nuova build perché il valore pubblico è incorporato nel codice browser. Verifiche automatiche: `npm run test:config`.
+
+Il server di sviluppo e quello di produzione usano normalmente la porta 3000: avviarne uno alla volta su quella porta. Database, servizio email e Cloudinary sono configurati nel backend. Le email di benvenuto e recupero password usano una coda persistente e Gmail API HTTPS in produzione; configurazione del mittente e consenso OAuth restano esclusivamente nel backend.
 
 ## Navigazione e ruoli
 
