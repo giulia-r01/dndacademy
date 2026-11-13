@@ -12,6 +12,7 @@ import { userService } from "@/services/user.service"
 import { isPasswordValid, passwordHint } from "@/lib/password"
 import type { UserProfile } from "@/types/user"
 import { learningLevelLabels as levels } from "@/lib/learning-level"
+import DeleteAccount from "@/components/profile/DeleteAccount"
 
 const errorMessage = (err: unknown) => err instanceof Error ? err.message : "Impossibile completare l’operazione."
 
@@ -24,7 +25,7 @@ export default function ProfileForms({ user }: { user: UserProfile }) {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const fileInput = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState<"account" | "password" | "avatar" | null>(null)
+  const [busy, setBusy] = useState<"account" | "password" | "avatar" | "delete" | null>(null)
   const [avatarAction, setAvatarAction] = useState<"upload" | "remove">("upload")
   const inFlight = useRef(false)
   const [feedback, setFeedback] = useState<{ section: string; error?: string; success?: string } | null>(null)
@@ -141,5 +142,6 @@ export default function ProfileForms({ user }: { user: UserProfile }) {
         </form>
       </AppCard>
     </div>
+    <DeleteAccount user={user} disabled={busy !== null} onBusyChange={deleting => setBusy(deleting ? "delete" : null)} />
   </div>
 }

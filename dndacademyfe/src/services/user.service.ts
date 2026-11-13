@@ -2,6 +2,12 @@ import { apiFetch } from "@/services/api"
 import type { ChangePasswordRequest, UpdateProfileRequest, UserProfile, UserRole } from "@/types/user"
 
 export const userService = {
+  deletionPlan() {
+    return apiFetch<{ campaigns: number; npcs: number; successors: { id: number; username: string }[] }>("/api/users/me/deletion-plan", { auth: true })
+  },
+  deleteMe(request: { currentPassword: string; confirmed: boolean; successorMasterId?: number }) {
+    return apiFetch<void>("/api/users/me", { method: "DELETE", auth: true, body: JSON.stringify(request) })
+  },
   updateMe(request: UpdateProfileRequest) {
     return apiFetch<UserProfile>("/api/users/me", { method: "PATCH", auth: true, body: JSON.stringify(request) })
   },

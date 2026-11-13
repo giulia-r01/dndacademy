@@ -35,3 +35,7 @@ Riferimento: [Spring Boot 3.5, configurazione della sicurezza](https://docs.spri
 ## Inizializzazione del primo Master
 
 La registrazione rimane riservata al ruolo PLAYER. Il primo account amministrativo viene promosso con la [procedura manuale documentata](FIRST_MASTER.md), dopo la verifica dell’identità dell’account e del database da parte dell’operatore. L’aggiornamento atomico controlla assenza di Master e corrispondenza di ID, username ed email, poi incrementa `token_version`: serve un nuovo login. Nessuna credenziale predefinita, endpoint pubblico o migrazione automatica viene aggiunta.
+
+## Eliminazione account
+
+`DELETE /api/users/me` usa esclusivamente l’identità del principal JWT e richiede password attuale e conferma esplicita. Nessun parametro identifica un altro account da cancellare. Il database rimuove l’utente e i suoi dati in una transazione; i token precedenti non trovano più l’account. Eventuali contenuti Master richiedono il trasferimento a un altro Master verificato sotto lock. [Dettagli e test](ACCOUNT_DELETION.md).

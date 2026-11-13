@@ -27,7 +27,7 @@ class InitialSchemaApplicationTest {
     @Test
     void applicationStartsWithMigratedSchemaAndInitializesSystemBadges() {
         assertEquals("validate", environment.getProperty("spring.jpa.hibernate.ddl-auto"));
-        assertEquals("3", flyway.info().current().getVersion().getVersion());
+        assertEquals("4", flyway.info().current().getVersion().getVersion());
         for (SystemBadge badge : SystemBadge.values()) {
             assertTrue(badges.findBySystemCode(badge).isPresent());
         }

@@ -24,3 +24,5 @@ Per il Branding Google usare l'URL reale della homepage e quello di `/privacy`. 
 - [Garante: cookie e altri strumenti di tracciamento](https://www.garanteprivacy.it/faq/cookie).
 - [Google: Branding](https://support.google.com/cloud/answer/15549049?hl=it), [verifica e proprietà](https://support.google.com/cloud/answer/13464321?hl=it), [durata delle autorizzazioni OAuth](https://developers.google.com/identity/protocols/oauth2).
 - [Vercel DPA](https://vercel.com/legal/dpa), [Railway DPA](https://railway.com/legal/dpa), [Cloudinary](https://cloudinary.com/msa), [Google API User Data Policy](https://developers.google.com/terms/api-services-user-data-policy).
+
+La pagina profilo consente ora la cancellazione autonoma con password e conferma esplicita, trasferendo i contenuti Master a un altro Master. L’informativa è aggiornata per questa funzione e per la coda tecnica di rimozione avatar; restano da finalizzare conservazione di log e backup e gestione delle richieste relative a dati inseriti nei contenuti condivisi.

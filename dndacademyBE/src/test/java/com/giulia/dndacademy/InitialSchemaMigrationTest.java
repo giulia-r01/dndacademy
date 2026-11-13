@@ -47,7 +47,7 @@ class InitialSchemaMigrationTest {
             assertEquals(1, original.migrate().migrationsExecuted);
             statement.executeUpdate("insert into users (username,email,password,token_version,role) "
                     + "values ('before_v2','before_v2@example.test','hash',0,'PLAYER')");
-            assertEquals(2, flyway(url).migrate().migrationsExecuted);
+            assertEquals(3, flyway(url).migrate().migrationsExecuted);
             validateAllEntityMappings(url);
             try (var rows = statement.executeQuery("select username from users")) {
                 assertTrue(rows.next());
@@ -69,7 +69,7 @@ class InitialSchemaMigrationTest {
             assertEquals(2, previous.migrate().migrationsExecuted);
             statement.execute("insert into users (username,email,password,token_version,role) values ('before_v3','before_v3@example.test','hash',0,'PLAYER')");
             statement.execute("insert into auth_rate_limit_buckets (id,attempts,expires_at) values ('" + "a".repeat(64) + "', 3, CURRENT_TIMESTAMP)");
-            assertEquals(1, flyway(url).migrate().migrationsExecuted);
+            assertEquals(2, flyway(url).migrate().migrationsExecuted);
             validateAllEntityMappings(url);
             try (var rows = statement.executeQuery("select attempts from auth_rate_limit_buckets")) { assertTrue(rows.next()); assertEquals(3, rows.getInt(1)); }
             try (var rows = statement.executeQuery("select username from users")) { assertTrue(rows.next()); assertEquals("before_v3", rows.getString(1)); }
@@ -81,7 +81,7 @@ class InitialSchemaMigrationTest {
     void freshInstallMatchesAllEntitiesAndSecondStartupKeepsData() throws Exception {
         String url = newDatabase();
         try (Connection connection = DriverManager.getConnection(url, "sa", "")) {
-            assertEquals(3, flyway(url).migrate().migrationsExecuted);
+            assertEquals(4, flyway(url).migrate().migrationsExecuted);
             validateAllEntityMappings(url);
             try (var statement = connection.createStatement()) {
                 statement.executeUpdate("insert into users (username,email,password,token_version,role,learning_level) "
@@ -91,7 +91,7 @@ class InitialSchemaMigrationTest {
             }
             Flyway restarted = flyway(url);
             assertEquals(0, restarted.migrate().migrationsExecuted);
-            assertEquals("3", restarted.info().current().getVersion().getVersion());
+            assertEquals("4", restarted.info().current().getVersion().getVersion());
             try (var statement = connection.createStatement();
                  var rows = statement.executeQuery("select username from users")) {
                 assertTrue(rows.next());

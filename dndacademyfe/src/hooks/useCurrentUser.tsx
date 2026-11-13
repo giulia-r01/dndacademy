@@ -14,7 +14,7 @@ type CurrentUserState = {
   error: string
   updateUser: (user: UserProfile) => void
   refresh: () => Promise<void>
-  logout: (reason?: "passwordChanged") => void
+  logout: (reason?: "passwordChanged" | "accountDeleted") => void
   loginHref: string
   login: (credentials: LoginRequest) => Promise<UserProfile>
 }
@@ -29,14 +29,14 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const generation = useRef(0)
   const pending = useRef<{ token: string; promise: Promise<UserProfile> } | null>(null)
 
-  const logout = useCallback((reason?: "passwordChanged") => {
+  const logout = useCallback((reason?: "passwordChanged" | "accountDeleted") => {
     generation.current++
     localStorage.removeItem("token")
     setUser(null)
     setError("")
     setIsLoading(false)
     pending.current = null
-    setLoginHref(reason === "passwordChanged" ? "/login?passwordChanged=1" : "/login")
+    setLoginHref(reason === "passwordChanged" ? "/login?passwordChanged=1" : reason === "accountDeleted" ? "/login?accountDeleted=1" : "/login")
   }, [])
 
   const refresh = useCallback(() => {

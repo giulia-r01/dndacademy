@@ -223,3 +223,7 @@ Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Pr
 ## Primo Master
 
 La [procedura del primo Master](docs/FIRST_MASTER.md) promuove manualmente un account Player verificato sul database nuovo. Lo script richiede ID, username ed email, rifiuta l’operazione se esiste già un Master e invalida le vecchie sessioni. Non viene eseguito da Flyway o all’avvio; le promozioni successive restano nell’Area Master.
+
+## Cancellazione del proprio account
+
+Dal profilo è possibile eliminare il proprio account con password e conferma esplicita. La [procedura applicativa](docs/ACCOUNT_DELETION.md) documenta rimozione dei dati personali, trasferimento dei contenuti Master, revoca degli accessi e pulizia persistente dell’avatar con V4. Non sono introdotte funzioni amministrative di eliminazione o disabilitazione di altri utenti.

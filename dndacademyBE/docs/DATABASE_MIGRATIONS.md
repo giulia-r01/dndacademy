@@ -45,9 +45,9 @@ Prerequisiti: database locale nuovo `dndacademy_preprod`, schema `public` presen
    ORDER BY installed_rank;
    ```
 
-   Devono esserci V1, V2 e V3 con `success = true`, oltre alle 26 tabelle applicative (24 di V1, contatori V2 e coda email V3). V1/V2 locali sono già confermate; V3 richiede la nuova prova PostgreSQL. Sono attesi i badge di sistema, non campagne o utenti di prova.
+   Devono esserci V1, V2, V3 e V4 con `success = true`, oltre alle 27 tabelle applicative (24 di V1, contatori V2, coda email V3 e pulizia avatar V4). V1/V2/V3 locali sono già confermate; V4 richiede il riavvio con il backend aggiornato. Sono attesi i badge di sistema, non campagne o utenti di prova.
 
-5. Fermare e riavviare con lo stesso comando. Flyway deve indicare che lo schema è aggiornato, senza riapplicare V1/V2/V3 e senza perdere dati. Il collaudo dei contenuti inseriti dal Master sarà un passo successivo.
+5. Fermare e riavviare con lo stesso comando. Flyway deve indicare che lo schema è aggiornato, senza riapplicare V1/V2/V3/V4 e senza perdere dati. Il collaudo dei contenuti inseriti dal Master sarà un passo successivo.
 6. Per tornare al vecchio ambiente, fermare il backend e avviarlo senza il profilo `preprod` dalla cartella backend. L'URL originale non è stato modificato. Per pulire la variabile del terminale: `Remove-Item Env:PREPROD_DB_URL`.
 
 Questi comandi sono istruzioni per una prova esplicita: la preparazione del codice e i test automatici non si collegano al PostgreSQL locale.
@@ -62,12 +62,16 @@ Lo script manuale [2026-11-10-character-templates.sql](migrations/2026-11-10-cha
 
 ## Verifiche automatiche e limiti
 
-L'aggiornamento V1→V3 e V2→V3 è verificato su H2 conservando utenti e contatori; la coda e i suoi lock sono verificati anche con 11 test su PostgreSQL 17 temporaneo separato dai database dell'utente. Il database locale `dndacademy_preprod` resta a V2 fino al prossimo avvio della nuova applicazione: il collaudo isolato non implica che V3 sia già stata applicata lì.
+L'aggiornamento V1→V3 e V2→V3 è verificato su H2 conservando utenti e contatori; la coda e i suoi lock sono verificati anche con 11 test su PostgreSQL 17 temporaneo separato dai database dell'utente. Il collaudo isolato non aggiorna il database dell’utente: il successivo avvio Docker ha confermato V3, mentre V4 va applicata avviando la nuova versione del backend.
 
-- `InitialSchemaMigrationTest`: V1/V2/V3 eseguite su H2 isolato, incluso aggiornamento di un database V1 con dati in modalità PostgreSQL; validazione di tutte le entità, seconda esecuzione senza modifiche ai dati, vincoli dei personaggi, rifiuto del database non gestito, clean disabilitato e rilevamento di una migrazione modificata.
+- `InitialSchemaMigrationTest`: V1/V2/V3/V4 eseguite su H2 isolato, incluso aggiornamento di un database V1 con dati in modalità PostgreSQL; validazione di tutte le entità, seconda esecuzione senza modifiche ai dati, vincoli dei personaggi, rifiuto del database non gestito, clean disabilitato e rilevamento di una migrazione modificata.
 - `InitialSchemaApplicationTest`: avvio Spring Boot con Flyway attivo e Hibernate in `validate`, con inizializzazione successiva dei badge di sistema.
-- La suite applicativa esistente conserva H2 e `create-drop`, con Flyway disabilitato esplicitamente per l'isolamento delle sue fixture. I test delle migrazioni sono separati: non sono una copia SQL dello schema H2, usano gli stessi script V1/V2/V3 destinati a PostgreSQL.
-- Il packaging deve includere V1/V2/V3 e i profili ed escludere `env.properties`, anche nelle build locali. Eseguire una build pulita per eliminare eventuali vecchie copie rimaste in `target`.
+- La suite applicativa esistente conserva H2 e `create-drop`, con Flyway disabilitato esplicitamente per l'isolamento delle sue fixture. I test delle migrazioni sono separati: non sono una copia SQL dello schema H2, usano gli stessi script V1/V2/V3/V4 destinati a PostgreSQL.
+- Il packaging deve includere V1/V2/V3/V4 e i profili ed escludere `env.properties`, anche nelle build locali. Eseguire una build pulita per eliminare eventuali vecchie copie rimaste in `target`.
 - H2 non sostituisce PostgreSQL 17: il via libera a questa fase richiede la prova locale sopra. Deploy Railway, servizi email/immagini e ripristino backup restano da verificare.
 
 Riferimenti: [Spring Boot 3.5 e Flyway](https://docs.spring.io/spring-boot/3.5/how-to/data-initialization.html), [rischi del baseline automatico](https://documentation.red-gate.com/fd/flyway-baseline-on-migrate-setting-277578974.html).
+
+## V4: pulizia avatar dopo cancellazione account
+
+V4 aggiunge solo la coda `avatar_cleanup`, senza modificare le migrazioni applicate né azzerare dati. Il lavoro conserva l’ID necessario alla cancellazione Cloudinary anche dopo la rimozione dell’utente; non ha una FK verso `users`. [Cancellazione e conservazione dei dati](ACCOUNT_DELETION.md). Il nuovo backend richiede questa tabella: aggiornare immagine/container locale e verificare il passaggio V3→V4 e gli avvii successivi sul medesimo database.

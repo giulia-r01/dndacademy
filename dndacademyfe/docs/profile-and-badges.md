@@ -11,6 +11,8 @@ Tutte le API richiedono autenticazione e operano sull'utente della sessione.
 | `PUT /api/users/me/password` | `currentPassword`, `newPassword` | 204; tutte le sessioni precedenti invalidate |
 | `PUT /api/users/me/avatar` | Multipart, campo `file` | Profilo con nuovo avatar |
 | `DELETE /api/users/me/avatar` | — | Profilo senza avatar |
+| `GET /api/users/me/deletion-plan` | — | Contenuti da trasferire e Master disponibili |
+| `DELETE /api/users/me` | `currentPassword`, `confirmed`, eventuale `successorMasterId` | 204; account e dati personali di gioco eliminati, vecchie sessioni non valide |
 | `GET /api/badges/catalog` | — | Catalogo con `unlocked` e `unlockedAt` personali |
 
 Username: 3–40 caratteri tra lettere ASCII, numeri, punti, trattini e underscore. Email normalizzate in minuscolo; username univoci e sensibili alle maiuscole. Il cambio di username mantiene l'ID e tutti i progressi. Ruolo e livello non sono modificabili dal profilo.
@@ -22,6 +24,8 @@ Le immagini ammesse sono JPG, PNG e WEBP fino a 5 MB. Cloudinary valida il forma
 Il profilo si apre dal menu dell'avatar nella barra superiore, che contiene anche Esci. La selezione di un'immagine valida avvia immediatamente il caricamento, senza una seconda conferma: spinner sull'avatar, messaggio di stato e controlli disabilitati indicano l'operazione. In caso di errore rimane visibile l'immagine precedente e si può selezionare nuovamente anche lo stesso file. Il profilo condiviso aggiorna la barra superiore dopo il salvataggio. Livelli e barra della sidebar usano le etichette italiane comuni.
 
 ## Database ricreato e ambiente di test
+
+La cancellazione dal profilo richiede una finestra di conferma, password attuale e accettazione esplicita. Nessun ID utente viene usato per selezionare l'account da eliminare: il backend usa la sessione. I contenuti creati come Master vengono conservati e trasferiti a un altro Master scelto prima della cancellazione; se manca un successore bisogna prima promuoverne uno. Modelli dei personaggi e dati degli altri Player non vengono cancellati. L'avatar viene eliminato tramite coda persistente con ritenti; dopo il successo si torna al login con conferma e si rimuovono token e preferenze del tour dell'account dal browser corrente. [Comportamento, transazioni e migrazione V4](../../dndacademyBE/docs/ACCOUNT_DELETION.md). Nessun controllo amministrativo sugli account altrui è stato aggiunto.
 
 Le modifiche aggiungono `users.avatar_url`, `users.token_version`, `badges.system_code` e il vincolo unico su `(user_id, badge_id)` in `user_badges`. Non è stata eseguita alcuna pulizia del database applicativo.
 
