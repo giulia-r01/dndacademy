@@ -356,7 +356,6 @@ test("preparazione: scelta personaggio nella stessa pagina prima di iniziare", a
     await page.getByRole("button", { name: "Scegli personaggio", exact: true }).waitFor()
     assert.ok(await start.isDisabled())
     await page.getByRole("button", { name: "Scegli personaggio", exact: true }).click()
-    // The available model already shows its abilities: wait for selection to finish.
     await start.click({ trial: true })
     assert.equal(await start.isDisabled(), false)
     assert.equal(starts(), 0)

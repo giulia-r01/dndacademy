@@ -9,17 +9,14 @@ import lombok.*;
 @Builder
 public class CombatFighterDTO {
 
-    // Identificativi
     private Long participantId;
     private Long characterId;
     private Long npcId;
 
-    // Informazioni del combattente
     private String name;
     private String imageUrl;
     private String characterClass;
 
-    // Stato durante il combattimento
     private int currentHp;
     private int maxHp;
     private int armorClass;
@@ -30,7 +27,6 @@ public class CombatFighterDTO {
 
     private int initiative;
 
-    // Armi e incantesimi
     private boolean spellcaster;
     private String weaponName;
     private int damageDie;

@@ -6,9 +6,9 @@ La creazione dello schema di preproduzione e produzione è affidata a Flyway. Hi
 
 `src/main/resources/db/migration/V1__initial_schema.sql` crea le 24 tabelle applicative, colonne, chiavi esterne, indici e vincoli del modello corrente, incluse le copie personali dei personaggi. Lo schema è stato derivato dalle entità con il dialect PostgreSQL, senza collegarsi a un database, e revisionato prima del collaudo. Non contiene account, campagne o dati dimostrativi.
 
-Flyway aggiunge `public.flyway_schema_history`, che registra versione, checksum ed esito. Al primo avvio su un database vuoto esegue le migrazioni V1/V2/V3; agli avvii successivi controlla la cronologia ed esegue soltanto quelle mancanti. Il normale inizializzatore applicativo crea i tre badge di sistema dopo la migrazione e la validazione Hibernate.
+Flyway aggiunge `public.flyway_schema_history`, che registra versione, checksum ed esito. Al primo avvio su un database vuoto esegue le migrazioni V1–V4; agli avvii successivi controlla la cronologia ed esegue soltanto quelle mancanti. Il normale inizializzatore applicativo crea i tre badge di sistema dopo la migrazione e la validazione Hibernate.
 
-Non eseguire V1 manualmente in pgAdmin. Non modificarla dopo che è stata applicata: aggiungere nuove migrazioni numerate. È ora presente **V2__auth_rate_limits.sql**, che aggiunge soltanto i contatori per la [protezione dell'autenticazione](AUTH_RATE_LIMITS.md). Su un database già a V1 non serve alcun reset: Flyway applica V2 al riavvio. È ora presente anche **V3__email_outbox.sql**, che aggiunge la [coda email persistente](GMAIL_API.md) senza modificare V1/V2 né cancellare utenti o contenuti. Le modifiche successive partiranno da V4. La stessa sequenza deve essere provata in collaudo prima della produzione. Non inserire dati di test in queste migrazioni.
+Non eseguire V1 manualmente in pgAdmin. Non modificarla dopo che è stata applicata: aggiungere nuove migrazioni numerate. È ora presente **V2__auth_rate_limits.sql**, che aggiunge soltanto i contatori per la [protezione dell'autenticazione](AUTH_RATE_LIMITS.md). Su un database già a V1 non serve alcun reset: Flyway applica V2 al riavvio. È ora presente anche **V3__email_outbox.sql**, che aggiunge la [coda email persistente](GMAIL_API.md) senza modificare V1/V2 né cancellare utenti o contenuti. È presente anche **V4__avatar_cleanup.sql**, che aggiunge la coda per la rimozione dell’avatar dopo la cancellazione account. Le modifiche successive partiranno da V5. La stessa sequenza deve essere provata in collaudo prima della produzione. Non inserire dati di test in queste migrazioni.
 
 ## Profili
 
@@ -20,7 +20,7 @@ Non eseguire V1 manualmente in pgAdmin. Non modificarla dopo che è stata applic
 
 Usare un solo profilo alla volta. Su Railway impostare esplicitamente `SPRING_PROFILES_ACTIVE=prod`: il default `dev` è mantenuto esclusivamente per non applicare migrazioni ai vecchi dati locali. Una build del JAR non attiva automaticamente il profilo di produzione.
 
-I profili `preprod` e `prod` condividono V1/V2/V3 e lo stesso ciclo di vita dello schema; il primo riusa soltanto la configurazione dei servizi locali. Il file con le credenziali rimane escluso da Git ed è escluso dalle risorse Maven. Il backend usa `${PORT:8080}` e non stampa le query SQL per default. Open Session in View è disabilitato, il [readiness endpoint](HEALTHCHECK.md) verifica app e database e [CORS](CORS.md) distingue origini locali e di produzione. La prova locale dei limiti di accesso, Docker, email e collaudo cloud richiedono ancora i passaggi della verifica di preproduzione.
+I profili `preprod` e `prod` condividono V1–V4 e lo stesso ciclo di vita dello schema; il primo riusa soltanto la configurazione dei servizi locali. Il file con le credenziali rimane escluso da Git ed è escluso dalle risorse Maven. Il backend usa `${PORT:8080}` e non stampa le query SQL per default. Open Session in View è disabilitato, il [readiness endpoint](HEALTHCHECK.md) verifica app e database e [CORS](CORS.md) distingue origini locali e di produzione. La prova locale dei limiti di accesso, Docker, email e collaudo cloud richiedono ancora i passaggi della verifica di preproduzione.
 
 ## Collaudo a piccoli passi su PostgreSQL 17
 
@@ -45,9 +45,9 @@ Prerequisiti: database locale nuovo `dndacademy_preprod`, schema `public` presen
    ORDER BY installed_rank;
    ```
 
-   Devono esserci V1, V2, V3 e V4 con `success = true`, oltre alle 27 tabelle applicative (24 di V1, contatori V2, coda email V3 e pulizia avatar V4). V1/V2/V3 locali sono già confermate; V4 richiede il riavvio con il backend aggiornato. Sono attesi i badge di sistema, non campagne o utenti di prova.
+   Devono esserci V1, V2, V3 e V4 con `success = true`, oltre alle 27 tabelle applicative (24 di V1, contatori V2, coda email V3 e pulizia avatar V4). Sul database dell'utente sono già confermate V1–V3; V4 richiede il riavvio con il backend aggiornato. Sono attesi i badge di sistema, non campagne o utenti di prova.
 
-5. Fermare e riavviare con lo stesso comando. Flyway deve indicare che lo schema è aggiornato, senza riapplicare V1/V2/V3/V4 e senza perdere dati. Il collaudo dei contenuti inseriti dal Master sarà un passo successivo.
+5. Fermare e riavviare con lo stesso comando. Flyway deve indicare che lo schema è aggiornato, senza riapplicare V1–V4 e senza perdere dati. Il collaudo dei contenuti inseriti dal Master sarà un passo successivo.
 6. Per tornare al vecchio ambiente, fermare il backend e avviarlo senza il profilo `preprod` dalla cartella backend. L'URL originale non è stato modificato. Per pulire la variabile del terminale: `Remove-Item Env:PREPROD_DB_URL`.
 
 Questi comandi sono istruzioni per una prova esplicita: la preparazione del codice e i test automatici non si collegano al PostgreSQL locale.
@@ -64,10 +64,10 @@ Lo script manuale [2026-11-10-character-templates.sql](migrations/2026-11-10-cha
 
 L'aggiornamento V1→V3 e V2→V3 è verificato su H2 conservando utenti e contatori; la coda e i suoi lock sono verificati anche con 11 test su PostgreSQL 17 temporaneo separato dai database dell'utente. Il collaudo isolato non aggiorna il database dell’utente: il successivo avvio Docker ha confermato V3, mentre V4 va applicata avviando la nuova versione del backend.
 
-- `InitialSchemaMigrationTest`: V1/V2/V3/V4 eseguite su H2 isolato, incluso aggiornamento di un database V1 con dati in modalità PostgreSQL; validazione di tutte le entità, seconda esecuzione senza modifiche ai dati, vincoli dei personaggi, rifiuto del database non gestito, clean disabilitato e rilevamento di una migrazione modificata.
+- `InitialSchemaMigrationTest`: V1–V4/V4 eseguite su H2 isolato, incluso aggiornamento di un database V1 con dati in modalità PostgreSQL; validazione di tutte le entità, seconda esecuzione senza modifiche ai dati, vincoli dei personaggi, rifiuto del database non gestito, clean disabilitato e rilevamento di una migrazione modificata.
 - `InitialSchemaApplicationTest`: avvio Spring Boot con Flyway attivo e Hibernate in `validate`, con inizializzazione successiva dei badge di sistema.
-- La suite applicativa esistente conserva H2 e `create-drop`, con Flyway disabilitato esplicitamente per l'isolamento delle sue fixture. I test delle migrazioni sono separati: non sono una copia SQL dello schema H2, usano gli stessi script V1/V2/V3/V4 destinati a PostgreSQL.
-- Il packaging deve includere V1/V2/V3/V4 e i profili ed escludere `env.properties`, anche nelle build locali. Eseguire una build pulita per eliminare eventuali vecchie copie rimaste in `target`.
+- La suite applicativa esistente conserva H2 e `create-drop`, con Flyway disabilitato esplicitamente per l'isolamento delle sue fixture. I test delle migrazioni sono separati: non sono una copia SQL dello schema H2, usano gli stessi script V1–V4/V4 destinati a PostgreSQL.
+- Il packaging deve includere V1–V4/V4 e i profili ed escludere `env.properties`, anche nelle build locali. Eseguire una build pulita per eliminare eventuali vecchie copie rimaste in `target`.
 - H2 non sostituisce PostgreSQL 17: il via libera a questa fase richiede la prova locale sopra. Deploy Railway, servizi email/immagini e ripristino backup restano da verificare.
 
 Riferimenti: [Spring Boot 3.5 e Flyway](https://docs.spring.io/spring-boot/3.5/how-to/data-initialization.html), [rischi del baseline automatico](https://documentation.red-gate.com/fd/flyway-baseline-on-migrate-setting-277578974.html).

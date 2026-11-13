@@ -23,7 +23,6 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/** Real Spring Security, transactions and schema constraints; no repository mocks. */
 @SpringBootTest
 @AutoConfigureMockMvc
 class PreMergeIntegrationTest {

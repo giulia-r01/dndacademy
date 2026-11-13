@@ -49,7 +49,6 @@ public class SecurityConfig {
                 );
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-        // Constructed only in the security chain: never registered a second time by the servlet container.
         http.addFilterBefore(new com.giulia.dndacademy.security.ratelimit.AuthRateLimitFilter(limiter, addresses, json), JwtFilter.class);
 
         return http.build();
@@ -75,7 +74,6 @@ public class SecurityConfig {
                 List.of("Authorization","Content-Type")
         );
 
-        // Authentication uses an explicit Bearer header, not cross-origin cookies.
         config.setAllowCredentials(false);
         config.setExposedHeaders(List.of("Retry-After"));
         config.setMaxAge(600L);

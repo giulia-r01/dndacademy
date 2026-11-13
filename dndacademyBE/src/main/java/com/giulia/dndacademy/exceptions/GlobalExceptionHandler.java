@@ -84,7 +84,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Object safeBody = body instanceof ErrorResponse && !status.is5xxServerError()
                 ? body : body(ApiErrorMessages.forStatus(status));
         if (status.is5xxServerError()) log.error("Errore interno di gestione della risposta HTTP", ex);
-        // Keep Spring's status/headers and committed-response handling, but never its technical detail.
         return super.handleExceptionInternal(ex, safeBody, headers, status, request);
     }
 

@@ -24,7 +24,6 @@ public class AuthRateLimitBucket implements org.springframework.data.domain.Pers
         this.expiresAt = expiresAt;
     }
 
-    // Assigned IDs must use INSERT, never merge: a racing merge could overwrite a live quota.
     @Override public boolean isNew() { return newRecord; }
     @PostPersist @PostLoad void markPersisted() { newRecord = false; }
 }

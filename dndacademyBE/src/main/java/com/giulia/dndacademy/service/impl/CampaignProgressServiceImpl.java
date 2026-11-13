@@ -64,8 +64,6 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
 
         List<CampaignProgress> progresses = campaignProgressRepository
                 .findByUserIdOrderByCampaignIdAsc(user.getId());
-        // Validate all completions before deriving eligibility: a newly added chapter
-        // can invalidate an old completion even if its campaign appears later in the list.
         progresses.forEach(this::reopenIfCurrentChaptersIncomplete);
         Set<CampaignDifficulty> completedDifficulties = progresses.stream()
                 .filter(CampaignProgress::isCompleted)
@@ -131,7 +129,6 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
     private void reopenIfCurrentChaptersIncomplete(CampaignProgress progress) {
         if (!progress.isCompleted()) return;
         long chapterCount = campaignChapterRepository.countByCampaignId(progress.getCampaign().getId());
-        // Compare against current chapters, including those without a progress row yet.
         if (chapterCount == 0 || completedChapterCount(progress) != chapterCount) reopen(progress);
     }
 

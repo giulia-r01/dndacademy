@@ -65,7 +65,7 @@ export function hasSeenTour(storage: Pick<Storage, "getItem">, key: string) {
   try { const value = JSON.parse(storage.getItem(key) ?? "null"); return value?.version === TOUR_VERSION && ["dismissed", "completed"].includes(value.status) } catch { return false }
 }
 export function saveTourResult(storage: Pick<Storage, "setItem">, key: string, status: "dismissed" | "completed") {
-  try { storage.setItem(key, JSON.stringify({ version: TOUR_VERSION, status })) } catch { /* Tour remains usable without storage. */ }
+  try { storage.setItem(key, JSON.stringify({ version: TOUR_VERSION, status })) } catch {   }
 }
 export function tourStorageKey(user: Pick<UserProfile, "id" | "role">, audience: TourAudience) { return `dndacademy:tour:v${TOUR_VERSION}:${user.id}:${user.role}:${audience}` }
 export function isAppPath(pathname: string) { return ["/dashboard", "/campaigns", "/lessons", "/characters", "/combat", "/achievements", "/profile", "/admin", "/tour"].some(path => pathname === path || pathname.startsWith(`${path}/`)) }

@@ -63,7 +63,6 @@ public class Character {
     @JoinColumn(name = "player_id")
     private User player;
 
-    // Personal instances retain an immutable snapshot and point to their reusable model.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_template_id", foreignKey = @ForeignKey(name = "fk_character_source_template"))
     private Character sourceTemplate;

@@ -60,8 +60,6 @@ public class AuthRateLimiter {
         }
     }
 
-    // A rejected request never extends the deadline. Successful requests count too.
-    // Commit independently of authentication failure or the caller's transaction.
     void consume(String scope, String subject, int limit, Duration window) {
         String key = key(scope, subject);
         for (int retry = 0; retry < 3; retry++) {
@@ -88,7 +86,6 @@ public class AuthRateLimiter {
                 }
                 return;
             } catch (DataIntegrityViolationException race) {
-                // Two instances may insert the first bucket together. Retry in a new transaction.
                 if (retry == 2) throw race;
             }
         }

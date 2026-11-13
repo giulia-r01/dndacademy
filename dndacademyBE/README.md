@@ -1,20 +1,20 @@
 # D&D Academy — Backend
 
-API REST per account, didattica, campagne a capitoli, personaggi, NPC e combattimenti narrativi. Integrato con il frontend Next.js; progetto in sviluppo attivo.
+API REST per account, didattica, campagne a capitoli, personaggi, NPC e combattimenti narrativi. Integrato con il frontend Next.js; progetto in preparazione al collaudo preproduzione.
 
 [Panoramica](../README.md) · [Frontend](../dndacademyfe/README.md)
 
 ## Stack
 
-Le scelte correnti su accesso ai quiz, modelli riutilizzabili, copie personali e HP didattici sono descritte in [Regole didattiche e assegnazioni](docs/REGOLE_DIDATTICHE_E_ASSEGNAZIONI.md). Per un database già popolato è richiesta la migrazione indicata nel documento prima dell'avvio della nuova versione; nessuno script svuota automaticamente il database.
+Le scelte correnti su accesso ai quiz, modelli riutilizzabili, copie personali e HP didattici sono descritte in [Regole didattiche e assegnazioni](docs/REGOLE_DIDATTICHE_E_ASSEGNAZIONI.md). Per un database legacy precedente ai modelli riutilizzabili è richiesta la conversione manuale indicata nel documento; un database nuovo usa Flyway e non esegue quello script; nessuno script svuota automaticamente il database.
 
-Java 17 come versione target, Spring Boot 3.5.11, Spring Security, JWT, BCrypt, Spring Data JPA / Hibernate, PostgreSQL, Jakarta Validation e Maven Wrapper. Cloudinary per le immagini, Spring Mail per le email, JUnit 5 e Mockito per i test.
+Java 17 come versione target, Spring Boot 3.5.11, Spring Security, JWT, BCrypt, Spring Data JPA / Hibernate, PostgreSQL, Jakarta Validation e Maven Wrapper. Cloudinary per le immagini, Gmail API HTTPS e coda persistente per le email, Spring Mail per MIME e SMTP locale, JUnit 5 e Mockito per i test.
 
 ## Funzionalità presenti
 
 | Area | Funzionalità |
 | --- | --- |
-| Account | Registrazione PLAYER, login JWT, recupero e reset password |
+| Account | Registrazione PLAYER, login JWT, profilo, immagini, cambio/reset password ed eliminazione del proprio account |
 | Didattica | Lezioni, quiz, domande e risposte, progressi, badge e livelli di apprendimento |
 | Campagne | Gestione Master, iscrizione Player e party |
 | Capitoli | Narrazione, lezione e quiz associati, combattimento opzionale e ricompensa |
@@ -65,7 +65,7 @@ Da questa cartella, su Windows:
 
 Su macOS/Linux usare `./mvnw spring-boot:run`. L'API locale ascolta sulla porta **8080**. Il frontend usa `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 
-Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica le migrazioni V1/V2/V3 in `src/main/resources/db/migration/` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
+Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica le migrazioni V1–V4 in `src/main/resources/db/migration/` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
 
 ## API principali
 
@@ -158,7 +158,7 @@ Gli errori applicativi previsti usano stati espliciti e messaggi controllati; i 
 .\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-La suite completa comprende 211 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1/V2/V3, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; la migrazione PostgreSQL e i servizi esterni richiedono il collaudo dell'ambiente reale.
+La suite completa comprende 218 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1–V4, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; migrazioni e cancellazione sono verificate anche su PostgreSQL 17 temporaneo; resta il collaudo dei servizi cloud reali.
 
 Il frontend include test browser Playwright con API simulate per i flussi Player/Master, combattimenti, immagini, profilo, navigazione, tour ed editor (vedere il relativo README). Non sostituiscono i test di integrazione o la prova completa con i servizi reali.
 
@@ -166,7 +166,7 @@ Il frontend include test browser Playwright con API simulate per i flussi Player
 
 Il codice si trova in `src/main/java/com/giulia/dndacademy/`, suddiviso in `controllers`, `service`, `repository`, `model`, `dto`, `security`, `exceptions` e `config`. Configurazione in `src/main/resources/`, test in `src/test/java/`.
 
-Flyway, V1/V2/V3 e i profili `dev`/`preprod`/`prod` sono introdotti; resta il collaudo su PostgreSQL reale. Prossimi sviluppi: completare la configurazione di rilascio, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate.
+Flyway, V1–V4 e i profili `dev`/`preprod`/`prod` sono introdotti; restano configurazione cloud e collaudo applicativo completo sul database di rilascio. Prossimi sviluppi: completare la configurazione di rilascio, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate.
 
 Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
 
@@ -214,11 +214,11 @@ TEST_DATABASE_PASSWORD puo essere passato allo stesso modo quando necessario. I 
 
 ## Preparazione Railway e Vercel
 
-Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Nuova build Docker con 211 test Java 17 superati. La nuova integrazione Gmail API/V3 ha superato avvio PostgreSQL locale, readiness, benvenuto ricevuto e recupero password completo con login. La revisione successiva dei messaggi e delle validazioni in italiano ha superato 212 test backend. Restano configurazione OAuth definitiva (attualmente Testing), collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
+Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Il codice corrente include V4 e la cancellazione account; le precedenti prove Docker e Gmail locali non certificano la versione cloud. Ricostruire l’immagine locale per applicare V4 senza svuotare il database. Vedere la guida Docker per variabili e avvio aggiornati.
 
 [Verifica del main per Railway e Vercel](../dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
 
-Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella guida frontend `docs/privacy-rilascio.md`; nessun commit, merge o deploy è stato eseguito.
+Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella [guida privacy frontend](../dndacademyfe/docs/privacy-rilascio.md); nessun commit, merge o deploy è stato eseguito.
 
 ## Primo Master
 

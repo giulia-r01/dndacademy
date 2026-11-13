@@ -1,5 +1,3 @@
-# Local rehearsal on a NEW database, using the same schema lifecycle as prod.
-# A separate required URL prevents silently falling back to the legacy DB_URL.
 spring:
   config:
     import: optional:file:./src/main/resources/env.properties

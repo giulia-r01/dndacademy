@@ -51,7 +51,7 @@ Il recupero mantiene HTTP 200 senza corpo sia per account presente sia per accou
 - `GlobalExceptionHandlerTest`: messaggi applicativi, fallback, errori imprevisti anche checked, 5xx espliciti, vincoli SQL e limite multipart.
 - `ApiErrorsIntegrationTest`: simulazioni di errori server/database/serializzazione, cause nei soli log, validazione, JSON malformato, parametri, 404/405/415, registrazione duplicata, login non valido e sicurezza 401/403. Anche con `Accept: text/html` il client riceve il solo messaggio JSON.
 - `JwtFilterFailureTest`: guasti prima del controller con JSON sicuro, status 503/500, contesto di sicurezza pulito e catena non proseguita.
-- Suite completa e packaging: 173 test superati su H2 isolato; nessuna connessione ai database PostgreSQL o ai provider reali durante i test.
+- Suite corrente e packaging: 218 test su database isolati. I test di cancellazione e della coda email sono stati ripetuti anche su PostgreSQL 17 temporaneo; i provider restano simulati.
 
 Non esiste un endpoint dimostrativo per provocare un 500: i guasti sono simulati solo nelle classi di test e non vengono inclusi nel JAR applicativo.
 
@@ -69,4 +69,4 @@ Riferimento: [Spring Framework 6.2, ResponseEntityExceptionHandler](https://docs
 
 ## Lingua delle validazioni
 
-La risorsa `ValidationMessages.properties` definisce in italiano i messaggi standard dei vincoli senza testo esplicito. I messaggi italiani già specificati sui DTO restano validi. La regressione HTTP in `ApiErrorsIntegrationTest` verifica campo obbligatorio e lunghezza anche con `Accept-Language: en-US`. Tradotte inoltre le diagnostiche applicative della nuova integrazione mail; nomi di proprietà e codici tecnici restano invariati. Revisione completa: 212 test backend superati.
+La risorsa `ValidationMessages.properties` definisce in italiano i messaggi standard dei vincoli senza testo esplicito. I messaggi italiani già specificati sui DTO restano validi. La regressione HTTP in `ApiErrorsIntegrationTest` verifica campo obbligatorio e lunghezza anche con `Accept-Language: en-US`. Tradotte inoltre le diagnostiche applicative della nuova integrazione mail; nomi di proprietà e codici tecnici restano invariati. La revisione della lingua aveva 212 test backend; la suite corrente ne comprende 218.

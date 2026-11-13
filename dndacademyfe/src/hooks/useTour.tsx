@@ -22,7 +22,6 @@ function reducer(session: Session | null, action: Action): Session | null {
   if (!session) return null
   if (action.type === "back") return { ...session, index: Math.max(0, session.index - 1), error: undefined }
   if (action.type === "forward") return { ...session, index: Math.min(session.furthest, session.index + 1), error: undefined }
-  // Past steps are read-only snapshots; reviewing them cannot replay or skip an action.
   if (session.index < session.furthest) return session
   const step = tourSteps(session.audience)[session.index]
   if (action.type === "feedback") return step.id === action.stepId ? { ...session, error: action.message } : session
@@ -69,7 +68,7 @@ function TourSessionProvider({ children, user, ready }: { children: ReactNode; u
   }
   function exitTour(status: "dismissed" | "completed" = "dismissed") {
     if (!session) return
-    if (user) { try { saveTourResult(localStorage, tourStorageKey(user, session.audience), status) } catch { /* Storage can be blocked. */ } }
+    if (user) { try { saveTourResult(localStorage, tourStorageKey(user, session.audience), status) } catch {   } }
     dispatch({ type: "close" })
     router.replace(session.origin)
     requestAnimationFrame(() => (originFocus.current?.isConnected ? originFocus.current : document.querySelector<HTMLElement>('[aria-label="Apri menu account"]'))?.focus({ preventScroll: true }))
@@ -77,7 +76,7 @@ function TourSessionProvider({ children, user, ready }: { children: ReactNode; u
   useEffect(() => {
     if (!user || !ready || !isAppPath(pathname) || pathname.startsWith("/tour/") || attempted.current) return
     const audience = user.role === "MASTER" ? "master" : "player"
-    try { if (hasSeenTour(localStorage, tourStorageKey(user, audience))) return } catch { /* Still allow a tour. */ }
+    try { if (hasSeenTour(localStorage, tourStorageKey(user, audience))) return } catch {   }
     const frame = requestAnimationFrame(() => {
       attempted.current = true
       const origin = window.location.pathname + window.location.search + window.location.hash
@@ -95,7 +94,7 @@ function TourSessionProvider({ children, user, ready }: { children: ReactNode; u
   useEffect(() => {
     if (!session) return
     const onBack = () => {
-      if (user) { try { saveTourResult(localStorage, tourStorageKey(user, session.audience), "dismissed") } catch { /* No persistence. */ } }
+      if (user) { try { saveTourResult(localStorage, tourStorageKey(user, session.audience), "dismissed") } catch {   } }
       dispatch({ type: "close" })
     }
     window.addEventListener("popstate", onBack)

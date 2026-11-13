@@ -104,8 +104,6 @@ public class NpcServiceImpl implements NpcService {
         validateDamageDie(request.getDamageDie());
         validateHealing(request);
 
-        // Evitiamo di modificare le statistiche di NPC già usati
-        // in combattimenti, perché altererebbe le sessioni salvate.
         if (combatParticipantRepository.existsByNpcId(npcId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,

@@ -8,7 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 
-/** Validated browser origin, shared by CORS and password-reset links. */
 public final class FrontendOrigin {
     private final String baseUrl;
     private final List<String> allowedOrigins;
@@ -58,7 +57,6 @@ public final class FrontendOrigin {
 
     private static boolean isLoopback(String host) {
         if (host.startsWith("[") && host.endsWith("]")) {
-            // URI.getHost guarantees a numeric IPv6 literal here; no DNS lookup.
             try {
                 InetAddress address = InetAddress.getByName(host.substring(1, host.length() - 1));
                 return address.isLoopbackAddress() || address.isAnyLocalAddress();
@@ -72,7 +70,6 @@ public final class FrontendOrigin {
     }
 
     private static IllegalArgumentException invalidOrigin() {
-        // Do not echo possibly misconfigured credentials or tokens into startup logs.
         return new IllegalArgumentException("APP_FRONTEND_BASE_URL deve essere una singola origine HTTP/HTTPS, senza credenziali, percorsi, query, frammenti o wildcard");
     }
 }

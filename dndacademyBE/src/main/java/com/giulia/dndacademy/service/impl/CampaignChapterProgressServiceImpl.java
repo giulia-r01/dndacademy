@@ -166,11 +166,6 @@ public class CampaignChapterProgressServiceImpl
         return mapToDTO(saved);
     }
 
-    /**
-     * Sincronizza la progressione con la struttura attuale della campagna.
-     * Supporta capitoli aggiunti dopo che il giocatore ha completato i precedenti.
-     * Non rimuove gli sblocchi gia' ottenuti.
-     */
     private void ensureProgressExistsForCampaign(User user, List<CampaignChapter> chapters) {
         if (chapters.isEmpty()) {
             return;

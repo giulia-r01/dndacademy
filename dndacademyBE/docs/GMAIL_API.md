@@ -80,9 +80,9 @@ Collaudo reale successivo confermato dall'utente: nuova immagine Docker avviata 
 
 Restano da verificare configurazione OAuth definitiva (attualmente Testing), rinnovo dopo la naturale scadenza dell'access token, comportamento con altri destinatari/provider, riavvio con task in attesa e percorso su Railway. La prova sul proprio alias Gmail non garantisce la consegna presso tutti i provider né l'assenza di spam. Non usare test automatici o richieste ripetute per consumare la quota del mittente. Chiedere esplicitamente l'invio di prova o eseguirlo dall'app con account di collaudo controllati.
 
-Per il test Docker, ricostruire l'immagine, aggiungere le cinque variabili API a `.env.docker.local`, mantenere il profilo `preprod` e lo stesso DB separato. Flyway deve applicare la sola V3 e riconoscere versione 3 ai riavvii successivi. Non svuotare il database. In produzione fornire le variabili dal pannello Railway; la password SMTP non è necessaria.
+Per il test Docker corrente, ricostruire l'immagine, aggiungere le cinque variabili API a `.env.docker.local`, mantenere il profilo `preprod` e lo stesso DB separato. Sul database locale già a V3 Flyway deve applicare la sola V4 per la pulizia avatar e riconoscere versione 4 ai riavvii successivi. Su un database nuovo applica V1–V4. Non svuotare il database. In produzione fornire le variabili dal pannello Railway; la password SMTP non è necessaria.
 
-## Revisione successiva e privacy
+## Verifiche precedenti, revisione e privacy
 
 La revisione dei commenti, delle diagnostiche italiane e delle validazioni ha superato 212 test backend. La precedente build Docker con 211 test resta una verifica storica: la prossima build includerà anche queste modifiche. V3 non è stata modificata, nemmeno nei commenti, perché già applicata al database locale.
 

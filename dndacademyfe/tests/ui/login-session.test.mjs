@@ -34,7 +34,6 @@ async function setup() {
     }
     if (path === "/api/users/me/password") return route.fulfill({ status: 204 })
     if (["/api/lessons/me/progress", "/api/quizzes/me/results", "/api/badges/me"].includes(path)) return reply([])
-    // The dashboard data is not relevant to session establishment.
     return reply([])
   })
   return {
@@ -62,7 +61,6 @@ test("primo login: attende il profilo prima della dashboard e non torna al login
     const profileRequested = f.blockProfile()
     await submitLogin(f.page)
     await profileRequested
-    // While /me is held, the app must keep the login in progress.
     assert.equal(f.navigations.includes("/dashboard"), false)
     assert.equal(await f.page.getByRole("button", { name: "Accesso in corso...", exact: true }).count(), 1)
     f.releaseProfile()

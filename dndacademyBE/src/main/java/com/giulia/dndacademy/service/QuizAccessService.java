@@ -15,7 +15,6 @@ public class QuizAccessService {
     private final UserService users;
 
     public void requireReadable(Quiz quiz, String username) {
-        // Masters can inspect content while authoring; submitting always requires reading.
         if (users.getByUsername(username).getRole() == Role.MASTER) return;
         requireCompletedLesson(quiz, username);
     }

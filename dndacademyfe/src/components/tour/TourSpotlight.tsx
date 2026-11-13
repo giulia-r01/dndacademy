@@ -104,7 +104,6 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
     window.addEventListener("resize", schedule)
     window.addEventListener("scroll", schedule, true)
     const timeout = window.setTimeout(() => { if (!targetRef.current) setMissing(true) }, 2500)
-    // Position and focus the next target before the browser paints this step.
     measure()
     return () => {
       stopped = true

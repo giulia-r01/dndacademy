@@ -31,7 +31,7 @@ public class ClientAddressResolver {
             byte[] bytes;
             if (value.contains(":")) {
                 if (!value.matches("[0-9a-fA-F:.]+")) throw invalidAddress();
-                bytes = InetAddress.getByName(value).getAddress(); // Numeric literal only; never DNS.
+                bytes = InetAddress.getByName(value).getAddress();
             } else {
                 String[] octets = value.split("\\.", -1);
                 if (octets.length != 4) throw invalidAddress();
@@ -43,7 +43,6 @@ public class ClientAddressResolver {
                     bytes[i] = (byte) number;
                 }
             }
-            // Group IPv6 privacy addresses by /64; rotating the host part cannot reset the quota.
             if (bytes.length == 16) java.util.Arrays.fill(bytes, 8, 16, (byte) 0);
             return InetAddress.getByAddress(bytes).getHostAddress();
         } catch (java.net.UnknownHostException ex) {

@@ -6,7 +6,7 @@ export interface Combat {
   campaignId: number
   chapterId: number
   encounterId: number
-  turnOrder: number[] // ID CombatParticipant
+  turnOrder: number[]
   currentTurnIndex: number
   completed: boolean
   outcome: CombatOutcome | null
@@ -51,8 +51,8 @@ export interface CombatStatus {
 }
 
 export interface AttackRequest {
-  attackerId: number // CombatParticipant ID
-  targetId: number // CombatParticipant ID
+  attackerId: number
+  targetId: number
   combatId: number
   actionType: CombatActionType
 }

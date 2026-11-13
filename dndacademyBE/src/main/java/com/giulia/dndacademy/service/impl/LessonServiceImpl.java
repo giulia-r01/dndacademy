@@ -152,7 +152,6 @@ public class LessonServiceImpl implements LessonService {
 
         UserLessonProgress saved = userLessonProgressRepository.save(progress);
 
-        // sblocca la lezione successiva
         List<Lesson> lessons = lessonRepository.findAllByOrderByOrderIndexAsc();
 
         lessons.stream()

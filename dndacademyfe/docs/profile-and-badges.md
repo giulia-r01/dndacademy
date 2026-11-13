@@ -27,7 +27,7 @@ Il profilo si apre dal menu dell'avatar nella barra superiore, che contiene anch
 
 La cancellazione dal profilo richiede una finestra di conferma, password attuale e accettazione esplicita. Nessun ID utente viene usato per selezionare l'account da eliminare: il backend usa la sessione. I contenuti creati come Master vengono conservati e trasferiti a un altro Master scelto prima della cancellazione; se manca un successore bisogna prima promuoverne uno. Modelli dei personaggi e dati degli altri Player non vengono cancellati. L'avatar viene eliminato tramite coda persistente con ritenti; dopo il successo si torna al login con conferma e si rimuovono token e preferenze del tour dell'account dal browser corrente. [Comportamento, transazioni e migrazione V4](../../dndacademyBE/docs/ACCOUNT_DELETION.md). Nessun controllo amministrativo sugli account altrui è stato aggiunto.
 
-Le modifiche aggiungono `users.avatar_url`, `users.token_version`, `badges.system_code` e il vincolo unico su `(user_id, badge_id)` in `user_badges`. Non è stata eseguita alcuna pulizia del database applicativo.
+Lo schema Flyway corrente comprende `users.avatar_url`, `users.token_version`, `badges.system_code`, il vincolo unico su `(user_id, badge_id)` in `user_badges` e la coda avatar V4. Su database gestiti basta applicare le migrazioni mancanti; un reset non è richiesto. Non è stata eseguita alcuna pulizia del database applicativo.
 
 I token usano ora l'ID utente e la versione delle credenziali: le sessioni emesse con il formato precedente richiedono un nuovo login. Dopo un reset del database con riutilizzo degli ID, cambiare anche `JWT_SECRET` per impedire il riutilizzo di token dei vecchi account. Avviare insieme frontend e backend aggiornati.
 

@@ -1,5 +1,3 @@
-# Allow only the inputs needed for compilation and isolated tests.
-# Git history, IDE settings, docs, local build output and env files stay outside.
 **
 !Dockerfile
 !.dockerignore
@@ -14,7 +12,6 @@
 !src/test/
 !src/test/**
 
-# Secrets and generated output are excluded even below the allowed source tree.
 **/env.properties
 **/.env*
 **/*.key

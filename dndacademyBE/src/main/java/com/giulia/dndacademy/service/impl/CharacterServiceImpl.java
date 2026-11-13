@@ -104,7 +104,6 @@ public class CharacterServiceImpl implements CharacterService {
     public CharacterDTO claimCharacter(Long characterId, String username) {
         User player = userService.getByUsername(username);
 
-        // Serialize all choices within a campaign before loading the character.
         Long campaignId = characterRepository.findCampaignIdById(characterId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personaggio non trovato"));
         campaignProgressService.requireUnlocked(campaignId, username);
@@ -406,7 +405,6 @@ public class CharacterServiceImpl implements CharacterService {
         character.setMaxHp(request.getMaxHp());
         character.setArmorClass(request.getArmorClass());
 
-        // Only the reusable model is edited; existing personal snapshots are untouched.
         character.setCurrentHp(request.getMaxHp());
 
         character.setWeaponName(request.getWeaponName().trim());

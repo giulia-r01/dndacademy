@@ -1,10 +1,10 @@
-﻿# Tour guidato: prototipo frontend
+﻿# Tour guidato frontend
 
-Il tour precedente a pannello è sostituito da una prova basata sulle azioni. Il Player segue 22 passaggi e il Master 19. Ogni passaggio evidenzia un comando o un gruppo di campi e mostra un box breve vicino al punto di interazione. La pagina circostante è oscurata e inerte, anche da tastiera. Prima della conclusione un passo informativo evidenzia l'avatar e spiega come riaprire il menu del profilo e scegliere Ripeti il tour da qualsiasi pagina.
+Il tour è basato sulle azioni: il Player segue 22 passaggi e il Master 19. Ogni passaggio evidenzia un comando o un gruppo di campi e mostra un box breve vicino al punto di interazione. La pagina circostante è oscurata e inerte, anche da tastiera. Prima della conclusione un passo informativo evidenzia l'avatar e spiega come riaprire il menu del profilo e scegliere Ripeti il tour da qualsiasi pagina.
 
 ## Percorsi e avanzamento
 
-Le pagine dimostrative sono raggiungibili nelle rotte `/tour/[audience]/[screen]`. Usano AppShell, sidebar, barra superiore, menu account e breadcrumb dell'app; i contenuti vengono creati all'inizio di ogni prova. Non si tratta delle pagine reali collegate alle API: per valutare questa metodologia, i moduli e lo scontro sono intenzionalmente abbreviati.
+Le pagine dimostrative sono raggiungibili nelle rotte `/tour/[audience]/[screen]`. Usano AppShell, sidebar, barra superiore, menu account e breadcrumb dell'app; i contenuti vengono creati all'inizio di ogni prova. Non si tratta delle pagine reali collegate alle API: i moduli e lo scontro sono intenzionalmente abbreviati per insegnare il percorso senza scrivere dati reali.
 
 - Player: home, campagne, iscrizione, capitolo, lettura, quiz, personaggio, preparazione e bersaglio dello scontro, vittoria, completamento del capitolo, badge, storico e account.
 - Master: gestione campagne, nuova campagna, personaggio, lezione, quiz, PNG, badge, capitolo, incontro, richiesta e conferma di cambio ruolo, account.
@@ -48,5 +48,5 @@ I test attraversano i due percorsi completi su desktop e mobile, verificano bloc
 
 Le altre suite usano `tests/ui/helpers/tour.mjs` per rappresentare account che hanno già chiuso la guida.
 
-Questo prototipo serve a valutare interazione e comprensione. I moduli dimostrativi condividono i componenti di base ma non tutti i campi e le modali delle schermate operative; lo scontro richiede un solo attacco. Prima di considerarlo finale occorre confermare la metodologia e completare la corrispondenza dei passaggi con i moduli reali, oltre al collaudo con account e servizi reali. Non sono richieste modifiche al backend.
+Il tour orienta tra le funzioni dell'app; non certifica la comprensione delle regole di gioco. I moduli dimostrativi condividono i componenti di base ma non tutti i campi e le modali delle schermate operative; lo scontro richiede un solo attacco. Il collaudo con account e servizi reali resta necessario. La cancellazione dell’account è disponibile solo nel profilo reale con password e conferma; non viene proposta come azione da provare nel tour. Il tour non richiede modifiche al backend.
 

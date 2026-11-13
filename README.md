@@ -4,7 +4,7 @@ Piattaforma didattica per imparare le basi di Dungeons & Dragons attraverso lezi
 
 ## Stato del progetto
 
-Backend Spring Boot e frontend Next.js sono integrati. Sono disponibili Area Player, Area Master, gestione utenti, profilo, badge, combattimenti narrativi e storico. Il progetto è in preparazione al collaudo preproduzione; è disponibile un prototipo di tour frontend guidato e restano da completare le verifiche dei servizi reali e la preparazione del deploy. Le meccaniche di D&D sono semplificate.
+Backend Spring Boot e frontend Next.js sono integrati. Sono disponibili Area Player, Area Master, gestione utenti, profilo, badge, combattimenti narrativi e storico. Il progetto è in preparazione al collaudo preproduzione; è disponibile il tour frontend guidato e restano da completare le verifiche dei servizi reali e la preparazione del deploy. Le meccaniche di D&D sono semplificate.
 
 | Componente | Contenuto | Stack |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ La sezione Utenti offre statistiche, ricerca e filtri e consente di assegnare o 
 
 **Profilo ed Esci sono nel menu apribile dall'avatar in alto.** La sidebar presenta gruppi distinti per ruolo e il riquadro del livello con la barra. Le etichette dei livelli sono Principiante, Intermedio e Avanzato in tutta l'interfaccia; la barra rappresenta il livello raggiunto su tre livelli.
 
-Il profilo permette di aggiornare username ed email confermando la password attuale, caricare o rimuovere l'avatar e cambiare password. Il caricamento parte alla scelta di un'immagine valida e mostra uno stato di avanzamento; un errore conserva l'immagine precedente. I dati aggiornano subito anche la barra superiore.
+Il profilo permette di aggiornare username ed email confermando la password attuale, caricare o rimuovere l'avatar, cambiare password ed eliminare il proprio account con conferma. La cancellazione trasferisce eventuali campagne e PNG a un altro Master e rimuove i dati personali di gioco senza eliminare i modelli condivisi. Il caricamento parte alla scelta di un'immagine valida e mostra uno stato di avanzamento; un errore conserva l'immagine precedente. I dati aggiornano subito anche la barra superiore.
 
 I token identificano l'utente tramite l'ID immutabile: il cambio username conserva identità e progressi. Il cambio password invalida le sessioni precedenti e i link di recupero, e richiede un nuovo login. I badge automatici usano codici stabili, sono inizializzati all'avvio e non possono essere eliminati.
 
@@ -55,7 +55,7 @@ Gli errori applicativi usano stati HTTP espliciti e messaggi leggibili. Errori s
 
 ## Tour di primo avvio
 
-Il prototipo guidato accompagna Player e Master tra pagine dimostrative interne all'app. Un box vicino al comando evidenziato indica l'azione richiesta; il resto della pagina è inerte. Il percorso avanza solo dopo l'azione o un salvataggio riuscito. Esci dal tour è sempre disponibile. I contenuti sono temporanei e non modificano dati reali. L'avvio è automatico al primo accesso e il menu dell'avatar permette di ricominciare; il Master può esplorare anche il percorso Player. La chiusura è ricordata per browser, account e ruolo. Dettagli: [Tour frontend](dndacademyfe/docs/tour-system.md).
+Il tour guidato accompagna Player e Master tra pagine dimostrative interne all'app. Un box vicino al comando evidenziato indica l'azione richiesta; il resto della pagina è inerte. Il percorso avanza solo dopo l'azione o un salvataggio riuscito. Esci dal tour è sempre disponibile. I contenuti sono temporanei e non modificano dati reali. L'avvio è automatico al primo accesso e il menu dell'avatar permette di ricominciare; il Master può esplorare anche il percorso Player. La chiusura è ricordata per browser, account e ruolo. Dettagli: [Tour frontend](dndacademyfe/docs/tour-system.md).
 
 ## Navigazione e rotte
 
@@ -122,7 +122,7 @@ Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero p
 
 ## Limiti e prossimi interventi
 
-- Flyway, V1/V2/V3 e i profili backend sono introdotti. Il [collaudo del nuovo database](dndacademyBE/docs/DATABASE_MIGRATIONS.md) su PostgreSQL 17, il completamento della configurazione di rilascio e la verifica dei servizi reali restano necessari prima della produzione.
+- Flyway, V1–V4 e i profili backend sono introdotti. Il [collaudo del nuovo database](dndacademyBE/docs/DATABASE_MIGRATIONS.md) su PostgreSQL 17, il completamento della configurazione di rilascio e la verifica dei servizi reali restano necessari prima della produzione.
 - La ripresa al ricaricamento funziona con un URL contenente `combatId`. L'avvio di un nuovo tentativo non aggiunge ancora l'ID all'URL: ricaricare una rotta priva di ID riapre la preparazione; il tentativo salvato resta recuperabile dallo storico.
 - I combattimenti sono individuali contro PNG: il party della campagna non implica sincronizzazione multiplayer in tempo reale.
 - Gli HP dello scontro sono separati da quelli permanenti del personaggio; la strategia PNG rimane semplificata.
@@ -131,8 +131,17 @@ Il progetto ha finalità educative e di portfolio.
 
 ## Preparazione Railway e Vercel
 
-Il backend dispone di un [Dockerfile con build e test Java 17](dndacademyBE/docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Nuova build Docker con 211 test Java 17 superati. La nuova integrazione Gmail API/V3 ha superato avvio PostgreSQL locale, readiness, benvenuto ricevuto e recupero password completo con login. La revisione successiva dei messaggi e delle validazioni in italiano ha superato 212 test backend. Restano configurazione OAuth definitiva (attualmente Testing), collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
+Il backend dispone di un [Dockerfile con build e test Java 17](dndacademyBE/docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Il codice corrente include le quattro migrazioni e la cancellazione account. Le precedenti prove Docker/Gmail sono descritte nella guida; l’immagine locale dell’utente va ricostruita per includere V4. Il frontend viene compilato da Vercel. Il collaudo cloud e OAuth definitivo sono ancora da completare.
 
 [Verifica del main per Railway e Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
 
 Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella guida frontend `docs/privacy-rilascio.md`; nessun commit, merge o deploy è stato eseguito.
+
+## Documentazione corrente
+
+- [Preparazione Railway/Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): stato dei servizi e ordine di rilascio.
+- [Revisione finale](dndacademyfe/docs/revisione-finale-premerge.md): pulizia, verifiche e limiti del controllo.
+- [Primo Master](dndacademyBE/docs/FIRST_MASTER.md) e [cancellazione account](dndacademyBE/docs/ACCOUNT_DELETION.md).
+- [Privacy e rilascio](dndacademyfe/docs/privacy-rilascio.md): pagina pubblica e verifiche operative ancora necessarie.
+
+I resoconti di ottobre sono conservati come storico e non sostituiscono queste istruzioni. La suite corrente comprende 218 test backend, 31 test di configurazione frontend e 126 test browser con API simulate; gli esiti della revisione finale sono registrati nel relativo documento.

@@ -1,4 +1,3 @@
-# Shared by the application and isolated tests; contains no credentials.
 management:
   endpoints:
     access:

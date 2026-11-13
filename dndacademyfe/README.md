@@ -72,6 +72,7 @@ Con più campagne in corso la home propone scelte distinte: non deduce l'ultima 
 
 | Funzione | Percorso |
 | --- | --- |
+| Home e privacy | `/`, `/privacy` |
 | Accesso e registrazione | `/login`, `/register` |
 | Recupero password | `/forgot-password`, `/reset-password` |
 | Percorso, profilo e badge | `/dashboard`, `/profile`, `/achievements` |
@@ -93,7 +94,7 @@ I vecchi URL `/combat?campaignId=...&chapterId=...` e `/admin/encounters?campaig
 
 La panoramica presenta l'ordine di preparazione: creare la campagna e i personaggi, preparare contenuti e risorse, costruire i capitoli e configurare gli incontri. Le pagine dei capitoli offrono collegamenti a lezioni, quiz e PNG.
 
-La sezione Utenti mostra statistiche, ricerca e filtri e permette il cambio Master/Player con conferma. La modifica del proprio ruolo è impedita anche dal backend. La registrazione pubblica crea Player: il primo account Master deve essere predisposto nell'ambiente; i successivi possono essere promossi da un Master esistente.
+La sezione Utenti mostra statistiche, ricerca e filtri e permette il cambio Master/Player con conferma. La modifica del proprio ruolo è impedita anche dal backend. La registrazione pubblica crea Player: il primo account Master usa la [procedura controllata](../dndacademyBE/docs/FIRST_MASTER.md); i successivi possono essere promossi da un Master esistente.
 
 Il Master prepara personaggi delle campagne e PNG nemici o aiutanti, anche guaritori con dado, bonus e utilizzi limitati per scontro. La gestione incontri presenta contesto del capitolo, partecipanti, quantità e statistiche. Le modali gestiscono focus iniziale, confinamento, Escape e ripristino del focus. Le schede e le API proteggono le modifiche incompatibili con personaggi già usati in combattimento.
 
@@ -127,7 +128,7 @@ La pagina Badge mostra ottenuti e bloccati, data di sblocco, ricerca, filtri e r
 
 ## Tour di primo avvio
 
-Il primo accesso autenticato apre automaticamente un tour distinto per Player e Master. Il prototipo guidato attraversa pagine dimostrative interne all'app: 22 passi per il Player e 19 per il Master. Un box vicino al comando spiega cosa fare, il comando è evidenziato e il resto della pagina è inerte. L'avanzamento segue l'azione richiesta o un salvataggio riuscito; **Ho capito** compare soltanto nei passi informativi. **Esci dal tour** ed Escape permettono di interrompere sempre la prova. Dal menu dell'avatar **Ripeti il tour** riapre il percorso dell'area corrente; un passo dedicato prima della conclusione ricorda questa possibilità. Il Master può aprire anche il tour dell'altra area.
+Il primo accesso autenticato apre automaticamente un tour distinto per Player e Master. Il tour guidato attraversa pagine dimostrative interne all'app: 22 passi per il Player e 19 per il Master. Un box vicino al comando spiega cosa fare, il comando è evidenziato e il resto della pagina è inerte. L'avanzamento segue l'azione richiesta o un salvataggio riuscito; **Ho capito** compare soltanto nei passi informativi. **Esci dal tour** ed Escape permettono di interrompere sempre la prova. Dal menu dell'avatar **Ripeti il tour** riapre il percorso dell'area corrente; un passo dedicato prima della conclusione ricorda questa possibilità. Il Master può aprire anche il tour dell'altra area.
 
 **Indietro** permette di rivedere i passaggi completati senza annullare i progressi; durante la revisione **Avanti** riporta fino al punto raggiunto. I vecchi passaggi sono in sola lettura e le nuove azioni restano obbligatorie. Il box ha testo più grande e comandi sempre visibili; l'oscuramento leggero mantiene leggibile il contesto della pagina.
 
@@ -136,6 +137,8 @@ Le rotte `/tour/[audience]/[screen]` usano la struttura di navigazione dell'app 
 La chiusura o il completamento sono ricordati nel `localStorage` del browser per account, ruolo, percorso e versione del tour. Su un altro browser, dopo la cancellazione dello storage o con un altro account/ruolo, il primo avvio viene riproposto. Non è una preferenza sincronizzata dal backend. Dettagli tecnici e collaudo: [Tour frontend](docs/tour-system.md).
 
 ## Combattimento, storico e immagini
+
+Gli ID dei combattenti in `fighters`, `attackerId`, `targetId` e `turnOrder` identificano i partecipanti allo specifico combattimento (`CombatParticipant`), non gli ID dei modelli o dei personaggi personali. Questo mantiene distinti gli snapshot di tentativi diversi.
 
 Gli incontri di questa versione sono esercizi indipendenti: ogni nuovo tentativo parte dagli HP massimi della copia personale. La preparazione mostra gli HP con cui si entrerà nello scontro e dichiara la semplificazione rispetto a cure e riposi di D&D. Riprendere un combattimento aperto recupera invece gli HP e gli eventi effettivamente salvati, senza alcun reset. Il tour presenta la stessa distinzione.
 
@@ -187,6 +190,7 @@ Il comando comprende tutti i file della suite:
 
 | File | Copertura |
 | --- | --- |
+| `tests/ui/account-deletion.test.mjs` | Conferma, password, cancellazione propria, trasferimento Master e recupero degli errori |
 | `tests/ui/admin-users.test.mjs` | Statistiche, filtri, cambio ruolo e accesso riservato |
 | `tests/ui/combat-and-npcs.test.mjs` | Arena, PNG, guaritori, incontri, storico, personaggi, layout e modali |
 | `tests/ui/profile-and-badges.test.mjs` | Profilo, password, upload automatico e rallentato, errori e badge |
@@ -208,8 +212,10 @@ Una prima partita è stata confermata dall'utente con esito positivo il 6 novemb
 
 Prima del rilascio verificare con account Player e Master reali il percorso completo, permessi, progressione, ritorno dalle attività, ripresa dello stato salvato, cambio password su più sessioni, immagini ed email. Il database e lo schema `public` devono esistere ed essere accessibili all'utente del backend. Il reset dell'ambiente di test è un'operazione esplicita e separata dalla build del frontend.
 
-Il tour di primo avvio è implementato interamente nel frontend. Sono introdotti Flyway, la migrazione iniziale e i profili backend: la [procedura di collaudo del nuovo database](../dndacademyBE/docs/DATABASE_MIGRATIONS.md) mantiene separato PostgreSQL di preproduzione dal vecchio ambiente locale. Restano il collaudo PostgreSQL, le verifiche dei servizi reali e il completamento della configurazione di rilascio. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
+Il tour di primo avvio è implementato interamente nel frontend. Flyway gestisce V1–V4 e i profili backend: la [procedura di collaudo del nuovo database](../dndacademyBE/docs/DATABASE_MIGRATIONS.md) mantiene separato PostgreSQL di preproduzione dal vecchio ambiente locale. Restano il collaudo applicativo cloud, le verifiche dei servizi reali e il completamento della configurazione di rilascio; le prove PostgreSQL isolate sono descritte nella revisione finale. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
 
 Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.
 
-La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Revisione corrente: lint e build superati, 122 test browser superati con API simulate; backend 212 test superati. Nessun deploy eseguito.
+La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Suite corrente: 126 test browser con API simulate, 31 test di configurazione e 218 test backend; gli esiti aggiornati sono nella [revisione finale](docs/revisione-finale-premerge.md). Nessun deploy eseguito.
+
+La pagina profilo include la cancellazione autonoma con password e conferma esplicita. I contenuti Master richiedono un successore; account, copie personali e progressi sono rimossi senza cancellare modelli o dati di altri Player. [Contratto e migrazione V4](../dndacademyBE/docs/ACCOUNT_DELETION.md).

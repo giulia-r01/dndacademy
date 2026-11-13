@@ -17,7 +17,6 @@ public class CombatStatusDTO {
     private Long campaignId;
     private Long chapterId;
 
-    // Nuovo sistema narrativo
     private Long encounterId;
     private Long currentTurnParticipantId;
     private boolean combatOver;

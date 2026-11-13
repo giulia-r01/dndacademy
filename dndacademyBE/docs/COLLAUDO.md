@@ -1,10 +1,12 @@
 ﻿# Collaudo funzionale — 29 ottobre 2026
 
+> Documento storico di ottobre 2026. Conserva il contesto di quel collaudo; stato Git, limiti e istruzioni non descrivono la versione corrente. Per il rilascio usare la [guida aggiornata](../../dndacademyfe/docs/preproduzione-railway-vercel.md) e la [revisione finale](../../dndacademyfe/docs/revisione-finale-premerge.md).
+
 Il collaudo reale è guidato tramite screenshot dell’utente. L’automazione della finestra Chrome non è disponibile perché lo strumento non riesce a verificare l’URL corrente. I test browser automatizzati usano un contesto separato e API simulate: non certificano i dati del database reale.
 
 ## Dashboard PLAYER
 
-Screenshot ricevuto per `giur92!`:
+Screenshot ricevuto per un account di collaudo:
 
 - 3 lezioni completate, 3 quiz superati, 5 badge e livello INTERMEDIATE visualizzati.
 - Progresso lezioni: 3/3, 100%; messaggio di lezioni disponibili completate.

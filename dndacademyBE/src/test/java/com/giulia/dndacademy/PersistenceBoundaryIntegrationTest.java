@@ -37,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** No test-wide transaction: fixtures commit before requests, DTOs serialize after services return. */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:persistence_boundaries;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa", "spring.datasource.password="

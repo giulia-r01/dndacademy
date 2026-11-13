@@ -32,7 +32,7 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false)
-    private String password; // hash della password
+    private String password;
 
     @Column(length = 2048)
     private String avatarUrl;
@@ -46,7 +46,6 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private LearningLevel learningLevel;
 
-    // METODI OBBLIGATORI DI UserDetails
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -18,9 +18,9 @@ Gli endpoint di scelta/catalogo mantengono gli URL esistenti; `claim` restituisc
 
 ### Database esistente
 
-Prima di avviare questa versione su un database popolato, eseguire a applicazione ferma e dopo un backup [la migrazione PostgreSQL](migrations/2026-11-10-character-templates.sql). Aggiunge il riferimento e ricrea un modello per ogni vecchia scheda già assegnata, lasciando invariati gli ID personali, le statistiche e i riferimenti dei combattimenti. Le vecchie schede non assegnate restano modelli. Lo script è transazionale e rieseguibile. Non viene applicato automaticamente né azzera il DB.
+Solo per un database legacy precedente ai modelli riutilizzabili, eseguire a applicazione ferma e dopo un backup [la migrazione PostgreSQL](migrations/2026-11-10-character-templates.sql). Aggiunge il riferimento e ricrea un modello per ogni vecchia scheda già assegnata, lasciando invariati gli ID personali, le statistiche e i riferimenti dei combattimenti. Le vecchie schede non assegnate restano modelli. Lo script è transazionale e rieseguibile. Non viene applicato automaticamente né azzera il DB.
 
-Un database nuovo usa direttamente il mapping aggiornato. I test H2 verificano i vincoli e le transazioni; la migrazione SQL richiede il collaudo PostgreSQL dell'ambiente di rilascio.
+Un database nuovo usa lo schema Flyway aggiornato, senza eseguire la conversione manuale. I test H2 verificano i vincoli e le transazioni; la migrazione SQL richiede il collaudo PostgreSQL dell'ambiente di rilascio.
 
 ## HP: incontri indipendenti per imparare
 

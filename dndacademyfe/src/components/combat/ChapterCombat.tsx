@@ -85,8 +85,7 @@ export default function ChapterCombat({ campaignId, chapterId, resumeCombatId = 
       setStatus(await combatService.advanceNpcTurn(combatId, status.events.length))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossibile mostrare l'azione")
-      // Recover the authoritative state without repeating the action after a network failure.
-      try { await refreshCombatStatus(combatId) } catch { /* Keep the original error visible. */ }
+      try { await refreshCombatStatus(combatId) } catch {   }
     } finally { setIsBusy(false) }
   }
 
@@ -114,7 +113,7 @@ export default function ChapterCombat({ campaignId, chapterId, resumeCombatId = 
       await refreshCombatStatus(combatId)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Errore durante l'attacco")
-      try { await refreshCombatStatus(combatId) } catch { /* Keep the original error visible. */ }
+      try { await refreshCombatStatus(combatId) } catch {   }
     } finally {
       setIsBusy(false)
     }

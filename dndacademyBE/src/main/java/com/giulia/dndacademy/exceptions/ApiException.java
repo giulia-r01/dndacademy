@@ -3,7 +3,6 @@ package com.giulia.dndacademy.exceptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-/** Expected application failures. Messages must be safe, developer-authored text. */
 public final class ApiException extends ResponseStatusException {
     private ApiException(HttpStatus status, String message) { super(status, message); }
     public static ApiException badRequest(String message) { return new ApiException(HttpStatus.BAD_REQUEST, message); }

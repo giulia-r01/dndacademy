@@ -251,7 +251,6 @@ public class CombatServiceImpl implements CombatService {
     public CombatStatusDTO advanceNpcTurn(Long combatId, int expectedEventCount, String username) {
         Combat combat = authorized(combatRepository.findLockedById(combatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Combattimento non trovato")), username);
-        // A retried request must never resolve another turn.
         if (expectedEventCount < 0 || expectedEventCount != combat.getEvents().size())
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Il turno è già cambiato: aggiorna il combattimento");
         if (combat.isCompleted())
@@ -291,7 +290,6 @@ public class CombatServiceImpl implements CombatService {
     private boolean healIfNeeded(Combat combat, CombatParticipant actor) {
         Npc npc = actor.getNpc();
         if (actor.isEnemy() || !npc.isHealer() || actor.getHealingUsed() >= npc.getHealingUses()) return false;
-        // Rescue fallen allies first, then the lowest HP ratio; ID resolves ties deterministically.
         CombatParticipant target = combatParticipantRepository.findByCombatId(combat.getId()).stream()
                 .filter(p -> !p.isEnemy() && p.getCurrentHp() < p.getMaxHp())
                 .min(Comparator.comparingDouble((CombatParticipant p) -> (double) p.getCurrentHp() / p.getMaxHp())

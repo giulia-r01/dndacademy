@@ -8,7 +8,7 @@ L'informativa è disponibile senza login su `/privacy`, con collegamenti da home
 
 Il testo descrive account, attività didattica, immagini, email, conservazione, memoria locale, diritti e fornitori previsti per il rilascio. Gmail API usa il consenso del mittente dell'app: i destinatari non autorizzano l'accesso alle proprie caselle Google.
 
-La pagina è statica e non richiede API, account o database. Verificati accesso pubblico, link dalla registrazione e assenza di scorrimento orizzontale a 390 e 1440 pixel. Lint, build e suite browser completa: 122 test superati con API simulate.
+La pagina è statica e non richiede API, account o database. Verificati accesso pubblico, link dalla registrazione e assenza di scorrimento orizzontale a 390 e 1440 pixel. Lint e build sono superati; la suite browser completa corrente comprende 126 test, tutti superati con API simulate. [Esiti della revisione finale](revisione-finale-premerge.md).
 
 ## Prima dell'apertura pubblica
 
