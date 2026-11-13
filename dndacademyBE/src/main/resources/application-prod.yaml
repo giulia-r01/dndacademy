@@ -1,0 +1,15 @@
+# Railway: all secrets are environment variables, no local file is imported.
+# Schema changes belong exclusively to versioned migrations.
+spring:
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+app:
+  # Enable only behind Railway HTTP ingress; no direct/TCP public backend access.
+  client-ip-source: ${APP_CLIENT_IP_SOURCE}
+  cors:
+    allow-local-origins: false

@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.*;
 import com.giulia.dndacademy.model.Answer;
 import com.giulia.dndacademy.model.Lesson;
@@ -12,6 +14,7 @@ import com.giulia.dndacademy.service.QuizService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.model.UserQuizResult;
 
@@ -36,14 +39,13 @@ public class QuizServiceImpl implements QuizService {
     private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
+    @Transactional
     public QuizDTO createQuiz(CreateQuizRequest request) {
         Lesson lesson = lessonRepository.findById(request.getLessonId())
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata."));
 
         if (quizRepository.existsByLessonId(request.getLessonId())) {
-            throw new RuntimeException(
-                    "Questa lezione ha già un quiz associato. Ogni lezione può avere un solo quiz."
-            );
+            throw ApiException.conflict("Questa lezione ha già un quiz associato. Ogni lezione può avere un solo quiz.");
         }
 
         Quiz quiz = Quiz.builder()
@@ -58,6 +60,7 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<QuizDTO> getAllQuizzes() {
         return quizRepository.findAll()
                 .stream()
@@ -66,17 +69,19 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public QuizDTO getQuizById(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato."));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato."));
 
         return mapToDTO(quiz);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public QuizDTO getQuizByLesson(Long lessonId, String username) {
         Quiz quiz = quizRepository.findByLessonId(lessonId)
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato per questa lezione."));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato per questa lezione."));
 
         quizAccess.requireReadable(quiz, username);
         return mapToDTO(quiz);
@@ -87,10 +92,10 @@ public class QuizServiceImpl implements QuizService {
     public QuizResultDTO submitQuiz(SubmitQuizRequest request, String username) {
 
         Quiz quiz = quizRepository.findById(request.getQuizId())
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato"));
 
         if (request.getAnswers() == null || request.getAnswers().isEmpty()) {
-            throw new RuntimeException("Devi inviare almeno una risposta");
+            throw ApiException.badRequest("Devi inviare almeno una risposta");
         }
 
         quizAccess.requireCompletedLesson(quiz, username);
@@ -112,14 +117,14 @@ public class QuizServiceImpl implements QuizService {
 
         for (SubmitAnswerRequest submitted : request.getAnswers()) {
             Answer answer = answerRepository.findById(submitted.getAnswerId())
-                    .orElseThrow(() -> new RuntimeException("Risposta non trovata"));
+                    .orElseThrow(() -> ApiException.notFound("Risposta non trovata"));
 
             if (!answer.getQuestion().getId().equals(submitted.getQuestionId())) {
-                throw new RuntimeException("La risposta non appartiene alla domanda indicata");
+                throw ApiException.badRequest("La risposta non appartiene alla domanda indicata");
             }
 
             if (!answer.getQuestion().getQuiz().getId().equals(quiz.getId())) {
-                throw new RuntimeException("La domanda non appartiene a questo quiz");
+                throw ApiException.badRequest("La domanda non appartiene a questo quiz");
             }
 
             if (answer.isCorrect()) {
@@ -182,6 +187,7 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserQuizResultDTO> getMyQuizResults(String username) {
         return userQuizResultRepository.findByUserUsername(username)
                 .stream()
@@ -197,17 +203,16 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional
     public QuizDTO updateQuiz(Long quizId, UpdateQuizRequest request) {
         Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato."));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato."));
 
         Lesson lesson = lessonRepository.findById(request.getLessonId())
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata."));
 
         if (quizRepository.existsByLessonIdAndIdNot(request.getLessonId(), quizId)) {
-            throw new RuntimeException(
-                    "Questa lezione ha già un quiz associato. Scegli un'altra lezione."
-            );
+            throw ApiException.conflict("Questa lezione ha già un quiz associato. Scegli un'altra lezione.");
         }
 
         quiz.setTitle(request.getTitle().trim());
@@ -220,26 +225,21 @@ public class QuizServiceImpl implements QuizService {
     }
 
     @Override
+    @Transactional
     public void deleteQuiz(Long quizId) {
         Quiz quiz = quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato."));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato."));
 
         if (questionRepository.existsByQuizId(quizId)) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questo quiz perché contiene ancora una o più domande. Elimina prima tutte le domande associate."
-            );
+            throw ApiException.conflict("Non puoi eliminare questo quiz perché contiene ancora una o più domande. Elimina prima tutte le domande associate.");
         }
 
         if (userQuizResultRepository.existsByQuizId(quizId)) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questo quiz perché è già stato svolto da uno o più utenti."
-            );
+            throw ApiException.conflict("Non puoi eliminare questo quiz perché è già stato svolto da uno o più utenti.");
         }
 
         if (campaignChapterRepository.existsByQuizId(quizId)) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questo quiz perché è collegato a uno o più capitoli. Rimuovi prima il collegamento dai capitoli."
-            );
+            throw ApiException.conflict("Non puoi eliminare questo quiz perché è collegato a uno o più capitoli. Rimuovi prima il collegamento dai capitoli.");
         }
 
         quizRepository.delete(quiz);

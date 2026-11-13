@@ -1,6 +1,7 @@
 package com.giulia.dndacademy.controllers;
 
 import com.giulia.dndacademy.dto.UserDTO;
+import com.giulia.dndacademy.exceptions.ApiException;
 import com.giulia.dndacademy.dto.UpdateUserRoleRequest;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +24,8 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {
         UserDTO dto = userService.getUserById(id);
-        return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
+        if (dto == null) throw ApiException.notFound("Utente non trovato");
+        return ResponseEntity.ok(dto);
     }
 
     @PreAuthorize("hasRole('MASTER')")

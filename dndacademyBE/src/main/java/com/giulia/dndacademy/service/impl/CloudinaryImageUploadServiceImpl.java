@@ -3,6 +3,7 @@ package com.giulia.dndacademy.service.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.giulia.dndacademy.service.ImageUploadService;
+import com.giulia.dndacademy.exceptions.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -79,28 +80,30 @@ public class CloudinaryImageUploadServiceImpl implements ImageUploadService {
             String secureUrl = (String) uploadResult.get("secure_url");
 
             if (secureUrl == null || secureUrl.isBlank()) {
-                throw new RuntimeException("Errore durante il recupero dell'URL sicuro dell'immagine");
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_GATEWAY, "Caricamento immagine non riuscito");
             }
 
             return forceHttps(secureUrl);
         } catch (IOException e) {
-            throw new RuntimeException("Errore durante l'upload dell'immagine");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_GATEWAY, "Caricamento immagine non riuscito", e);
         }
     }
 
     private void validateFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("Il file immagine è obbligatorio");
+            throw ApiException.badRequest("Il file immagine è obbligatorio");
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new RuntimeException("L'immagine non può superare 5 MB");
+            throw ApiException.payloadTooLarge("L'immagine non può superare 5 MB");
         }
 
         String contentType = file.getContentType();
 
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new RuntimeException("Formato immagine non valido. Usa JPG, PNG o WEBP");
+            throw ApiException.badRequest("Formato immagine non valido. Usa JPG, PNG o WEBP");
         }
     }
 

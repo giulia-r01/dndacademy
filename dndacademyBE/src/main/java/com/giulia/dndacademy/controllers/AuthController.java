@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.controllers;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.AuthRequest;
 import com.giulia.dndacademy.dto.AuthResponse;
 import com.giulia.dndacademy.dto.RegisterRequest;
@@ -42,15 +44,19 @@ public class AuthController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private com.giulia.dndacademy.security.ratelimit.AuthRateLimiter rateLimiter;
+
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequest request) {
+        rateLimiter.checkIdentity("register", request.getEmail());
 
         if (userService.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username già in uso");
+            throw ApiException.conflict("Username già in uso");
         }
 
         if (userService.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email già registrata");
+            throw ApiException.conflict("Email già registrata");
         }
 
         User user = User.builder()
@@ -69,7 +75,7 @@ public class AuthController {
                     savedUser.getUsername()
             );
         } catch (RuntimeException e) {
-            System.out.println("Errore invio email di benvenuto: " + e.getMessage());
+            org.slf4j.LoggerFactory.getLogger(AuthController.class).warn("Invio email di benvenuto non riuscito", e);
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -77,12 +83,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody @Valid AuthRequest request) {
+        rateLimiter.checkIdentity("login", request.getUsername());
 
         User user = userRepository.findByUsername(request.getUsername()).orElse(null);
-        if (user == null) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        if (user == null) throw ApiException.unauthorized("Credenziali non valide");
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            throw ApiException.unauthorized("Credenziali non valide");
         }
 
         String token = jwtTool.generateToken(user);
@@ -94,6 +101,7 @@ public class AuthController {
     public ResponseEntity<Void> forgotPassword(
             @RequestBody @Valid ForgotPasswordRequest request
     ) {
+        rateLimiter.checkIdentity("forgot-password", request.getEmail());
         passwordResetService.forgotPassword(request);
         return ResponseEntity.ok().build();
     }

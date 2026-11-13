@@ -187,7 +187,7 @@ public class CombatServiceImpl implements CombatService {
                 .encounterId(combat.getEncounter() == null ? null : combat.getEncounter().getId())
                 .currentTurnParticipantId(current).combatOver(combat.isCompleted())
                 .completed(combat.isCompleted()).outcome(combat.getOutcome())
-                .completedAt(combat.getCompletedAt()).fighters(fighters).events(combat.getEvents()).build();
+                .completedAt(combat.getCompletedAt()).fighters(fighters).events(new ArrayList<>(combat.getEvents())).build();
     }
 
     @Override @Transactional
@@ -383,7 +383,7 @@ public class CombatServiceImpl implements CombatService {
     private CombatDTO mapToDTO(Combat c) {
         return CombatDTO.builder().id(c.getId()).campaignId(c.getCampaign().getId())
                 .chapterId(c.getChapter().getId()).encounterId(c.getEncounter().getId())
-                .turnOrder(c.getTurnOrder()).currentTurnIndex(c.getCurrentTurnIndex())
+                .turnOrder(new ArrayList<>(c.getTurnOrder())).currentTurnIndex(c.getCurrentTurnIndex())
                 .completed(c.isCompleted()).outcome(c.getOutcome()).completedAt(c.getCompletedAt()).build();
     }
 }

@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.CampaignDTO;
 import com.giulia.dndacademy.dto.CreateCampaignRequest;
 import com.giulia.dndacademy.dto.PartyMemberDTO;
@@ -13,6 +15,7 @@ import com.giulia.dndacademy.service.CampaignService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +32,7 @@ public class CampaignServiceImpl implements CampaignService {
     private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
+    @Transactional
     public CampaignDTO createCampaign(CreateCampaignRequest request, String username) {
 
         validateCampaignRequest(request);
@@ -47,6 +51,7 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CampaignDTO> getAllCampaigns() {
         return campaignRepository.findAll()
                 .stream()
@@ -59,7 +64,7 @@ public class CampaignServiceImpl implements CampaignService {
     public CampaignDTO joinCampaign(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         User player = userService.getByUsername(username);
 
@@ -75,10 +80,11 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<String> getPlayers(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
+                .orElseThrow(() -> ApiException.notFound("Nessuna campagna trovata"));
 
         checkCampaignAccess(campaign, username);
 
@@ -89,10 +95,11 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PartyMemberDTO> getParty(Long campaignId, String username) {
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
+                .orElseThrow(() -> ApiException.notFound("Nessuna campagna trovata"));
 
         checkCampaignAccess(campaign, username);
 
@@ -137,33 +144,34 @@ public class CampaignServiceImpl implements CampaignService {
                 .anyMatch(player -> player.getId().equals(user.getId()));
 
         if (!isMaster && !isPlayer) {
-            throw new RuntimeException("Non fai parte di questa campagna");
+            throw ApiException.forbidden("Non fai parte di questa campagna");
         }
     }
 
     @Override
+    @Transactional
     public CampaignDTO updateCampaign(Long campaignId, CreateCampaignRequest request, String username) {
         User master = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         boolean isCampaignMaster = campaign.getMaster().getId().equals(master.getId());
 
         if (!isCampaignMaster) {
-            throw new RuntimeException("Puoi modificare solo le campagne create da te");
+            throw ApiException.forbidden("Puoi modificare solo le campagne create da te");
         }
 
         if (request.getName() == null || request.getName().isBlank()) {
-            throw new RuntimeException("Il nome della campagna è obbligatorio");
+            throw ApiException.badRequest("Il nome della campagna è obbligatorio");
         }
 
         if (request.getDescription() == null || request.getDescription().isBlank()) {
-            throw new RuntimeException("La descrizione della campagna è obbligatoria");
+            throw ApiException.badRequest("La descrizione della campagna è obbligatoria");
         }
 
         if (request.getDifficulty() == null) {
-            throw new RuntimeException("La difficoltà della campagna è obbligatoria");
+            throw ApiException.badRequest("La difficoltà della campagna è obbligatoria");
         }
 
         campaign.setName(request.getName().trim());
@@ -176,34 +184,29 @@ public class CampaignServiceImpl implements CampaignService {
     }
 
     @Override
+    @Transactional
     public void deleteCampaign(Long campaignId, String username) {
         User master = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         boolean isCampaignMaster = campaign.getMaster().getId().equals(master.getId());
 
         if (!isCampaignMaster) {
-            throw new RuntimeException("Puoi eliminare solo le campagne create da te");
+            throw ApiException.forbidden("Puoi eliminare solo le campagne create da te");
         }
 
         if (campaignChapterRepository.existsByCampaignId(campaignId)) {
-            throw new RuntimeException(
-                    "Non puoi eliminare una campagna che contiene capitoli. Elimina prima tutti i capitoli della campagna."
-            );
+            throw ApiException.conflict("Non puoi eliminare una campagna che contiene capitoli. Elimina prima tutti i capitoli della campagna.");
         }
 
         if (!characterRepository.findByCampaignId(campaignId).isEmpty()) {
-            throw new RuntimeException(
-                    "Non puoi eliminare una campagna che contiene personaggi"
-            );
+            throw ApiException.conflict("Non puoi eliminare una campagna che contiene personaggi");
         }
 
         if (!combatRepository.findByCampaignId(campaignId).isEmpty()) {
-            throw new RuntimeException(
-                    "Non puoi eliminare una campagna che contiene combattimenti"
-            );
+            throw ApiException.conflict("Non puoi eliminare una campagna che contiene combattimenti");
         }
 
         campaignRepository.delete(campaign);

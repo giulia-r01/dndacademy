@@ -1,0 +1,13 @@
+# Existing local development database; never use this profile for a release.
+spring:
+  config:
+    import: optional:file:./src/main/resources/env.properties
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+app:
+  cors:
+    allow-local-origins: true

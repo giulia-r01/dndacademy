@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.UserDTO;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.model.enumerations.Role;
@@ -48,17 +50,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User register(User user) {
         return userRepository.save(user);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User getByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Utente non trovato con username: " + username));
+                .orElseThrow(() -> ApiException.notFound("Utente non trovato"));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDTO getUserById(Long id) {
         return userRepository.findById(id)
                 .map(u -> UserDTO.from(u))
@@ -66,16 +71,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmailIgnoreCase(email);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream().map(u ->
                 UserDTO.from(u)
@@ -83,18 +91,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDTO getByUsernameDTO(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Utente non trovato"));
 
         return UserDTO.from(user);
     }
 
     @Override
+    @Transactional
     public void updateLearningLevel(String username) {
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Utente non trovato"));
 
         long completedLessons = userLessonProgressRepository
                 .findByUserUsernameOrderByLessonOrderIndexAsc(username)

@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.CampaignChapterPlayerDTO;
 import com.giulia.dndacademy.dto.CampaignChapterProgressDTO;
 import com.giulia.dndacademy.model.Campaign;
@@ -41,7 +43,7 @@ public class CampaignChapterProgressServiceImpl
         User user = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         checkCampaignAccess(campaign, user);
 
@@ -77,9 +79,7 @@ public class CampaignChapterProgressServiceImpl
                         && chapter.getQuiz() != null
                         && !chapter.getQuiz().getLesson().getId().equals(chapter.getLesson().getId())
         ) {
-            throw new RuntimeException(
-                    "Il quiz collegato al capitolo non appartiene alla lezione collegata"
-            );
+            throw ApiException.conflict("Il quiz collegato al capitolo non appartiene alla lezione collegata");
         }
 
 
@@ -91,9 +91,7 @@ public class CampaignChapterProgressServiceImpl
                     );
 
             if (!lessonCompleted) {
-                throw new RuntimeException(
-                        "Devi completare la lezione prima di completare il capitolo"
-                );
+                throw ApiException.conflict("Devi completare la lezione prima di completare il capitolo");
             }
         }
 
@@ -105,9 +103,7 @@ public class CampaignChapterProgressServiceImpl
                     );
 
             if (!quizPassed) {
-                throw new RuntimeException(
-                        "Devi superare il quiz prima di completare il capitolo"
-                );
+                throw ApiException.conflict("Devi superare il quiz prima di completare il capitolo");
             }
         }
 
@@ -121,9 +117,7 @@ public class CampaignChapterProgressServiceImpl
                     );
 
             if (!combatCompleted) {
-                throw new RuntimeException(
-                        "Devi completare il combattimento prima di completare il capitolo"
-                );
+                throw ApiException.conflict("Devi completare il combattimento prima di completare il capitolo");
             }
         }
     }
@@ -134,7 +128,7 @@ public class CampaignChapterProgressServiceImpl
         User user = userService.getByUsername(username);
 
         CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
-                .orElseThrow(() -> new RuntimeException("Capitolo non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Capitolo non trovato"));
 
         checkCampaignAccess(chapter.getCampaign(), user);
 
@@ -145,10 +139,10 @@ public class CampaignChapterProgressServiceImpl
 
         CampaignChapterProgress progress = progressRepository
                 .findByUserIdAndChapterId(user.getId(), chapterId)
-                .orElseThrow(() -> new RuntimeException("Progressione capitolo non trovata"));
+                .orElseThrow(() -> new IllegalStateException("Progressione capitolo non trovata"));
 
         if (!progress.isUnlocked()) {
-            throw new RuntimeException("Questo capitolo non è ancora sbloccato");
+            throw ApiException.forbidden("Questo capitolo non è ancora sbloccato");
         }
 
         if (progress.isCompleted()) return mapToDTO(progress);
@@ -230,7 +224,7 @@ public class CampaignChapterProgressServiceImpl
 
                 CampaignChapterProgress nextProgress = progressRepository
                         .findByUserIdAndChapterId(user.getId(), nextChapter.getId())
-                        .orElseThrow(() -> new RuntimeException("Progressione capitolo successivo non trovata"));
+                        .orElseThrow(() -> new IllegalStateException("Progressione capitolo successivo non trovata"));
 
                 nextProgress.setUnlocked(true);
 
@@ -251,7 +245,7 @@ public class CampaignChapterProgressServiceImpl
                 .anyMatch(player -> player.getId().equals(user.getId()));
 
         if (!isMaster && !isPlayer) {
-            throw new RuntimeException("Non fai parte di questa campagna");
+            throw ApiException.forbidden("Non fai parte di questa campagna");
         }
     }
 
@@ -308,7 +302,7 @@ public class CampaignChapterProgressServiceImpl
         User user = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         checkCampaignAccess(campaign, user);
 

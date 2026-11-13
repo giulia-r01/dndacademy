@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.*;
 import com.giulia.dndacademy.model.Lesson;
 import com.giulia.dndacademy.repository.CampaignChapterRepository;
@@ -10,6 +12,7 @@ import com.giulia.dndacademy.service.LessonService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.model.UserLessonProgress;
 
@@ -28,6 +31,7 @@ public class LessonServiceImpl implements LessonService {
     private final CampaignChapterRepository campaignChapterRepository;
 
     @Override
+    @Transactional
     public LessonDTO createLesson(CreateLessonRequest request) {
         Lesson lesson = Lesson.builder()
                 .title(request.getTitle())
@@ -40,6 +44,7 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<LessonDTO> getAllLessons() {
         return lessonRepository.findAllByOrderByOrderIndexAsc()
                 .stream()
@@ -48,9 +53,10 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public LessonDTO getLessonById(Long id) {
         Lesson lesson = lessonRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata"));
 
         return mapToDTO(lesson);
     }
@@ -84,6 +90,7 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    @Transactional
     public List<UserLessonProgressDTO> getMyLessonProgress(String username) {
 
         User user = userService.getByUsername(username);
@@ -119,12 +126,13 @@ public class LessonServiceImpl implements LessonService {
 
 
     @Override
+    @Transactional
     public UserLessonProgressDTO completeLesson(Long lessonId, String username) {
 
         User user = userService.getByUsername(username);
 
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata"));
 
         UserLessonProgress progress = userLessonProgressRepository
                 .findByUserUsernameAndLessonId(username, lessonId)
@@ -136,7 +144,7 @@ public class LessonServiceImpl implements LessonService {
                         .build());
 
         if (!progress.isUnlocked()) {
-            throw new RuntimeException("Lezione non ancora sbloccata");
+            throw ApiException.forbidden("Lezione non ancora sbloccata");
         }
 
         progress.setCompleted(true);
@@ -174,12 +182,13 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    @Transactional
     public void completeLessonAfterQuiz(Long lessonId, String username) {
 
         User user = userService.getByUsername(username);
 
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata"));
 
         UserLessonProgress progress = userLessonProgressRepository
                 .findByUserUsernameAndLessonId(username, lessonId)
@@ -216,9 +225,10 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    @Transactional
     public LessonDTO updateLesson(Long lessonId, UpdateLessonRequest request) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata."));
 
         lesson.setTitle(request.getTitle().trim());
         lesson.setContent(request.getContent().trim());
@@ -231,20 +241,17 @@ public class LessonServiceImpl implements LessonService {
     }
 
     @Override
+    @Transactional
     public void deleteLesson(Long lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata."));
 
         if (quizRepository.findByLessonId(lessonId).isPresent()) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questa lezione perché è collegata a un quiz. Elimina prima il quiz associato."
-            );
+            throw ApiException.conflict("Non puoi eliminare questa lezione perché è collegata a un quiz. Elimina prima il quiz associato.");
         }
 
         if (!campaignChapterRepository.findByLessonId(lessonId).isEmpty()) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questa lezione perché è collegata a uno o più capitoli. Rimuovi prima il collegamento dai capitoli."
-            );
+            throw ApiException.conflict("Non puoi eliminare questa lezione perché è collegata a uno o più capitoli. Rimuovi prima il collegamento dai capitoli.");
         }
 
         lessonRepository.delete(lesson);

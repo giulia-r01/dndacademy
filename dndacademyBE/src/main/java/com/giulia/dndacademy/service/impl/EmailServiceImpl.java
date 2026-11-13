@@ -88,7 +88,8 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
 
         } catch (MessagingException | MailException e) {
-            throw new RuntimeException("Errore durante l'invio dell'email di recupero password");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "Invio email non riuscito", e);
         }
     }
 
@@ -155,7 +156,8 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
 
         } catch (MessagingException | MailException e) {
-            throw new RuntimeException("Errore durante l'invio dell'email di benvenuto");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "Invio email non riuscito", e);
         }
     }
 }

@@ -43,6 +43,16 @@ Il profilo permette di aggiornare username ed email confermando la password attu
 
 I token identificano l'utente tramite l'ID immutabile: il cambio username conserva identità e progressi. Il cambio password invalida le sessioni precedenti e i link di recupero, e richiede un nuovo login. I badge automatici usano codici stabili, sono inizializzati all'avvio e non possono essere eliminati.
 
+L'autenticazione usa gli account dell'app e JWT; non viene creato l'utente in memoria predefinito di Spring Boot. HTTP Basic e form login sono disabilitati esplicitamente, mantenendo la catena di sicurezza e i controlli dei ruoli. Dettagli in [Autenticazione JWT](dndacademyBE/docs/AUTHENTICATION.md).
+
+Le risposte API sono preparate dai servizi entro transazioni esplicite, con Open Session in View disabilitato. Il registro del combattimento e l'ordine dei turni non dipendono da collezioni Hibernate da caricare durante la risposta. Dettagli in [Sessioni database e transazioni](dndacademyBE/docs/PERSISTENCE_BOUNDARIES.md).
+
+Il GET pubblico `/actuator/health/readiness` verifica app e database per il futuro deploy Railway e restituisce solo lo stato. Gli altri endpoint di gestione sono bloccati. La [procedura healthcheck](dndacademyBE/docs/HEALTHCHECK.md) distingue la prova locale dall'impostazione cloud ancora da effettuare.
+
+L'origine del frontend è validata e condivisa da CORS e link di recupero password. In produzione è consentita solo l'origine HTTPS configurata; localhost è previsto nei profili locali, senza wildcard per i progetti Vercel. Le richieste usano JWT Bearer, senza cookie cross-origin. Procedura e verifiche in [CORS per ambiente](dndacademyBE/docs/CORS.md).
+
+Gli errori applicativi usano stati HTTP espliciti e messaggi leggibili. Errori server, SQL e provider non espongono dettagli interni: il client riceve il JSON `message` e le cause restano nei log del backend. Dettagli e prova locale in [Gestione errori API](dndacademyBE/docs/ERROR_HANDLING.md).
+
 ## Tour di primo avvio
 
 Il prototipo guidato accompagna Player e Master tra pagine dimostrative interne all'app. Un box vicino al comando evidenziato indica l'azione richiesta; il resto della pagina è inerte. Il percorso avanza solo dopo l'azione o un salvataggio riuscito. Esci dal tour è sempre disponibile. I contenuti sono temporanei e non modificano dati reali. L'avvio è automatico al primo accesso e il menu dell'avatar permette di ricominciare; il Master può esplorare anche il percorso Player. La chiusura è ricordata per browser, account e ruolo. Dettagli: [Tour frontend](dndacademyfe/docs/tour-system.md).
@@ -112,7 +122,7 @@ Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero p
 
 ## Limiti e prossimi interventi
 
-- Le migrazioni versionate, la configurazione di rilascio e il collaudo dei servizi reali restano da completare prima della produzione.
+- Flyway, V1/V2 e i profili backend sono introdotti. Il [collaudo del nuovo database](dndacademyBE/docs/DATABASE_MIGRATIONS.md) su PostgreSQL 17, il completamento della configurazione di rilascio e la verifica dei servizi reali restano necessari prima della produzione.
 - La ripresa al ricaricamento funziona con un URL contenente `combatId`. L'avvio di un nuovo tentativo non aggiunge ancora l'ID all'URL: ricaricare una rotta priva di ID riapre la preparazione; il tentativo salvato resta recuperabile dallo storico.
 - I combattimenti sono individuali contro PNG: il party della campagna non implica sincronizzazione multiplayer in tempo reale.
 - Gli HP dello scontro sono separati da quelli permanenti del personaggio; la strategia PNG rimane semplificata.

@@ -20,6 +20,10 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 
 La base non deve includere `/api`: i servizi specificano già i percorsi completi, compresi quelli `/auth`. Nel backend impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per allineare CORS e collegamenti delle email.
 
+Il backend valida un'origine frontend unica: in `dev`/`preprod` consente anche `http://localhost:3000` e `http://127.0.0.1:3000`, in `prod` solo l'origine HTTPS configurata, senza wildcard Vercel. Il client continua a usare `Authorization: Bearer` senza cookie cross-origin. Regole e verifica delle richieste preliminari in [CORS per ambiente](../dndacademyBE/docs/CORS.md).
+
+Gli errori API conservano il campo JSON `message` usato da `apiFetch`. Il backend distingue 400/401/403/404/409 dagli errori di servizio 5xx, senza esporre SQL o stack trace; i 503 non indicano una sessione scaduta. Dettagli in [Gestione errori API](../dndacademyBE/docs/ERROR_HANDLING.md).
+
 ```powershell
 npm ci
 npm run dev
@@ -200,6 +204,6 @@ Una prima partita è stata confermata dall'utente con esito positivo il 6 novemb
 
 Prima del rilascio verificare con account Player e Master reali il percorso completo, permessi, progressione, ritorno dalle attività, ripresa dello stato salvato, cambio password su più sessioni, immagini ed email. Il database e lo schema `public` devono esistere ed essere accessibili all'utente del backend. Il reset dell'ambiente di test è un'operazione esplicita e separata dalla build del frontend.
 
-Il tour di primo avvio è implementato interamente nel frontend. Restano la gestione versionata delle migrazioni backend, le verifiche dei servizi reali e la preparazione del deploy. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
+Il tour di primo avvio è implementato interamente nel frontend. Sono introdotti Flyway, la migrazione iniziale e i profili backend: la [procedura di collaudo del nuovo database](../dndacademyBE/docs/DATABASE_MIGRATIONS.md) mantiene separato PostgreSQL di preproduzione dal vecchio ambiente locale. Restano il collaudo PostgreSQL, le verifiche dei servizi reali e il completamento della configurazione di rilascio. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
 
 Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.

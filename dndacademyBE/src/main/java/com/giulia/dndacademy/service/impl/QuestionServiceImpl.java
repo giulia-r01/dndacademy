@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.*;
 import com.giulia.dndacademy.model.Answer;
 import com.giulia.dndacademy.model.Question;
@@ -24,12 +26,13 @@ public class QuestionServiceImpl implements QuestionService {
     private final com.giulia.dndacademy.service.QuizAccessService quizAccess;
 
     @Override
+    @Transactional
     public QuestionDTO createQuestion(CreateQuestionRequest request) {
         Quiz quiz = quizRepository.findById(request.getQuizId())
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato"));
 
         if (request.getAnswers() == null || request.getAnswers().isEmpty()) {
-            throw new RuntimeException("La domanda deve avere almeno una risposta");
+            throw ApiException.badRequest("La domanda deve avere almeno una risposta");
         }
 
         boolean hasCorrectAnswer = request.getAnswers()
@@ -37,7 +40,7 @@ public class QuestionServiceImpl implements QuestionService {
                 .anyMatch(CreateAnswerRequest::isCorrect);
 
         if (!hasCorrectAnswer) {
-            throw new RuntimeException("La domanda deve avere almeno una risposta corretta");
+            throw ApiException.badRequest("La domanda deve avere almeno una risposta corretta");
         }
 
         Question question = Question.builder()
@@ -62,6 +65,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<QuestionDTO> getQuestionsByQuiz(Long quizId, String username) {
         Quiz quiz = quizRepository.findById(quizId).orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Quiz non trovato"));
         quizAccess.requireReadable(quiz, username);
@@ -88,9 +92,10 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public QuestionDTO updateQuestion(Long questionId, UpdateQuestionRequest request) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Domanda non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Domanda non trovata."));
 
         question.setText(request.getText().trim());
 
@@ -103,7 +108,7 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional
     public void deleteQuestion(Long questionId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Domanda non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Domanda non trovata."));
 
         answerRepository.deleteByQuestionId(questionId);
 
@@ -128,6 +133,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AdminQuestionDTO> getAdminQuestionsByQuiz(Long quizId) {
         return questionRepository.findByQuizId(quizId)
                 .stream()
@@ -136,9 +142,10 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public AdminQuestionDTO createAnswer(Long questionId, CreateAnswerRequest request) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Domanda non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Domanda non trovata."));
 
         Answer answer = Answer.builder()
                 .text(request.getText().trim())
@@ -152,19 +159,20 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public AdminQuestionDTO updateAnswer(
             Long questionId,
             Long answerId,
             CreateAnswerRequest request
     ) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Domanda non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Domanda non trovata."));
 
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new RuntimeException("Risposta non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Risposta non trovata."));
 
         if (!answer.getQuestion().getId().equals(questionId)) {
-            throw new RuntimeException("La risposta non appartiene a questa domanda.");
+            throw ApiException.badRequest("La risposta non appartiene a questa domanda.");
         }
 
         List<Answer> currentAnswers = answerRepository.findByQuestionId(questionId);
@@ -175,9 +183,7 @@ public class QuestionServiceImpl implements QuestionService {
                 .count() == 1;
 
         if (isOnlyCorrectAnswer && !request.isCorrect()) {
-            throw new RuntimeException(
-                    "La domanda deve avere almeno una risposta corretta."
-            );
+            throw ApiException.badRequest("La domanda deve avere almeno una risposta corretta.");
         }
 
         answer.setText(request.getText().trim());
@@ -192,21 +198,19 @@ public class QuestionServiceImpl implements QuestionService {
     @Transactional
     public AdminQuestionDTO deleteAnswer(Long questionId, Long answerId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Domanda non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Domanda non trovata."));
 
         Answer answer = answerRepository.findById(answerId)
-                .orElseThrow(() -> new RuntimeException("Risposta non trovata."));
+                .orElseThrow(() -> ApiException.notFound("Risposta non trovata."));
 
         if (!answer.getQuestion().getId().equals(questionId)) {
-            throw new RuntimeException("La risposta non appartiene a questa domanda.");
+            throw ApiException.badRequest("La risposta non appartiene a questa domanda.");
         }
 
         List<Answer> currentAnswers = answerRepository.findByQuestionId(questionId);
 
         if (currentAnswers.size() <= 2) {
-            throw new RuntimeException(
-                    "La domanda deve avere almeno due risposte."
-            );
+            throw ApiException.badRequest("La domanda deve avere almeno due risposte.");
         }
 
         boolean isOnlyCorrectAnswer = answer.isCorrect()
@@ -215,9 +219,7 @@ public class QuestionServiceImpl implements QuestionService {
                 .count() == 1;
 
         if (isOnlyCorrectAnswer) {
-            throw new RuntimeException(
-                    "Non puoi eliminare l'unica risposta corretta della domanda."
-            );
+            throw ApiException.conflict("Non puoi eliminare l'unica risposta corretta della domanda.");
         }
 
         answerRepository.delete(answer);

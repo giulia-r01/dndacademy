@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.AttackRequest;
 import com.giulia.dndacademy.dto.AttackResultDTO;
 import com.giulia.dndacademy.dto.CharacterDTO;
@@ -48,12 +50,12 @@ public class CharacterServiceImpl implements CharacterService {
         User master = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(request.getCampaignId())
-                .orElseThrow(() -> new RuntimeException("Nessuna campagna trovata"));
+                .orElseThrow(() -> ApiException.notFound("Nessuna campagna trovata"));
 
         boolean isMaster = campaign.getMaster().getId().equals(master.getId());
 
         if (!isMaster) {
-            throw new RuntimeException("Solo il master della campagna può creare personaggi");
+            throw ApiException.forbidden("Solo il master della campagna può creare personaggi");
         }
 
         validateCreateCharacterRequest(request);
@@ -116,7 +118,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .anyMatch(campaignPlayer -> campaignPlayer.getId().equals(player.getId()));
 
         if (!isPlayerInCampaign) {
-            throw new RuntimeException("Devi unirti alla campagna prima di scegliere un personaggio");
+            throw ApiException.forbidden("Devi unirti alla campagna prima di scegliere un personaggio");
         }
 
         if (character.getPlayer() != null) {
@@ -155,7 +157,7 @@ public class CharacterServiceImpl implements CharacterService {
     @Transactional(readOnly = true)
     public List<CharacterDTO> getAvailableCharactersByCampaign(Long campaignId, String username) {
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         checkCampaignAccess(campaign, username);
 
@@ -169,7 +171,7 @@ public class CharacterServiceImpl implements CharacterService {
     @Transactional(readOnly = true)
     public List<CharacterDTO> getCharactersByCampaign(Long campaignId, String username) {
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         checkCampaignAccess(campaign, username);
 
@@ -224,32 +226,32 @@ public class CharacterServiceImpl implements CharacterService {
 
     private void validateCreateCharacterRequest(CreateCharacterRequest request) {
         if (request.getStats() == null) {
-            throw new RuntimeException("Stats obbligatorie");
+            throw ApiException.badRequest("Stats obbligatorie");
         }
 
         if (request.getWeaponName() == null || request.getWeaponName().isBlank()) {
-            throw new RuntimeException("Il nome dell'arma è obbligatorio");
+            throw ApiException.badRequest("Il nome dell'arma è obbligatorio");
         }
 
         if (!List.of(4, 6, 8, 10, 12).contains(request.getDamageDie())) {
-            throw new RuntimeException("Il dado danno dell'arma deve essere d4, d6, d8, d10 o d12");
+            throw ApiException.badRequest("Il dado danno dell'arma deve essere d4, d6, d8, d10 o d12");
         }
 
         if (request.getAttackAbility() == null) {
-            throw new RuntimeException("La caratteristica di attacco è obbligatoria");
+            throw ApiException.badRequest("La caratteristica di attacco è obbligatoria");
         }
 
         if (request.isSpellcaster()) {
             if (request.getSpellName() == null || request.getSpellName().isBlank()) {
-                throw new RuntimeException("Il nome dell'incantesimo è obbligatorio per gli spellcaster");
+                throw ApiException.badRequest("Il nome dell'incantesimo è obbligatorio per gli spellcaster");
             }
 
             if (!List.of(4, 6, 8, 10, 12).contains(request.getSpellDamageDie())) {
-                throw new RuntimeException("Il dado danno dell'incantesimo deve essere d4, d6, d8, d10 o d12");
+                throw ApiException.badRequest("Il dado danno dell'incantesimo deve essere d4, d6, d8, d10 o d12");
             }
 
             if (request.getSpellAbility() == null) {
-                throw new RuntimeException("La caratteristica dell'incantesimo è obbligatoria");
+                throw ApiException.badRequest("La caratteristica dell'incantesimo è obbligatoria");
             }
         }
     }
@@ -304,7 +306,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .anyMatch(player -> player.getId().equals(user.getId()));
 
         if (!isMaster && !isPlayer) {
-            throw new RuntimeException("Non fai parte di questa campagna");
+            throw ApiException.forbidden("Non fai parte di questa campagna");
         }
     }
 
@@ -315,7 +317,7 @@ public class CharacterServiceImpl implements CharacterService {
         User master = userService.getByUsername(username);
 
         Character character = characterRepository.findLockedById(characterId)
-                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Personaggio non trovato"));
 
         boolean isCampaignMaster = character.getCampaign()
                 .getMaster()
@@ -323,7 +325,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .equals(master.getId());
 
         if (!isCampaignMaster) {
-            throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
+            throw ApiException.forbidden("Puoi modificare solo personaggi delle tue campagne");
         }
 
         requireTemplate(character);
@@ -343,32 +345,32 @@ public class CharacterServiceImpl implements CharacterService {
 
     private void validateUpdateCharacterRequest(UpdateCharacterRequest request) {
         if (request.getStats() == null) {
-            throw new RuntimeException("Stats obbligatorie");
+            throw ApiException.badRequest("Stats obbligatorie");
         }
 
         if (request.getWeaponName() == null || request.getWeaponName().isBlank()) {
-            throw new RuntimeException("Il nome dell'arma è obbligatorio");
+            throw ApiException.badRequest("Il nome dell'arma è obbligatorio");
         }
 
         if (!List.of(4, 6, 8, 10, 12).contains(request.getDamageDie())) {
-            throw new RuntimeException("Il dado danno dell'arma deve essere d4, d6, d8, d10 o d12");
+            throw ApiException.badRequest("Il dado danno dell'arma deve essere d4, d6, d8, d10 o d12");
         }
 
         if (request.getAttackAbility() == null) {
-            throw new RuntimeException("La caratteristica di attacco è obbligatoria");
+            throw ApiException.badRequest("La caratteristica di attacco è obbligatoria");
         }
 
         if (request.isSpellcaster()) {
             if (request.getSpellName() == null || request.getSpellName().isBlank()) {
-                throw new RuntimeException("Il nome dell'incantesimo è obbligatorio per gli spellcaster");
+                throw ApiException.badRequest("Il nome dell'incantesimo è obbligatorio per gli spellcaster");
             }
 
             if (!List.of(4, 6, 8, 10, 12).contains(request.getSpellDamageDie())) {
-                throw new RuntimeException("Il dado danno dell'incantesimo deve essere d4, d6, d8, d10 o d12");
+                throw ApiException.badRequest("Il dado danno dell'incantesimo deve essere d4, d6, d8, d10 o d12");
             }
 
             if (request.getSpellAbility() == null) {
-                throw new RuntimeException("La caratteristica dell'incantesimo è obbligatoria");
+                throw ApiException.badRequest("La caratteristica dell'incantesimo è obbligatoria");
             }
         }
     }
@@ -379,7 +381,7 @@ public class CharacterServiceImpl implements CharacterService {
         User master = userService.getByUsername(username);
 
         Character character = characterRepository.findLockedById(characterId)
-                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Personaggio non trovato"));
 
         boolean isCampaignMaster = character.getCampaign()
                 .getMaster()
@@ -387,7 +389,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .equals(master.getId());
 
         if (!isCampaignMaster) {
-            throw new RuntimeException("Puoi modificare solo personaggi delle tue campagne");
+            throw ApiException.forbidden("Puoi modificare solo personaggi delle tue campagne");
         }
 
         requireTemplate(character);
@@ -454,7 +456,7 @@ public class CharacterServiceImpl implements CharacterService {
         User master = userService.getByUsername(username);
 
         Character character = characterRepository.findLockedById(characterId)
-                .orElseThrow(() -> new RuntimeException("Personaggio non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Personaggio non trovato"));
 
         boolean isCampaignMaster = character.getCampaign()
                 .getMaster()
@@ -462,7 +464,7 @@ public class CharacterServiceImpl implements CharacterService {
                 .equals(master.getId());
 
         if (!isCampaignMaster) {
-            throw new RuntimeException("Puoi eliminare solo personaggi delle tue campagne");
+            throw ApiException.forbidden("Puoi eliminare solo personaggi delle tue campagne");
         }
 
         requireTemplate(character);
@@ -477,14 +479,14 @@ public class CharacterServiceImpl implements CharacterService {
             String username
     ) {
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         User master = userService.getByUsername(username);
 
         boolean isCampaignMaster = campaign.getMaster().getId().equals(master.getId());
 
         if (!isCampaignMaster) {
-            throw new RuntimeException("Puoi visualizzare solo personaggi delle tue campagne");
+            throw ApiException.forbidden("Puoi visualizzare solo personaggi delle tue campagne");
         }
 
         return characterRepository.findByCampaignIdAndPlayerIsNullAndSourceTemplateIsNull(campaignId)

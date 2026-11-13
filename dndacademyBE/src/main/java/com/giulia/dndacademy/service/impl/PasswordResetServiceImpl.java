@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.ForgotPasswordRequest;
 import com.giulia.dndacademy.dto.ResetPasswordRequest;
 import com.giulia.dndacademy.model.PasswordResetToken;
@@ -9,7 +11,7 @@ import com.giulia.dndacademy.repository.UserRepository;
 import com.giulia.dndacademy.service.EmailService;
 import com.giulia.dndacademy.service.PasswordResetService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
+import com.giulia.dndacademy.config.FrontendOrigin;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,8 +29,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final jakarta.persistence.EntityManager entityManager;
 
-    @Value("${app.frontend-base-url}")
-    private String frontendBaseUrl;
+    private final FrontendOrigin frontendOrigin;
 
     @Override
     @Transactional
@@ -53,7 +54,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         tokenRepository.save(resetToken);
 
-        String resetLink = frontendBaseUrl + "/reset-password?token=" + token;
+        String resetLink = frontendOrigin.baseUrl() + "/reset-password?token=" + token;
 
         emailService.sendPasswordResetEmail(
                 user.getEmail(),
@@ -67,25 +68,25 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public void resetPassword(ResetPasswordRequest request) {
 
         PasswordResetToken resetToken = tokenRepository.findByToken(request.getToken())
-                .orElseThrow(() -> new RuntimeException("Token non valido"));
+                .orElseThrow(() -> ApiException.badRequest("Token non valido"));
 
         if (resetToken.isUsed()) {
-            throw new RuntimeException("Token già utilizzato");
+            throw ApiException.badRequest("Token già utilizzato");
         }
 
         if (resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token scaduto");
+            throw ApiException.badRequest("Token scaduto");
         }
 
         User user = userRepository.findForUpdateById(resetToken.getUser().getId()).orElseThrow();
         // Re-read after taking the user lock: a password/email change may have invalidated the token.
         entityManager.refresh(resetToken);
         if (resetToken.isUsed() || resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token non valido o scaduto");
+            throw ApiException.badRequest("Token non valido o scaduto");
         }
 
         if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-            throw new RuntimeException("La nuova password deve essere diversa da quella precedente");
+            throw ApiException.badRequest("La nuova password deve essere diversa da quella precedente");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));

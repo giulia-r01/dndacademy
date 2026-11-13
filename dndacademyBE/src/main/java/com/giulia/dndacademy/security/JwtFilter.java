@@ -2,8 +2,9 @@ package com.giulia.dndacademy.security;
 
 import com.giulia.dndacademy.model.User;
 import com.giulia.dndacademy.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.giulia.dndacademy.dto.ErrorResponse;
+import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.dao.TransientDataAccessResourceException;
+import org.springframework.dao.QueryTimeoutException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.*;
@@ -20,7 +21,7 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
     private final JwtTool jwtTool;
     private final UserRepository users;
-    private final ObjectMapper json;
+    private final ApiSecurityErrorHandler securityErrors;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -39,10 +40,15 @@ public class JwtFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities()));
             } catch (JwtException | IllegalArgumentException ex) {
                 SecurityContextHolder.clearContext();
-                response.setStatus(401);
-                response.setContentType("application/json");
-                json.writeValue(response.getOutputStream(), ErrorResponse.builder()
-                        .message("Sessione scaduta. Accedi nuovamente.").build());
+                securityErrors.sessionExpired(response);
+                return;
+            } catch (DataAccessResourceFailureException | TransientDataAccessResourceException | QueryTimeoutException ex) {
+                SecurityContextHolder.clearContext();
+                securityErrors.unavailable(response, ex);
+                return;
+            } catch (RuntimeException ex) {
+                SecurityContextHolder.clearContext();
+                securityErrors.unexpected(response, ex);
                 return;
             }
         }
@@ -51,6 +57,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return request.getServletPath().startsWith("/auth/");
+        return request.getServletPath().startsWith("/auth/")
+                || ("GET".equals(request.getMethod())
+                    && "/actuator/health/readiness".equals(request.getServletPath()));
     }
 }

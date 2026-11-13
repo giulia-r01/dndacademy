@@ -1,19 +1,19 @@
 package com.giulia.dndacademy.security;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import com.giulia.dndacademy.config.FrontendOrigin;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
@@ -22,23 +22,35 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${APP_FRONTEND_BASE_URL}")
-    private String frontendUrl;
-
     @Autowired
     private JwtFilter jwtFilter;
 
+    @Autowired
+    private com.giulia.dndacademy.security.ratelimit.AuthRateLimiter limiter;
+    @Autowired
+    private com.giulia.dndacademy.security.ratelimit.ClientAddressResolver addresses;
+    @Autowired
+    private com.fasterxml.jackson.databind.ObjectMapper json;
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, UrlBasedCorsConfigurationSource corsConfigurationSource,
+            ApiSecurityErrorHandler securityErrors) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .formLogin(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(securityErrors).accessDeniedHandler(securityErrors))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/actuator/health/readiness").permitAll()
+                        .requestMatchers("/actuator", "/actuator/**").denyAll()
                         .requestMatchers("/auth/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        // Constructed only in the security chain: never registered a second time by the servlet container.
+        http.addFilterBefore(new com.giulia.dndacademy.security.ratelimit.AuthRateLimitFilter(limiter, addresses, json), JwtFilter.class);
 
         return http.build();
     }
@@ -49,17 +61,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public UrlBasedCorsConfigurationSource corsConfigurationSource(FrontendOrigin frontendOrigin) {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOriginPatterns(
-                List.of(
-                        frontendUrl,            // frontend in produzione
-                        "http://localhost:5173", // vite dev server
-                        "http://localhost:8080"  // utile per test locali
-                )
-        );
+        config.setAllowedOrigins(frontendOrigin.allowedOrigins());
 
         config.setAllowedMethods(
                 List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS")
@@ -69,7 +75,10 @@ public class SecurityConfig {
                 List.of("Authorization","Content-Type")
         );
 
-        config.setAllowCredentials(true);
+        // Authentication uses an explicit Bearer header, not cross-origin cookies.
+        config.setAllowCredentials(false);
+        config.setExposedHeaders(List.of("Retry-After"));
+        config.setMaxAge(600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

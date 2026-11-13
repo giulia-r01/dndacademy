@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.BadgeDTO;
 import com.giulia.dndacademy.dto.CreateBadgeRequest;
 import com.giulia.dndacademy.dto.UpdateBadgeRequest;
@@ -13,6 +15,7 @@ import com.giulia.dndacademy.service.BadgeService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -50,7 +53,7 @@ public class BadgeServiceImpl implements BadgeService {
 
 
         Badge badge = badgeRepository.findByName(badgeName)
-                .orElseThrow(() -> new RuntimeException("Badge non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Badge non trovato"));
 
         UserBadge userBadge = UserBadge.builder()
                 .user(user)
@@ -74,6 +77,7 @@ public class BadgeServiceImpl implements BadgeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BadgeDTO> getMyBadges(String username) {
 
         return userBadgeRepository.findByUserUsername(username)
@@ -88,6 +92,7 @@ public class BadgeServiceImpl implements BadgeService {
     }
 
     @Override
+    @Transactional
     public BadgeDTO createBadge(CreateBadgeRequest request) {
 
         Badge badge = Badge.builder()
@@ -101,6 +106,7 @@ public class BadgeServiceImpl implements BadgeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BadgeDTO> getAllBadges() {
         return badgeRepository.findAll()
                 .stream()
@@ -109,9 +115,10 @@ public class BadgeServiceImpl implements BadgeService {
     }
 
     @Override
+    @Transactional
     public BadgeDTO updateBadge(Long badgeId, UpdateBadgeRequest request) {
         Badge badge = badgeRepository.findById(badgeId)
-                .orElseThrow(() -> new RuntimeException("Badge non trovato."));
+                .orElseThrow(() -> ApiException.notFound("Badge non trovato."));
 
         badge.setName(request.getName().trim());
         badge.setDescription(request.getDescription().trim());
@@ -122,24 +129,21 @@ public class BadgeServiceImpl implements BadgeService {
     }
 
     @Override
+    @Transactional
     public void deleteBadge(Long badgeId) {
         Badge badge = badgeRepository.findById(badgeId)
-                .orElseThrow(() -> new RuntimeException("Badge non trovato."));
+                .orElseThrow(() -> ApiException.notFound("Badge non trovato."));
 
         if (badge.getSystemCode() != null) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.CONFLICT, "I badge di sistema non possono essere eliminati");
         }
         if (userBadgeRepository.existsByBadgeId(badgeId)) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questo badge perché è già stato assegnato a uno o più utenti."
-            );
+            throw ApiException.conflict("Non puoi eliminare questo badge perché è già stato assegnato a uno o più utenti.");
         }
 
         if (campaignChapterRepository.existsByRewardBadgeId(badgeId)) {
-            throw new RuntimeException(
-                    "Non puoi eliminare questo badge perché è usato come ricompensa in uno o più capitoli."
-            );
+            throw ApiException.conflict("Non puoi eliminare questo badge perché è usato come ricompensa in uno o più capitoli.");
         }
 
         badgeRepository.delete(badge);

@@ -23,13 +23,25 @@ Java 17 come versione target, Spring Boot 3.5.11, Spring Security, JWT, BCrypt, 
 | NPC e incontri | Nemici e aiutanti riutilizzabili, immagini e quantità per incontro |
 | Combattimento | Iniziativa, azioni singole, HP, critici, sconfitta e registro persistente |
 
-Gli endpoint richiedono autenticazione salvo `/auth/**`. Il backend verifica ruoli, appartenenza e proprietà nelle operazioni previste. La registrazione pubblica crea PLAYER; il backoffice richiede un account MASTER già predisposto.
+Gli endpoint richiedono autenticazione salvo `/auth/**` e il GET pubblico `/actuator/health/readiness`. Il backend verifica ruoli, appartenenza e proprietà nelle operazioni previste. La registrazione pubblica crea PLAYER; il backoffice richiede un account MASTER già predisposto.
+
+Le richieste pubbliche di autenticazione hanno quote per indirizzo e identità con contatori condivisi nel database e migrazione V2. Il rifiuto temporaneo restituisce 429 con `Retry-After`. Configurazione Railway, motivazioni e prova locale: [Limiti autenticazione](docs/AUTH_RATE_LIMITS.md).
+
+Il login usa gli account persistiti e BCrypt; le richieste protette usano JWT Bearer. È esclusa la sola autoconfigurazione dell'utente predefinito in memoria e sono disabilitati esplicitamente HTTP Basic e form login. La protezione degli endpoint resta attiva. Motivazione e verifica in [Autenticazione JWT](docs/AUTHENTICATION.md).
+
+Open Session in View è disabilitato: i servizi caricano le relazioni e costruiscono i DTO all'interno di transazioni esplicite. Registro eventi e ordine dei turni del combattimento sono copiati in liste normali prima della risposta JSON. Scelte e prove senza una transazione di test esterna in [Sessioni database e transazioni](docs/PERSISTENCE_BOUNDARIES.md).
+
+Il readiness endpoint Actuator verifica disponibilità dell'app e del database: restituisce solo `status`, con HTTP 200 se pronto e 503 negli stati non pronti. Gli altri percorsi di gestione sono bloccati. Configurazione condivisa con i test in `src/main/resources/management.yaml`; prova locale e percorso da impostare su Railway in [Healthcheck](docs/HEALTHCHECK.md).
+
+CORS consente origini esatte: in `dev`/`preprod` anche localhost e 127.0.0.1 sulla porta 3000, in `prod` solo l'origine HTTPS configurata. Configurazioni errate o eccezioni locali in produzione impediscono l'avvio. La stessa origine normalizzata è usata per le email di recupero password. Regole, prova preflight e test in [CORS per ambiente](docs/CORS.md).
+
+Gli errori API mantengono il JSON `message`: quelli previsti hanno stati espliciti e testi utili; gli imprevisti restituiscono 500 generico, con la causa nei soli log. Il formato copre anche Spring MVC e gli errori della catena di sicurezza; indisponibilità del database non vengono confuse con credenziali errate. Contratto, stati e collaudo in [Gestione errori](docs/ERROR_HANDLING.md).
 
 ## Configurazione e avvio
 
 Servono JDK 17 o compatibile, PostgreSQL e un database creato per il progetto. Le immagini richiedono Cloudinary; le email richiedono SMTP.
 
-`src/main/resources/application.yaml` legge queste proprietà dalle variabili d'ambiente o dal file locale `src/main/resources/env.properties`, importato opzionalmente. Mantenere le credenziali fuori dai commit.
+`src/main/resources/application.yaml` legge le proprietà dalle variabili d'ambiente. Il profilo locale `dev` (default) importa opzionalmente `./src/main/resources/env.properties` come file esterno, relativo alla cartella di avvio: il file non viene più incluso nelle risorse Maven o nel JAR. `prod` usa esclusivamente l'ambiente. Mantenere le credenziali fuori dai commit.
 
 | Proprietà | Utilizzo |
 | --- | --- |
@@ -37,7 +49,7 @@ Servono JDK 17 o compatibile, PostgreSQL e un database creato per il progetto. L
 | `DB_USERNAME`, `DB_PASSWORD` | Credenziali PostgreSQL |
 | `JWT_SECRET` | Segreto di firma HMAC, almeno 32 byte |
 | `JWT_EXPIRATION` | Durata token in millisecondi |
-| `APP_FRONTEND_BASE_URL` | Origine frontend, in locale `http://localhost:3000`; usata per CORS e reset password |
+| `APP_FRONTEND_BASE_URL` | Singola origine frontend, in locale `http://localhost:3000`; in `prod` HTTPS non loopback, senza percorsi/query/wildcard; usata per CORS e reset password |
 | `MAIL_HOST`, `MAIL_PORT` | Server SMTP |
 | `MAIL_USERNAME`, `MAIL_PASSWORD` | Credenziali SMTP |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Configurazione Cloudinary |
@@ -50,7 +62,7 @@ Da questa cartella, su Windows:
 
 Su macOS/Linux usare `./mvnw spring-boot:run`. L'API locale ascolta sulla porta **8080**. Il frontend usa `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 
-Lo schema di sviluppo usa `spring.jpa.hibernate.ddl-auto: update`. Per una partenza pulita, configurare in `DB_URL` un database PostgreSQL vuoto: al primo avvio Hibernate crea lo schema dalle entità. L’avvio non svuota il database e non va usato come migrazione automatica di vecchi dati di collaudo. Le migrazioni versionate sono ancora da introdurre.
+Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica `src/main/resources/db/migration/V1__initial_schema.sql` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
 
 ## API principali
 
@@ -131,7 +143,7 @@ Gli endpoint immagini accettano `multipart/form-data`, campo `file`: JPG, PNG o 
 
 Il proprietario può cambiare l'immagine di un NPC già usato in combattimento; la modifica delle statistiche resta bloccata. Gli NPC usati in incontri o combattimenti non possono essere eliminati.
 
-Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. I divieti Spring Security restituiscono 403; i conflitti di integrita dati restituiscono 409 con un messaggio pubblico, senza SQL o dettagli del database. Le altre `RuntimeException` sono restituite come 400 con messaggio di ripiego se assente. La classificazione completa degli errori resta da uniformare.
+Gli errori applicativi previsti usano stati espliciti e messaggi controllati; i motivi 5xx non vengono mai restituiti. Spring MVC mantiene stati come 400/404/405/413/415, con il solo messaggio sicuro. La sicurezza restituisce JSON 401 per accesso mancante o sessione non valida e 403 per divieti; conflitti di integrità/concorrenza hanno 409 generico. Gli imprevisti hanno 500, i guasti di servizio 502/503, con dettagli nei soli log. Il fallback del server non include messaggi tecnici, eccezioni o stack trace. Contratto completo in [Gestione errori](docs/ERROR_HANDLING.md).
 
 ## Verifiche
 
@@ -143,7 +155,7 @@ Le `ResponseStatusException` conservano il codice HTTP e un messaggio JSON. I di
 .\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-La suite completa comprende 101 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. Il profilo di test usa H2 in memoria; la migrazione PostgreSQL e i servizi esterni richiedono il collaudo dell'ambiente reale.
+La suite completa comprende 187 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1 e V2, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; la migrazione PostgreSQL e i servizi esterni richiedono il collaudo dell'ambiente reale.
 
 Il frontend include test browser Playwright con API simulate per i flussi Player/Master, combattimenti, immagini, profilo, navigazione, tour ed editor (vedere il relativo README). Non sostituiscono i test di integrazione o la prova completa con i servizi reali.
 
@@ -151,7 +163,7 @@ Il frontend include test browser Playwright con API simulate per i flussi Player
 
 Il codice si trova in `src/main/java/com/giulia/dndacademy/`, suddiviso in `controllers`, `service`, `repository`, `model`, `dto`, `security`, `exceptions` e `config`. Configurazione in `src/main/resources/`, test in `src/test/java/`.
 
-Prossimi sviluppi: gestione automatizzata e versionata delle migrazioni, profili per ambiente, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate e preparazione al deploy.
+Flyway, V1/V2 e i profili `dev`/`preprod`/`prod` sono introdotti; resta il collaudo su PostgreSQL reale. Prossimi sviluppi: completare la configurazione di rilascio, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate.
 
 Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
 

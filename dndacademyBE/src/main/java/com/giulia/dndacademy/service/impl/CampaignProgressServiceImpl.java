@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.CampaignProgressDTO;
 import com.giulia.dndacademy.model.Campaign;
 import com.giulia.dndacademy.model.CampaignProgress;
@@ -89,19 +91,19 @@ public class CampaignProgressServiceImpl implements CampaignProgressService {
         User user = userService.getByUsername(username);
 
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         CampaignProgress progress = campaignProgressRepository
                 .findByUserIdAndCampaignId(user.getId(), campaignId)
                 .orElseGet(() -> createProgressForCampaign(user, campaign));
 
         if (!progress.isUnlocked()) {
-            throw new RuntimeException("Questa campagna non è ancora sbloccata");
+            throw ApiException.forbidden("Questa campagna non è ancora sbloccata");
         }
 
         long chapterCount = campaignChapterRepository.countByCampaignId(campaignId);
         if (chapterCount == 0) {
-            throw new RuntimeException("La campagna non ha capitoli completabili");
+            throw ApiException.conflict("La campagna non ha capitoli completabili");
         }
 
         boolean allChaptersCompleted = completedChapterCount(progress) == chapterCount;

@@ -1,5 +1,7 @@
 package com.giulia.dndacademy.service.impl;
 
+import com.giulia.dndacademy.exceptions.ApiException;
+
 import com.giulia.dndacademy.dto.CampaignChapterDTO;
 import com.giulia.dndacademy.dto.CreateCampaignChapterRequest;
 import com.giulia.dndacademy.model.*;
@@ -8,6 +10,7 @@ import com.giulia.dndacademy.service.CampaignChapterService;
 import com.giulia.dndacademy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -26,13 +29,14 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
     private final EncounterRepository encounterRepository;
 
     @Override
+    @Transactional
     public CampaignChapterDTO createChapter(
             Long campaignId,
             CreateCampaignChapterRequest request,
             String username
     ) {
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         checkCampaignMaster(campaign, username);
 
@@ -42,7 +46,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
                 campaignId,
                 request.getOrderIndex()
         )) {
-            throw new RuntimeException("Esiste già un capitolo con questo ordine nella campagna");
+            throw ApiException.conflict("Esiste già un capitolo con questo ordine nella campagna");
         }
 
         Lesson lesson = getLessonOrNull(request.getLessonId());
@@ -67,12 +71,13 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CampaignChapterDTO> getChaptersByCampaign(
             Long campaignId,
             String username
     ) {
         Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new RuntimeException("Campagna non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Campagna non trovata"));
 
         checkCampaignAccess(campaign, username);
 
@@ -83,13 +88,14 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
     }
 
     @Override
+    @Transactional
     public CampaignChapterDTO updateChapter(
             Long chapterId,
             CreateCampaignChapterRequest request,
             String username
     ) {
         CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
-                .orElseThrow(() -> new RuntimeException("Capitolo non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Capitolo non trovato"));
 
         checkCampaignMaster(chapter.getCampaign(), username);
 
@@ -104,7 +110,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
                 );
 
         if (orderAlreadyUsed) {
-            throw new RuntimeException("Esiste già un altro capitolo con questo ordine nella campagna");
+            throw ApiException.conflict("Esiste già un altro capitolo con questo ordine nella campagna");
         }
 
         Lesson lesson = getLessonOrNull(request.getLessonId());
@@ -126,9 +132,10 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
     }
 
     @Override
+    @Transactional
     public void deleteChapter(Long chapterId, String username) {
         CampaignChapter chapter = campaignChapterRepository.findById(chapterId)
-                .orElseThrow(() -> new RuntimeException("Capitolo non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Capitolo non trovato"));
 
         checkCampaignMaster(chapter.getCampaign(), username);
 
@@ -142,15 +149,15 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
 
     private void validateRequest(CreateCampaignChapterRequest request) {
         if (request.getTitle() == null || request.getTitle().isBlank()) {
-            throw new RuntimeException("Il titolo del capitolo è obbligatorio");
+            throw ApiException.badRequest("Il titolo del capitolo è obbligatorio");
         }
 
         if (request.getStoryText() == null || request.getStoryText().isBlank()) {
-            throw new RuntimeException("Il testo narrativo è obbligatorio");
+            throw ApiException.badRequest("Il testo narrativo è obbligatorio");
         }
 
         if (request.getOrderIndex() < 1) {
-            throw new RuntimeException("L'ordine del capitolo deve essere almeno 1");
+            throw ApiException.badRequest("L'ordine del capitolo deve essere almeno 1");
         }
     }
 
@@ -160,7 +167,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
         boolean isMaster = campaign.getMaster().getId().equals(user.getId());
 
         if (!isMaster) {
-            throw new RuntimeException("Puoi gestire solo capitoli delle tue campagne");
+            throw ApiException.forbidden("Puoi gestire solo capitoli delle tue campagne");
         }
     }
 
@@ -176,7 +183,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
                 .anyMatch(player -> player.getId().equals(user.getId()));
 
         if (!isMaster && !isPlayer) {
-            throw new RuntimeException("Non fai parte di questa campagna");
+            throw ApiException.forbidden("Non fai parte di questa campagna");
         }
     }
 
@@ -186,7 +193,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
         }
 
         return lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new RuntimeException("Lezione non trovata"));
+                .orElseThrow(() -> ApiException.notFound("Lezione non trovata"));
     }
 
     private Quiz getQuizOrNull(Long quizId) {
@@ -195,7 +202,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
         }
 
         return quizRepository.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Quiz non trovato"));
     }
 
     private Badge getBadgeOrNull(Long badgeId) {
@@ -204,7 +211,7 @@ public class CampaignChapterServiceImpl implements CampaignChapterService {
         }
 
         return badgeRepository.findById(badgeId)
-                .orElseThrow(() -> new RuntimeException("Badge non trovato"));
+                .orElseThrow(() -> ApiException.notFound("Badge non trovato"));
     }
 
     private String trimOrNull(String value) {
