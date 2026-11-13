@@ -28,6 +28,6 @@ La [configurazione CORS per ambiente](CORS.md) gestisce i preflight prima del fi
 
 Gli errori della catena di sicurezza hanno risposte JSON: 401 per accesso mancante o sessione non valida e 403 per accesso negato. I guasti interni durante la verifica JWT hanno 503/500 generici con dettagli nei soli log. Il login restituisce lo stesso messaggio per username assente e password errata. Vedere [Gestione errori](ERROR_HANDLING.md).
 
-La [limitazione delle richieste pubbliche](AUTH_RATE_LIMITS.md) usa ora contatori condivisi nel database, con V2, quote per indirizzo e identità e risposta 429 con Retry-After. Readiness, preflight CORS e risposta della rotta inesistente sono stati confermati localmente dall'utente. Restano verifica locale dei limiti e preparazione di Docker, email e servizi cloud; i test non certificano il deploy.
+La [limitazione delle richieste pubbliche](AUTH_RATE_LIMITS.md) usa contatori condivisi nel database, con V2, quote per indirizzo e identità e risposta 429 con Retry-After. Readiness, preflight CORS, rotta inesistente e limite al ventunesimo login sono confermati localmente; anche avvio e ricreazione del container precedente sono stati collaudati. La nuova [integrazione Gmail API](GMAIL_API.md) usa V3 per la coda e mantiene uniforme la risposta HTTP del recupero password, con invio dopo il commit. Consenso Google e consegna reale restano da verificare; i test non certificano il deploy.
 
 Riferimento: [Spring Boot 3.5, configurazione della sicurezza](https://docs.spring.io/spring-boot/3.5/reference/web/spring-security.html).

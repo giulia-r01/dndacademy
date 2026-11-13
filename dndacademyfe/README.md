@@ -36,7 +36,7 @@ npm run build
 npm run start
 ```
 
-`NEXT_PUBLIC_API_URL` deve essere disponibile durante la build. Il server di sviluppo e quello di produzione usano normalmente la porta 3000: avviarne uno alla volta su quella porta. Database, SMTP e Cloudinary sono configurati nel backend.
+`NEXT_PUBLIC_API_URL` deve essere disponibile durante la build. Il server di sviluppo e quello di produzione usano normalmente la porta 3000: avviarne uno alla volta su quella porta. Database, servizio email e Cloudinary sono configurati nel backend. Le email di benvenuto e recupero password usano una coda persistente e Gmail API HTTPS in produzione; configurazione del mittente e consenso OAuth restano esclusivamente nel backend.
 
 ## Navigazione e ruoli
 
@@ -192,7 +192,7 @@ Il comando comprende tutti i file della suite:
 | `tests/ui/navigation-flow.test.mjs` | Percorsi Player/Master, contesto, vecchie rotte, ripresa, menu account e livelli |
 | `tests/ui/tour.test.mjs` | Percorsi guidati Player/Master, azioni obbligatorie, validazione, nessuna scrittura API, replay, focus, mobile e ritorno all'URL iniziale |
 
-Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSER_PATH` (eseguibile Chromium, Chrome o Edge) e `UI_SCREENSHOT_DIR` (cartella per gli screenshot). Le API e i servizi esterni sono simulati: questi test non modificano il database applicativo o Cloudinary. Non sostituiscono il collaudo con backend, PostgreSQL, SMTP e Cloudinary reali.
+Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSER_PATH` (eseguibile Chromium, Chrome o Edge) e `UI_SCREENSHOT_DIR` (cartella per gli screenshot). Le API e i servizi esterni sono simulati: questi test non modificano il database applicativo o Cloudinary. Non sostituiscono il collaudo con backend, PostgreSQL, Gmail API e Cloudinary reali.
 
 ## Collaudo preproduzione e sviluppi previsti
 
@@ -207,3 +207,5 @@ Prima del rilascio verificare con account Player e Master reali il percorso comp
 Il tour di primo avvio è implementato interamente nel frontend. Sono introdotti Flyway, la migrazione iniziale e i profili backend: la [procedura di collaudo del nuovo database](../dndacademyBE/docs/DATABASE_MIGRATIONS.md) mantiene separato PostgreSQL di preproduzione dal vecchio ambiente locale. Restano il collaudo PostgreSQL, le verifiche dei servizi reali e il completamento della configurazione di rilascio. Non è presente sincronizzazione multiplayer in tempo reale; gli HP dello scontro sono separati da quelli permanenti del personaggio.
 
 Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.
+
+La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Revisione corrente: lint e build superati, 122 test browser superati con API simulate; backend 212 test superati. Nessun deploy eseguito.

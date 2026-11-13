@@ -27,6 +27,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserLessonProgressRepository userLessonProgressRepository;
     private final UserQuizResultRepository userQuizResultRepository;
+    private final com.giulia.dndacademy.service.EmailService emailService;
 
     @Override
     @Transactional
@@ -52,7 +53,9 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User register(User user) {
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        emailService.queueWelcomeEmail(saved);
+        return saved;
     }
 
     @Override

@@ -27,6 +27,14 @@ Successivamente l'utente ha avviato il container con profilo `preprod`, variabil
 
 L'utente ha poi arrestato e ricreato il container con lo stesso comando. Il secondo log, alle 10:18 UTC, conferma lo stesso database e schema 2 aggiornato senza nuove migrazioni; il readiness torna `UP`. Avvio, connessione, ricreazione del container e raggiungibilità HTTP sono verificati localmente. Restano la prova di conservazione di contenuti/account/quote specifici, i percorsi autenticati, email, upload e collaudo Railway/Vercel. Non è stato ancora collaudato il container con profilo `prod` sui servizi cloud.
 
+## Aggiornamento Gmail API e V3
+
+La successiva build con Gmail API e coda email è riuscita con **211 test Java 17, zero fallimenti/errori**. La nuova manifest list locale è `sha256:aa81bb0128180fa1c67ad14db32a710bb2df22d1b8caa288877beb1f29187e98`; il tag `dndacademy-backend:preprod` indica ora questa immagine. Il container già in esecuzione non viene sostituito dalla build e usa ancora la versione precedente fino alla sua ricreazione.
+
+La nuova immagine contiene V3 per la coda. Per attivare Gmail API nel collaudo aggiungere `MAIL_PROVIDER=gmail-api`, `MAIL_FROM`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` al file locale, dopo aver completato il consenso del mittente. In `prod` Gmail API è imposta e SMTP non è accettato. La password SMTP non è necessaria al trasporto API. In `preprod`, senza la selezione esplicita, resta disponibile SMTP per il collaudo locale esistente. Variabili, procedura Google e limiti in [Gmail API](GMAIL_API.md).
+
+Gli avvii PostgreSQL descritti nella prima sezione riguardano la versione V2 precedente. Successivamente l'utente ha ricreato il container con Gmail API: V3 applicata sul database locale, avvio e readiness UP sulla porta 8081 confermati. Sono riusciti registrazione con benvenuto ricevuto e percorso completo di recupero password dal frontend collegato alla porta 8081, fino al login con nuova password. La build non ha inviato email: queste prove reali sono state eseguite dall'utente. Restano configurazione OAuth finale (attualmente Testing) e collaudo Railway/Vercel. Nessun reset del database è stato necessario.
+
 ## Primo passo: costruzione locale
 
 Docker Desktop deve essere avviato con motore Linux. L'utente ha confermato Client/Server funzionanti e `docker run --rm hello-world` riuscito. In PowerShell entrare nella cartella backend:
@@ -53,7 +61,7 @@ Questa parte richiede la configurazione dei servizi: eseguirla dopo aver control
 
 Variabili richieste attualmente: `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `JWT_EXPIRATION`, `APP_FRONTEND_BASE_URL`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`. Il segreto JWT deve essere casuale e adeguato, non la chiave fittizia dei test. Per il frontend locale usare `APP_FRONTEND_BASE_URL=http://localhost:3000`.
 
-Il file `env.properties` resta fuori dal container. I valori necessari vanno forniti a runtime: non copiarlo nell'immagine né nel Dockerfile. L'attuale servizio email SMTP è ancora da completare per la produzione.
+Il file `env.properties` resta fuori dal container. I valori necessari vanno forniti a runtime: non copiarlo nell'immagine né nel Dockerfile. Per il nuovo trasporto Gmail API usare le variabili aggiuntive descritte sopra; SMTP resta un trasporto locale.
 
 Per collegarsi allo **stesso database di preproduzione locale** su PostgreSQL Windows, utilizzare `host.docker.internal`, non `localhost` (che dentro il container indica il container stesso). Pubblicare il backend su 8081, così non collide con quello eventualmente aperto in Maven su 8080:
 
@@ -75,7 +83,7 @@ In un secondo terminale:
 Invoke-RestMethod 'http://localhost:8081/actuator/health/readiness'
 ```
 
-Deve risultare `UP`. Verificare anche Flyway a versione 2, nessuna migrazione riapplicata, arresto/riavvio senza perdita di dati e login. Il browser frontend deve essere compilato/avviato con l'URL backend appropriato prima del collaudo da interfaccia. Il solo readiness non prova email, upload o l'intero percorso didattico.
+Deve risultare `UP`. Con la nuova immagine verificare Flyway a versione 3, nessuna migrazione riapplicata, arresto/riavvio senza perdita di dati e login. Il browser frontend deve essere compilato/avviato con l'URL backend appropriato prima del collaudo da interfaccia. Il solo readiness non prova email, upload o l'intero percorso didattico.
 
 ## Railway
 

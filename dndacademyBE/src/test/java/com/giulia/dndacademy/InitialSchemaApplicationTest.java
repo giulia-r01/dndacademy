@@ -11,7 +11,6 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Verifies Boot runs V1 before Hibernate validation and the badge initializer. */
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:initial_schema_boot;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
         "spring.datasource.username=sa", "spring.datasource.password=",
@@ -28,7 +27,7 @@ class InitialSchemaApplicationTest {
     @Test
     void applicationStartsWithMigratedSchemaAndInitializesSystemBadges() {
         assertEquals("validate", environment.getProperty("spring.jpa.hibernate.ddl-auto"));
-        assertEquals("2", flyway.info().current().getVersion().getVersion());
+        assertEquals("3", flyway.info().current().getVersion().getVersion());
         for (SystemBadge badge : SystemBadge.values()) {
             assertTrue(badges.findBySystemCode(badge).isPresent());
         }

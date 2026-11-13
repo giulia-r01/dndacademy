@@ -1,8 +1,11 @@
 package com.giulia.dndacademy.service;
 
+import com.giulia.dndacademy.model.PasswordResetToken;
+import com.giulia.dndacademy.model.User;
+
 public interface EmailService {
 
-    void sendPasswordResetEmail(String to, String username, String resetLink);
+    void queuePasswordResetEmail(User user, PasswordResetToken token);
 
-    void sendWelcomeEmail(String to, String username);
+    void queueWelcomeEmail(User user);
 }

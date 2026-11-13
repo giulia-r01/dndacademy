@@ -19,7 +19,6 @@ import com.giulia.dndacademy.model.enumerations.LearningLevel;
 import com.giulia.dndacademy.dto.ForgotPasswordRequest;
 import com.giulia.dndacademy.dto.ResetPasswordRequest;
 import com.giulia.dndacademy.service.PasswordResetService;
-import com.giulia.dndacademy.service.EmailService;
 
 
 @RestController
@@ -40,9 +39,6 @@ public class AuthController {
 
     @Autowired
     private PasswordResetService passwordResetService;
-
-    @Autowired
-    private EmailService emailService;
 
     @Autowired
     private com.giulia.dndacademy.security.ratelimit.AuthRateLimiter rateLimiter;
@@ -67,16 +63,7 @@ public class AuthController {
                 .learningLevel(LearningLevel.BEGINNER)
                 .build();
 
-        User savedUser = userService.register(user);
-
-        try {
-            emailService.sendWelcomeEmail(
-                    savedUser.getEmail(),
-                    savedUser.getUsername()
-            );
-        } catch (RuntimeException e) {
-            org.slf4j.LoggerFactory.getLogger(AuthController.class).warn("Invio email di benvenuto non riuscito", e);
-        }
+        userService.register(user);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

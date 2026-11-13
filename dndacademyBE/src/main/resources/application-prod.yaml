@@ -1,5 +1,3 @@
-# Railway: all secrets are environment variables, no local file is imported.
-# Schema changes belong exclusively to versioned migrations.
 spring:
   flyway:
     enabled: true
@@ -9,7 +7,8 @@ spring:
     show-sql: false
 
 app:
-  # Enable only behind Railway HTTP ingress; no direct/TCP public backend access.
+  mail:
+    provider: gmail-api
   client-ip-source: ${APP_CLIENT_IP_SOURCE}
   cors:
     allow-local-origins: false

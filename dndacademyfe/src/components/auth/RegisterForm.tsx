@@ -115,6 +115,12 @@ export default function RegisterForm() {
         </p>
       )}
 
+      <p className="text-sm leading-6 text-[var(--text-muted)]">
+        Prima di creare l&apos;account, leggi l&apos;{" "}
+        <Link href="/privacy" className="text-[var(--accent-soft)] underline">informativa privacy</Link>
+        {" "}sul trattamento dei tuoi dati.
+      </p>
+
       <AppButton type="submit" fullWidth disabled={isLoading}>
         {isLoading ? "Creazione account..." : "Crea account"}
       </AppButton>

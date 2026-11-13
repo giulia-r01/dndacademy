@@ -145,6 +145,22 @@ class ApiErrorsIntegrationTest {
         safe(get("/api/lessons/96").with(user("reader")).accept(MediaType.TEXT_HTML), 500);
     }
 
+    @Test
+    void defaultValidationMessagesStayItalianWithEnglishBrowserLanguage() throws Exception {
+        mvc.perform(post("/api/lessons").with(user("master").roles("MASTER"))
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"\",\"content\":\"Contenuto\",\"orderIndex\":1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Il campo è obbligatorio."));
+        mvc.perform(post("/api/campaigns").with(user("master").roles("MASTER"))
+                        .header(HttpHeaders.ACCEPT_LANGUAGE, "en-US")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("name", "a".repeat(256), "difficulty", "BEGINNER"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La lunghezza deve essere compresa tra 0 e 255."));
+    }
+
     private JsonNode safe(MockHttpServletRequestBuilder request, int status) throws Exception {
         String content = mvc.perform(request).andExpect(status().is(status))
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);

@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 class UserRoleTest {
     UserRepository users = mock(UserRepository.class);
     UserServiceImpl service = new UserServiceImpl(users,
-            mock(UserLessonProgressRepository.class), mock(UserQuizResultRepository.class));
+            mock(UserLessonProgressRepository.class), mock(UserQuizResultRepository.class), mock(com.giulia.dndacademy.service.EmailService.class));
     User actor = User.builder().id(1L).username("master").role(Role.MASTER).build();
     User target = User.builder().id(2L).username("player").role(Role.PLAYER).build();
 

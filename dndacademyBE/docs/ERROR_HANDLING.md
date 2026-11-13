@@ -26,7 +26,7 @@ Lo stato non viene dedotto dal testo dell'eccezione durante la richiesta: è sce
 | 415 | Tipo di contenuto HTTP non supportato |
 | 500 | Errore imprevisto o errore di preparazione della risposta |
 | 502 | Problema del servizio esterno di immagini |
-| 503 | Database/connessione temporaneamente indisponibile, timeout o servizio email non disponibile |
+| 503 | Database/connessione temporaneamente indisponibile o timeout; gli invii email avvengono ora nel worker dopo il commit |
 
 I 4xx applicativi mantengono il messaggio utile. I 5xx ricevono sempre un testo generico anche se una `ResponseStatusException` contiene un motivo tecnico. Conflitti SQL e di concorrenza hanno messaggi generici: non mostrano i nomi dei vincoli. Il fallimento del login ha la stessa risposta per username assente e password errata.
 
@@ -42,9 +42,9 @@ Gli errori imprevisti, le indisponibilità e i conflitti database sono registrat
 
 ## Servizi esterni
 
-Gli errori di invio email e upload immagini conservano la causa per i log e sono convertiti in risposte di servizio generiche. Il mancato invio della sola email di benvenuto continua a non annullare la registrazione: l'account resta creato e il problema è registrato sul server. Non vengono modificati il provider email, le credenziali o le regole di recupero password in questa fase.
+Gli errori di upload immagini conservano la causa per i log e sono convertiti in risposte di servizio generiche. Le email sono ora gestite dalla [coda persistente con Gmail API](GMAIL_API.md): account/benvenuto e token reset/task vengono salvati atomicamente, e il provider viene contattato dopo il commit. Un errore Gmail viene classificato con una categoria sicura, senza riportare corpi HTTP o segreti nei log; non cambia la risposta già fornita alla richiesta utente. La registrazione può invece fallire se non è possibile salvare account e richiesta email nel database.
 
-Restano nel lavoro email il provider compatibile con Railway, i timeout, la verifica di consegna e la gestione omogenea dell'esito del recupero password in caso di guasto del provider. Questa correzione non equivale a un collaudo SMTP reale o a una revisione completa delle protezioni antiabuso.
+Il recupero mantiene HTTP 200 senza corpo sia per account presente sia per account assente; un guasto del provider nel worker non ne modifica l'esito. Restano validazione, quote e possibili guasti del database. Timeout, rinnovo OAuth, ritenti e risposte uniformi sono coperti dai test isolati; consenso Google definitivo e consegna cloud restano da collaudare; benvenuto e recupero completi sono stati confermati localmente. La risposta 200 conferma la gestione della richiesta, non l'arrivo del messaggio.
 
 ## Verifiche
 
@@ -63,6 +63,10 @@ Fermare il backend e riavviare nello stesso terminale con `PREPROD_DB_URL` ancor
 .\mvnw.cmd '-Dspring-boot.run.profiles=preprod' spring-boot:run
 ```
 
-Aprire `http://localhost:8080/auth/not-a-real-route`. Sono attesi HTTP 404 e `{"message":"Risorsa non trovata."}`, senza login, stack trace o pagina di errore tecnica. Questa prova non crea dati. Non serve modificare V1 né svuotare il database. La verifica locale resta da confermare dall'utente.
+Aprire `http://localhost:8080/auth/not-a-real-route`. Sono attesi HTTP 404 e `{"message":"Risorsa non trovata."}`, senza login, stack trace o pagina di errore tecnica. Questa prova non crea dati. Non serve modificare V1 né svuotare il database. La risposta JSON è stata confermata localmente dall'utente; non è una verifica della consegna email.
 
 Riferimento: [Spring Framework 6.2, ResponseEntityExceptionHandler](https://docs.spring.io/spring-framework/docs/6.2.x/javadoc-api/org/springframework/web/servlet/mvc/method/annotation/ResponseEntityExceptionHandler.html).
+
+## Lingua delle validazioni
+
+La risorsa `ValidationMessages.properties` definisce in italiano i messaggi standard dei vincoli senza testo esplicito. I messaggi italiani già specificati sui DTO restano validi. La regressione HTTP in `ApiErrorsIntegrationTest` verifica campo obbligatorio e lunghezza anche con `Accept-Language: en-US`. Tradotte inoltre le diagnostiche applicative della nuova integrazione mail; nomi di proprietà e codici tecnici restano invariati. Revisione completa: 212 test backend superati.

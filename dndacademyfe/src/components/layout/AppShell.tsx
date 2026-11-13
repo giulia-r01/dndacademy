@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation"
 import Breadcrumbs from "@/components/layout/Breadcrumbs"
 import { defaultBreadcrumbs, type Breadcrumb } from "@/lib/navigation"
 import { useTour } from "@/hooks/useTour"
+import PublicFooter from "@/components/common/PublicFooter"
 
 type AppShellProps = {
   children: ReactNode
@@ -91,7 +92,7 @@ export default function AppShell({ children, breadcrumbs, activeHref }: AppShell
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onMenuClick={openSidebar} user={demoPage ? { ...user, ...session.demo.profile, avatarUrl: null } : user} onLogout={handleLogout} />
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8" style={demoPage ? { paddingBottom: "calc(var(--tour-coach-height, 16rem) + 4rem)" } : undefined}><Breadcrumbs items={breadcrumbs ?? defaultBreadcrumbs(pathname)} />{children}</main>
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8" style={demoPage ? { paddingBottom: "calc(var(--tour-coach-height, 16rem) + 4rem)" } : undefined}><Breadcrumbs items={breadcrumbs ?? defaultBreadcrumbs(pathname)} />{children}<PublicFooter /></main>
         </div>
       </div>
     </div>

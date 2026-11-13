@@ -11,7 +11,6 @@ import com.giulia.dndacademy.repository.UserRepository;
 import com.giulia.dndacademy.service.EmailService;
 import com.giulia.dndacademy.service.PasswordResetService;
 import lombok.RequiredArgsConstructor;
-import com.giulia.dndacademy.config.FrontendOrigin;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,8 +27,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     private final jakarta.persistence.EntityManager entityManager;
-
-    private final FrontendOrigin frontendOrigin;
 
     @Override
     @Transactional
@@ -49,18 +46,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                         .build());
 
         resetToken.setToken(token);
-        resetToken.setExpirationDate(LocalDateTime.now().plusMinutes(30));
+        resetToken.setExpirationDate(LocalDateTime.now(java.time.Clock.systemUTC()).plusMinutes(30));
         resetToken.setUsed(false);
 
         tokenRepository.save(resetToken);
 
-        String resetLink = frontendOrigin.baseUrl() + "/reset-password?token=" + token;
-
-        emailService.sendPasswordResetEmail(
-                user.getEmail(),
-                user.getUsername(),
-                resetLink
-        );
+        emailService.queuePasswordResetEmail(user, resetToken);
     }
 
     @Override
@@ -74,14 +65,13 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw ApiException.badRequest("Token già utilizzato");
         }
 
-        if (resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
+        if (!resetToken.getExpirationDate().isAfter(LocalDateTime.now(java.time.Clock.systemUTC()))) {
             throw ApiException.badRequest("Token scaduto");
         }
 
         User user = userRepository.findForUpdateById(resetToken.getUser().getId()).orElseThrow();
-        // Re-read after taking the user lock: a password/email change may have invalidated the token.
         entityManager.refresh(resetToken);
-        if (resetToken.isUsed() || resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
+        if (resetToken.isUsed() || !resetToken.getExpirationDate().isAfter(LocalDateTime.now(java.time.Clock.systemUTC()))) {
             throw ApiException.badRequest("Token non valido o scaduto");
         }
 

@@ -1,4 +1,5 @@
 import AppButton from "@/components/common/AppButton"
+import PublicFooter from "@/components/common/PublicFooter"
 
 export default function HomePage() {
   return (
@@ -35,6 +36,7 @@ export default function HomePage() {
           </AppButton>
         </div>
       </section>
+      <PublicFooter />
     </main>
   )
 }

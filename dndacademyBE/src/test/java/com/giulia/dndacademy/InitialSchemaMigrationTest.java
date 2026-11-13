@@ -23,8 +23,6 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Exercises the real V1 script on isolated H2, never TEST_DATABASE_URL or DB_URL.
- * PostgreSQL 17 rehearsal is a separate, explicit preproduction step. */
 class InitialSchemaMigrationTest {
     @TempDir Path temporaryMigrations;
 
@@ -49,7 +47,7 @@ class InitialSchemaMigrationTest {
             assertEquals(1, original.migrate().migrationsExecuted);
             statement.executeUpdate("insert into users (username,email,password,token_version,role) "
                     + "values ('before_v2','before_v2@example.test','hash',0,'PLAYER')");
-            assertEquals(1, flyway(url).migrate().migrationsExecuted);
+            assertEquals(2, flyway(url).migrate().migrationsExecuted);
             validateAllEntityMappings(url);
             try (var rows = statement.executeQuery("select username from users")) {
                 assertTrue(rows.next());
@@ -63,11 +61,27 @@ class InitialSchemaMigrationTest {
     }
 
     @Test
+    void upgradesExistingV2AndRetainsUsersAndRateLimitCounters() throws Exception {
+        String url = newDatabase();
+        try (Connection connection = DriverManager.getConnection(url, "sa", ""); var statement = connection.createStatement()) {
+            var previous = Flyway.configure().dataSource(url, "sa", "").defaultSchema("public")
+                    .locations("classpath:db/migration").target("2").cleanDisabled(true).load();
+            assertEquals(2, previous.migrate().migrationsExecuted);
+            statement.execute("insert into users (username,email,password,token_version,role) values ('before_v3','before_v3@example.test','hash',0,'PLAYER')");
+            statement.execute("insert into auth_rate_limit_buckets (id,attempts,expires_at) values ('" + "a".repeat(64) + "', 3, CURRENT_TIMESTAMP)");
+            assertEquals(1, flyway(url).migrate().migrationsExecuted);
+            validateAllEntityMappings(url);
+            try (var rows = statement.executeQuery("select attempts from auth_rate_limit_buckets")) { assertTrue(rows.next()); assertEquals(3, rows.getInt(1)); }
+            try (var rows = statement.executeQuery("select username from users")) { assertTrue(rows.next()); assertEquals("before_v3", rows.getString(1)); }
+            try (var rows = statement.executeQuery("select count(*) from email_outbox")) { assertTrue(rows.next()); assertEquals(0, rows.getInt(1)); }
+        }
+    }
+
+    @Test
     void freshInstallMatchesAllEntitiesAndSecondStartupKeepsData() throws Exception {
         String url = newDatabase();
-        // Keep the in-memory database alive only for this test's duration.
         try (Connection connection = DriverManager.getConnection(url, "sa", "")) {
-            assertEquals(2, flyway(url).migrate().migrationsExecuted);
+            assertEquals(3, flyway(url).migrate().migrationsExecuted);
             validateAllEntityMappings(url);
             try (var statement = connection.createStatement()) {
                 statement.executeUpdate("insert into users (username,email,password,token_version,role,learning_level) "
@@ -77,7 +91,7 @@ class InitialSchemaMigrationTest {
             }
             Flyway restarted = flyway(url);
             assertEquals(0, restarted.migrate().migrationsExecuted);
-            assertEquals("2", restarted.info().current().getVersion().getVersion());
+            assertEquals("3", restarted.info().current().getVersion().getVersion());
             try (var statement = connection.createStatement();
                  var rows = statement.executeQuery("select username from users")) {
                 assertTrue(rows.next());

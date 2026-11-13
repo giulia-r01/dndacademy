@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import AppCard from "@/components/common/AppCard"
+import PublicFooter from "@/components/common/PublicFooter"
 
 type AuthLayoutProps = {
   title: string
@@ -45,6 +46,7 @@ export default function AuthLayout({
           {children}
         </AppCard>
       </section>
+      <PublicFooter />
     </main>
   )
 }

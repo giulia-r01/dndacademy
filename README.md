@@ -11,7 +11,7 @@ Backend Spring Boot e frontend Next.js sono integrati. Sono disponibili Area Pla
 | [dndacademyBE](dndacademyBE/README.md) | API, sicurezza, regole e persistenza | Java 17, Spring Boot 3.5.11, JPA, PostgreSQL, Maven |
 | [dndacademyfe](dndacademyfe/README.md) | Interfaccia Player e Master | Next.js 16.4.3, React 19.2.4, TypeScript, Tailwind CSS 4 |
 
-JWT e BCrypt gestiscono l'autenticazione. Cloudinary ospita avatar e immagini di personaggi e PNG; SMTP supporta le email di benvenuto e recupero password.
+JWT e BCrypt gestiscono l'autenticazione. Cloudinary ospita avatar e immagini di personaggi e PNG; Gmail API via HTTPS e una coda persistente gestiscono benvenuto e recupero password in produzione; SMTP resta disponibile in locale.
 
 ## Percorso Player
 
@@ -69,7 +69,7 @@ I vecchi collegamenti con `campaignId` e `chapterId` nella query reindirizzano a
 
 ## Avvio locale
 
-Servono JDK 17 o compatibile, PostgreSQL, Node.js 20.9 o superiore e npm. Configurare database, JWT, SMTP e Cloudinary seguendo il [README backend](dndacademyBE/README.md#configurazione-e-avvio). Impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per CORS e collegamenti delle email.
+Servono JDK 17 o compatibile, PostgreSQL, Node.js 20.9 o superiore e npm. Configurare database, JWT, servizio email e Cloudinary seguendo il [README backend](dndacademyBE/README.md#configurazione-e-avvio). Impostare `APP_FRONTEND_BASE_URL=http://localhost:3000` per CORS e collegamenti delle email.
 
 In un terminale, dalla radice:
 
@@ -96,7 +96,7 @@ Aprire [l'app locale](http://localhost:3000). L'API ascolta normalmente sulla po
 
 Nel solo profilo `dev` il backend crea o aggiorna le tabelle tramite Hibernate; database e schema devono già esistere e l'utente configurato deve avere i permessi necessari. Se in sviluppo si elimina anche `public`, ricreare lo schema prima dell'avvio. Nei profili `preprod` e `prod` Flyway applica le migrazioni e Hibernate valida lo schema. Una build non svuota né ricrea automaticamente il database. Dopo un reset con riutilizzo degli ID cambiare anche `JWT_SECRET` per invalidare i token dei vecchi account.
 
-Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. Le migrazioni versionate V1/V2 sono implementate e sono state applicate al database locale di preproduzione; il rilascio Railway richiede ancora il collaudo cloud descritto nella documentazione.
+Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. Le migrazioni V1/V2 sono applicate al database locale di preproduzione; V3 aggiunge la coda email ed è verificata nei test isolati; il rilascio Railway richiede ancora il collaudo cloud descritto nella documentazione.
 
 ## Verifiche
 
@@ -122,7 +122,7 @@ Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero p
 
 ## Limiti e prossimi interventi
 
-- Flyway, V1/V2 e i profili backend sono introdotti. Il [collaudo del nuovo database](dndacademyBE/docs/DATABASE_MIGRATIONS.md) su PostgreSQL 17, il completamento della configurazione di rilascio e la verifica dei servizi reali restano necessari prima della produzione.
+- Flyway, V1/V2/V3 e i profili backend sono introdotti. Il [collaudo del nuovo database](dndacademyBE/docs/DATABASE_MIGRATIONS.md) su PostgreSQL 17, il completamento della configurazione di rilascio e la verifica dei servizi reali restano necessari prima della produzione.
 - La ripresa al ricaricamento funziona con un URL contenente `combatId`. L'avvio di un nuovo tentativo non aggiunge ancora l'ID all'URL: ricaricare una rotta priva di ID riapre la preparazione; il tentativo salvato resta recuperabile dallo storico.
 - I combattimenti sono individuali contro PNG: il party della campagna non implica sincronizzazione multiplayer in tempo reale.
 - Gli HP dello scontro sono separati da quelli permanenti del personaggio; la strategia PNG rimane semplificata.
@@ -131,6 +131,8 @@ Il progetto ha finalità educative e di portfolio.
 
 ## Preparazione Railway e Vercel
 
-Il backend dispone di un [Dockerfile con build e test Java 17](dndacademyBE/docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Build Docker, 187 test Java 17 e ispezione del JAR superati; avvio e ricreazione del container locale con PostgreSQL, schema V2 e readiness UP confermati dall'utente. Restano collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
+Il backend dispone di un [Dockerfile con build e test Java 17](dndacademyBE/docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Nuova build Docker con 211 test Java 17 superati. La nuova integrazione Gmail API/V3 ha superato avvio PostgreSQL locale, readiness, benvenuto ricevuto e recupero password completo con login. La revisione successiva dei messaggi e delle validazioni in italiano ha superato 212 test backend. Restano configurazione OAuth definitiva (attualmente Testing), collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
 
 [Verifica del main per Railway e Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
+
+Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella guida frontend `docs/privacy-rilascio.md`; nessun commit, merge o deploy è stato eseguito.

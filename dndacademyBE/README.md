@@ -39,7 +39,7 @@ Gli errori API mantengono il JSON `message`: quelli previsti hanno stati esplici
 
 ## Configurazione e avvio
 
-Servono JDK 17 o compatibile, PostgreSQL e un database creato per il progetto. Le immagini richiedono Cloudinary; le email richiedono SMTP.
+Servono JDK 17 o compatibile, PostgreSQL e un database creato per il progetto. Le immagini richiedono Cloudinary; le email usano [Gmail API HTTPS con OAuth e coda persistente](docs/GMAIL_API.md) in produzione. SMTP resta disponibile nei profili locali.
 
 `src/main/resources/application.yaml` legge le proprietà dalle variabili d'ambiente. Il profilo locale `dev` (default) importa opzionalmente `./src/main/resources/env.properties` come file esterno, relativo alla cartella di avvio: il file non viene più incluso nelle risorse Maven o nel JAR. `prod` usa esclusivamente l'ambiente. Mantenere le credenziali fuori dai commit.
 
@@ -50,8 +50,11 @@ Servono JDK 17 o compatibile, PostgreSQL e un database creato per il progetto. L
 | `JWT_SECRET` | Segreto di firma HMAC, almeno 32 byte |
 | `JWT_EXPIRATION` | Durata token in millisecondi |
 | `APP_FRONTEND_BASE_URL` | Singola origine frontend, in locale `http://localhost:3000`; in `prod` HTTPS non loopback, senza percorsi/query/wildcard; usata per CORS e reset password |
-| `MAIL_HOST`, `MAIL_PORT` | Server SMTP |
-| `MAIL_USERNAME`, `MAIL_PASSWORD` | Credenziali SMTP |
+| `MAIL_PROVIDER` | `smtp` per default in locale; impostare `gmail-api` per il collaudo API. `prod` impone Gmail API |
+| `MAIL_FROM` | Indirizzo del mittente autorizzato; in locale può usare `MAIL_USERNAME` come fallback |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | OAuth del mittente per Gmail API; nessun accesso Google richiesto ai Player |
+| `MAIL_HOST`, `MAIL_PORT` | Server SMTP, soltanto per il trasporto SMTP locale |
+| `MAIL_USERNAME`, `MAIL_PASSWORD` | Credenziali SMTP locali; non usate da Gmail API |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Configurazione Cloudinary |
 
 Da questa cartella, su Windows:
@@ -62,7 +65,7 @@ Da questa cartella, su Windows:
 
 Su macOS/Linux usare `./mvnw spring-boot:run`. L'API locale ascolta sulla porta **8080**. Il frontend usa `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 
-Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica le migrazioni V1/V2 in `src/main/resources/db/migration/` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
+Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica le migrazioni V1/V2/V3 in `src/main/resources/db/migration/` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
 
 ## API principali
 
@@ -155,7 +158,7 @@ Gli errori applicativi previsti usano stati espliciti e messaggi controllati; i 
 .\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-La suite completa comprende 187 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1 e V2, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; la migrazione PostgreSQL e i servizi esterni richiedono il collaudo dell'ambiente reale.
+La suite completa comprende 211 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1/V2/V3, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; la migrazione PostgreSQL e i servizi esterni richiedono il collaudo dell'ambiente reale.
 
 Il frontend include test browser Playwright con API simulate per i flussi Player/Master, combattimenti, immagini, profilo, navigazione, tour ed editor (vedere il relativo README). Non sostituiscono i test di integrazione o la prova completa con i servizi reali.
 
@@ -163,7 +166,7 @@ Il frontend include test browser Playwright con API simulate per i flussi Player
 
 Il codice si trova in `src/main/java/com/giulia/dndacademy/`, suddiviso in `controllers`, `service`, `repository`, `model`, `dto`, `security`, `exceptions` e `config`. Configurazione in `src/main/resources/`, test in `src/test/java/`.
 
-Flyway, V1/V2 e i profili `dev`/`preprod`/`prod` sono introdotti; resta il collaudo su PostgreSQL reale. Prossimi sviluppi: completare la configurazione di rilascio, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate.
+Flyway, V1/V2/V3 e i profili `dev`/`preprod`/`prod` sono introdotti; resta il collaudo su PostgreSQL reale. Prossimi sviluppi: completare la configurazione di rilascio, strategie NPC più articolate, risorse persistenti con cure e riposi come modulo didattico distinto, magie e condizioni avanzate.
 
 Progetto personale di Giulia, sviluppato per apprendimento e portfolio.
 
@@ -211,6 +214,8 @@ TEST_DATABASE_PASSWORD puo essere passato allo stesso modo quando necessario. I 
 
 ## Preparazione Railway e Vercel
 
-Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Build Docker, 187 test Java 17 e ispezione del JAR superati; avvio e ricreazione del container locale con PostgreSQL, schema V2 e readiness UP confermati dall'utente. Restano collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
+Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Nuova build Docker con 211 test Java 17 superati. La nuova integrazione Gmail API/V3 ha superato avvio PostgreSQL locale, readiness, benvenuto ricevuto e recupero password completo con login. La revisione successiva dei messaggi e delle validazioni in italiano ha superato 212 test backend. Restano configurazione OAuth definitiva (attualmente Testing), collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
 
 [Verifica del main per Railway e Vercel](../dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
+
+Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella guida frontend `docs/privacy-rilascio.md`; nessun commit, merge o deploy è stato eseguito.

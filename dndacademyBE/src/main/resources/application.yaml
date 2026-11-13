@@ -18,17 +18,10 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
-  mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
+  task:
+    scheduling:
+      pool:
+        size: 2
 
   servlet:
     multipart:
@@ -51,6 +44,19 @@ server:
     include-stacktrace: never
 
 app:
+  mail:
+    provider: ${MAIL_PROVIDER:smtp}
+    from: ${MAIL_FROM:${MAIL_USERNAME:}}
+    worker-enabled: true
+    smtp:
+      host: ${MAIL_HOST:}
+      port: ${MAIL_PORT:587}
+      username: ${MAIL_USERNAME:}
+      password: ${MAIL_PASSWORD:}
+    gmail:
+      client-id: ${GMAIL_CLIENT_ID:}
+      client-secret: ${GMAIL_CLIENT_SECRET:}
+      refresh-token: ${GMAIL_REFRESH_TOKEN:}
   frontend-base-url: ${APP_FRONTEND_BASE_URL}
   cors:
     allow-local-origins: false

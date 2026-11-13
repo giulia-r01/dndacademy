@@ -9,6 +9,35 @@ let browser
 before(async () => { browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_PATH ? { executablePath: process.env.UI_BROWSER_PATH } : {}) }) })
 after(async () => { await browser?.close() })
 
+test("privacy pubblica accessibile dalla home senza account o API", async () => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+  try {
+    await context.route("**/api/**", route => route.abort())
+    const page = await context.newPage()
+    await page.goto(baseURL)
+    await page.getByRole("link", { name: "Informativa privacy", exact: true }).click()
+    await page.getByRole("heading", { name: "Informativa privacy", exact: true }).waitFor()
+    assert.equal(new URL(page.url()).pathname, "/privacy")
+    assert.equal(await page.getByText("Giulia Rizzo, Italia", { exact: true }).count(), 1)
+    assert.equal(await page.locator('a[href="mailto:dnd.academy.team@gmail.com"]').count() > 0, true)
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true)
+  } finally { await context.close() }
+})
+
+test("registrazione mostra l'informativa prima dell'invio e privacy apre senza sessione", async () => {
+  const context = await browser.newContext()
+  try {
+    const page = await context.newPage()
+    await page.goto(`${baseURL}/register`)
+    await page.locator("form").getByRole("link", { name: "informativa privacy", exact: true }).click()
+    await page.getByRole("heading", { name: "Informativa privacy", exact: true }).waitFor()
+    assert.equal(new URL(page.url()).pathname, "/privacy")
+    const response = await page.goto(`${baseURL}/privacy`)
+    assert.equal(response.status(), 200)
+    await page.getByRole("heading", { name: "1. Titolare e contatti", exact: true }).waitFor()
+  } finally { await context.close() }
+})
+
 async function setup(options = {}) {
   const context = await browser.newContext({ viewport: options.mobile ? { width: 390, height: 844 } : { width: 1440, height: 1100 } })
   if (!options.login) await context.addInitScript(() => localStorage.setItem("token", "navigation-fixture"))
