@@ -1,16 +1,15 @@
 import AppButton from "@/components/common/AppButton"
 import PublicFooter from "@/components/common/PublicFooter"
+import BrandLogo from "@/components/common/BrandLogo"
 
 export default function HomePage() {
   return (
     <main className="min-h-screen px-6 py-10 text-[var(--text-main)]">
       <section className="mx-auto flex min-h-[80vh] max-w-5xl flex-col items-center justify-center text-center">
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] font-bold text-white shadow-[var(--shadow-glow)]">
-          D&D
-        </div>
+        <BrandLogo size={56} className="mb-6" />
 
         <p className="mb-3 text-sm font-bold uppercase tracking-[0.35em] text-[var(--accent-soft)]">
-          DnD Academy
+          D&D Academy
         </p>
 
         <h1 className="max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">

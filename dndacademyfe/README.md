@@ -6,6 +6,8 @@ Interfaccia della piattaforma didattica per imparare Dungeons & Dragons attraver
 
 ## Stack
 
+Il logo ufficiale fornito è conservato in `public/brand/dnd-academy.png`. Il componente `BrandLogo` usa Next Image per mostrarlo nella home e nelle schermate di autenticazione al posto dei precedenti simboli testuali. I metadata del layout lo impostano come icona della scheda browser e icona Apple, anche nelle pagine interne. L'originale è mantenuto senza modifiche; il browser e Next Image lo adattano alle dimensioni di visualizzazione. Verificati build, lint e caricamento del logo su desktop e mobile.
+
 Next.js 16.4.3 con App Router, React 19.2.4, TypeScript, Tailwind CSS 4 e React Icons. Provider e hook React condividono sessione e area di navigazione; i servizi TypeScript comunicano con le API REST Spring Boot.
 
 Il JWT è conservato in `localStorage` e inviato come Bearer token. Il backend resta l'autorità per permessi, proprietà dei dati e progressione. Le variabili `NEXT_PUBLIC_*` sono pubbliche e non devono contenere credenziali.

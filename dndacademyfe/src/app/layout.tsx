@@ -7,6 +7,10 @@ import { TourProvider } from "@/hooks/useTour"
 export const metadata: Metadata = {
   title: "D&D Academy",
   description: "Impara Dungeons & Dragons passo dopo passo",
+  icons: {
+    icon: { url: "/brand/dnd-academy.png", type: "image/png" },
+    apple: { url: "/brand/dnd-academy.png", type: "image/png" },
+  },
 }
 
 export default function RootLayout({
