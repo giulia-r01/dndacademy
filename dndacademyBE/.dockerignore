@@ -1,0 +1,25 @@
+# Allow only the inputs needed for compilation and isolated tests.
+# Git history, IDE settings, docs, local build output and env files stay outside.
+**
+!Dockerfile
+!.dockerignore
+!pom.xml
+!mvnw
+!.mvn/
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.properties
+!src/
+!src/main/
+!src/main/**
+!src/test/
+!src/test/**
+
+# Secrets and generated output are excluded even below the allowed source tree.
+**/env.properties
+**/.env*
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/target/
+**/*.log

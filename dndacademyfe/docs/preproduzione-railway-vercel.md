@@ -25,7 +25,7 @@ Il main può essere usato per preparare la preproduzione. Non è ancora pronto p
 | Email | EmailServiceImpl usa soltanto JavaMailSender SMTP; mittente e timeout restano da configurare | Scegliere il servizio compatibile con Railway, verificare consegna e risposta uniforme del recupero password anche con guasti del provider |
 | Errori | Errori previsti con stati espliciti e messaggi controllati; Spring MVC e sicurezza rispondono in JSON; 5xx generici e dettagli nei soli log | Test superati e prova locale confermata dall'utente: la rotta pubblica inesistente restituisce `{"message":"Risorsa non trovata."}`; [contratto](../../dndacademyBE/docs/ERROR_HANDLING.md) |
 | Autenticazione pubblica | Quote per indirizzo e identità con contatori DB condivisi, V2, scadenza e 429/Retry-After; indirizzo locale distinto dall'ingress Railway | Test automatici superati; aggiornamento PostgreSQL locale V1→V2 e avvio confermati. Prova HTTP locale confermata dall'utente: 20 login non validi con 401 e ventunesimo con 429. Restano conservazione delle quote al riavvio e verifica del proxy su Railway; [scelte e procedura](../../dndacademyBE/docs/AUTH_RATE_LIMITS.md) |
-| Docker | Non ancora presente | Preparare Dockerfile backend con build multistage Java 17, utente senza privilegi e .dockerignore; build e avvio di collaudo prima del deploy Railway. Frontend destinato alla build Next.js gestita da Vercel |
+| Docker | Aggiunti Dockerfile backend con build multistage Java 17 e Maven Wrapper, test durante verify, JRE finale con utente 10001:10001 e .dockerignore con credenziali escluse | Build e 187 test Java 17 superati; verificati utente e JAR senza credenziali/test/H2/DevTools. Primo avvio e ricreazione del container preprod con PostgreSQL e V1/V2 valide confermati dall'utente; readiness HTTP sulla porta 8081 UP anche dopo la ricreazione. Restano conservazione dei dati applicativi e collaudo completo; [procedura](../../dndacademyBE/docs/DOCKER.md). Frontend destinato alla build Next.js gestita da Vercel |
 | Utente Spring predefinito | Esclusa la sola `UserDetailsServiceAutoConfiguration`; HTTP Basic e form login disabilitati, JWT e ruoli mantenuti | Riavvio locale confermato alle 14:21 del 10 novembre: nessun messaggio di password generata o servizio utenti in memoria; [motivazione e test](../../dndacademyBE/docs/AUTHENTICATION.md) |
 | Sessioni database | Open Session in View disabilitato; transazioni mancanti aggiunte ai servizi e collezioni del combattimento copiate prima della risposta | Test senza transazione esterna e riavvio PostgreSQL locale superati; resta il collaudo applicativo completo; [dettagli](../../dndacademyBE/docs/PERSISTENCE_BOUNDARIES.md) |
 | Primo Master | La registrazione crea sempre PLAYER; la promozione richiede già un MASTER | Definire una procedura controllata e una tantum per promuovere il proprio account verificato, senza registrazione pubblica del ruolo MASTER e senza password predefinite |
@@ -52,7 +52,7 @@ Se si vuole conservare Pietraluce, preparare separatamente un'esportazione dei s
 | --- | --- |
 | Vercel | Root Directory `dndacademyfe`, framework Next.js, installazione dal lockfile e build `npm run build`; nessun export statico |
 | Vercel | `NEXT_PUBLIC_API_URL=https://<backend-railway>` impostata prima della build, senza `/api`; una modifica richiede un nuovo deploy |
-| Railway backend | Root Directory `dndacademyBE`, Java 17, build Maven e avvio del JAR; Healthcheck Path `/actuator/health/readiness` sulla porta `PORT` |
+| Railway backend | Root Directory `/dndacademyBE`, Dockerfile con build Maven/Java 17 e avvio JAR; nessun override del comando di avvio; Healthcheck Path `/actuator/health/readiness` sulla porta `PORT` |
 | Railway database | PostgreSQL nuovo nello stesso ambiente del backend, collegamento privato; il driver richiede un URL JDBC `jdbc:postgresql://...`, non il solo URI `postgresql://...` |
 | Railway variabili attuali | `APP_CLIENT_IP_SOURCE=railway`, `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` casuale di almeno 32 byte, `JWT_EXPIRATION` in millisecondi, `APP_FRONTEND_BASE_URL` con origine HTTPS Vercel |
 | Immagini backend | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, mai nel frontend |
@@ -88,7 +88,14 @@ Verifica successiva del 13 novembre 2026 alle 10:25: profilo `preprod`, database
 
 Prova HTTP locale successiva confermata dall'utente: 21 richieste di login con lo stesso username inesistente; prime 20 risposte HTTP 401, ventunesima HTTP 429. Verificato il limite per identità su PostgreSQL reale. Il risultato riportato non include header Retry-After o corpo della risposta e non verifica ancora scadenza, persistenza al riavvio, concorrenza PostgreSQL o indirizzi dell'ingress Railway.
 
+Avvio Docker confermato dal log dell'utente del 13 novembre 2026 alle 10:13 UTC (11:13 Europe/Rome): JAR eseguito come utente `app`, Java 17.0.21, profilo `preprod`, PostgreSQL 17.5 su `host.docker.internal:5432/dndacademy_preprod`. Flyway valida due migrazioni e riconosce versione 2 già aggiornata, senza applicarne altre; Hibernate inizializzato e Tomcat avviato sulla porta interna 8080, pubblicata localmente su 8081. Questa prova conferma avvio e connessione, non ancora readiness HTTP, conservazione dei dati dopo un riavvio del container o funzionalità complete.
+
+Successiva verifica HTTP Docker confermata dall'utente: `Invoke-RestMethod http://localhost:8081/actuator/health/readiness` restituisce `status: UP`. Verificati inoltro porta 8081→8080 e readiness con connessione al database; non è una prova dei percorsi autenticati o dei servizi email/immagini.
+
+Ricreazione Docker confermata dal log dell'utente del 13 novembre 2026 alle 10:18 UTC (11:18 Europe/Rome), seguito da readiness UP sulla porta 8081: Java 17.0.21, profilo preprod, stesso database PostgreSQL, entrambe le migrazioni valide, versione corrente 2 e nessuna migrazione necessaria. Il nuovo container si avvia correttamente. Non è ancora verificata con questa prova la conservazione di account, contenuti o quote specifiche tra container.
+
 ## Riferimenti ufficiali consultati
+
 
 - [Spring Boot 3.5: inizializzazione del database](https://docs.spring.io/spring-boot/3.5/how-to/data-initialization.html).
 - [Railway: monorepo](https://docs.railway.com/deployments/monorepo), [healthcheck e porta](https://docs.railway.com/deployments/healthchecks), [restrizioni SMTP](https://docs.railway.com/networking/outbound-networking).

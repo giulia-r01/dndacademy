@@ -94,9 +94,9 @@ npm run dev
 
 Aprire [l'app locale](http://localhost:3000). L'API ascolta normalmente sulla porta 8080. Su macOS/Linux usare `./mvnw spring-boot:run`. Le credenziali dei servizi restano nella configurazione locale e non vanno committate; le variabili `NEXT_PUBLIC_*` sono invece pubbliche.
 
-Il backend crea o aggiorna le tabelle tramite Hibernate, ma database e schema devono già esistere e l'utente configurato deve avere i permessi necessari. Se in sviluppo si elimina anche `public`, ricreare lo schema prima dell'avvio. Una build non svuota né ricrea automaticamente il database. Dopo un reset con riutilizzo degli ID cambiare anche `JWT_SECRET` per invalidare i token dei vecchi account.
+Nel solo profilo `dev` il backend crea o aggiorna le tabelle tramite Hibernate; database e schema devono già esistere e l'utente configurato deve avere i permessi necessari. Se in sviluppo si elimina anche `public`, ricreare lo schema prima dell'avvio. Nei profili `preprod` e `prod` Flyway applica le migrazioni e Hibernate valida lo schema. Una build non svuota né ricrea automaticamente il database. Dopo un reset con riutilizzo degli ID cambiare anche `JWT_SECRET` per invalidare i token dei vecchi account.
 
-Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. La configurazione attuale usa `ddl-auto: update`: le migrazioni versionate restano un requisito della preparazione al rilascio.
+Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. Le migrazioni versionate V1/V2 sono implementate e sono state applicate al database locale di preproduzione; il rilascio Railway richiede ancora il collaudo cloud descritto nella documentazione.
 
 ## Verifiche
 
@@ -130,5 +130,7 @@ Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero p
 Il progetto ha finalità educative e di portfolio.
 
 ## Preparazione Railway e Vercel
+
+Il backend dispone di un [Dockerfile con build e test Java 17](dndacademyBE/docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Build Docker, 187 test Java 17 e ispezione del JAR superati; avvio e ricreazione del container locale con PostgreSQL, schema V2 e readiness UP confermati dall'utente. Restano collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
 
 [Verifica del main per Railway e Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.

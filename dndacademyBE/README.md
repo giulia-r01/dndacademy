@@ -62,7 +62,7 @@ Da questa cartella, su Windows:
 
 Su macOS/Linux usare `./mvnw spring-boot:run`. L'API locale ascolta sulla porta **8080**. Il frontend usa `NEXT_PUBLIC_API_URL=http://localhost:8080`.
 
-Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica `src/main/resources/db/migration/V1__initial_schema.sql` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
+Il solo profilo `dev` conserva Hibernate `update` e Flyway disabilitato per il vecchio database locale. Per nuove installazioni di collaudo e produzione, Flyway applica le migrazioni V1/V2 in `src/main/resources/db/migration/` e Hibernate usa `validate`: non modifica le tabelle. `preprod` richiede un URL separato `PREPROD_DB_URL`; `prod` richiede `SPRING_PROFILES_ACTIVE=prod` e tutte le variabili cloud. Nessun baseline automatico o reset dei vecchi dati. La porta legge `PORT` con default locale 8080. Procedura a piccoli passi e differenze tra profili in [Flyway e collaudo del database](docs/DATABASE_MIGRATIONS.md).
 
 ## API principali
 
@@ -210,5 +210,7 @@ Surefire carica src/test/resources/application-test.properties, con H2 in modali
 TEST_DATABASE_PASSWORD puo essere passato allo stesso modo quando necessario. I vincoli nuovi sono stati verificati su schema pulito H2 e PostgreSQL; su database preesistenti controllare eventuali duplicati prima di aggiornare lo schema, senza cancellare automaticamente dati storici. Nessun reset del database dell'utente e incluso in queste modifiche. Dettagli e limiti: [revisione pre merge](docs/REVISIONE_PRE_MERGE_2026-10-30.md).
 
 ## Preparazione Railway e Vercel
+
+Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Build Docker, 187 test Java 17 e ispezione del JAR superati; avvio e ricreazione del container locale con PostgreSQL, schema V2 e readiness UP confermati dall'utente. Restano collaudo applicativo completo e servizi cloud. Il frontend mantiene la build Next.js su Vercel. La guida distingue costruzione dell'immagine, avvio locale e impostazioni Railway.
 
 [Verifica del main per Railway e Vercel](../dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
