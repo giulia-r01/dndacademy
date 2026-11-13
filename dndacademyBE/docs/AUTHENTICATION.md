@@ -31,3 +31,7 @@ Gli errori della catena di sicurezza hanno risposte JSON: 401 per accesso mancan
 La [limitazione delle richieste pubbliche](AUTH_RATE_LIMITS.md) usa contatori condivisi nel database, con V2, quote per indirizzo e identità e risposta 429 con Retry-After. Readiness, preflight CORS, rotta inesistente e limite al ventunesimo login sono confermati localmente; anche avvio e ricreazione del container precedente sono stati collaudati. La nuova [integrazione Gmail API](GMAIL_API.md) usa V3 per la coda e mantiene uniforme la risposta HTTP del recupero password, con invio dopo il commit. Consenso Google e consegna reale restano da verificare; i test non certificano il deploy.
 
 Riferimento: [Spring Boot 3.5, configurazione della sicurezza](https://docs.spring.io/spring-boot/3.5/reference/web/spring-security.html).
+
+## Inizializzazione del primo Master
+
+La registrazione rimane riservata al ruolo PLAYER. Il primo account amministrativo viene promosso con la [procedura manuale documentata](FIRST_MASTER.md), dopo la verifica dell’identità dell’account e del database da parte dell’operatore. L’aggiornamento atomico controlla assenza di Master e corrispondenza di ID, username ed email, poi incrementa `token_version`: serve un nuovo login. Nessuna credenziale predefinita, endpoint pubblico o migrazione automatica viene aggiunta.

@@ -219,3 +219,7 @@ Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), 
 [Verifica del main per Railway e Vercel](../dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
 
 Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella guida frontend `docs/privacy-rilascio.md`; nessun commit, merge o deploy è stato eseguito.
+
+## Primo Master
+
+La [procedura del primo Master](docs/FIRST_MASTER.md) promuove manualmente un account Player verificato sul database nuovo. Lo script richiede ID, username ed email, rifiuta l’operazione se esiste già un Master e invalida le vecchie sessioni. Non viene eseguito da Flyway o all’avvio; le promozioni successive restano nell’Area Master.
