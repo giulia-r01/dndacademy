@@ -12,6 +12,7 @@ import java.time.*;
 @Service @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
     private final EmailOutboxRepository outbox;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     @Override @Transactional(propagation = Propagation.MANDATORY)
     public void queueWelcomeEmail(User user) {
@@ -35,5 +36,6 @@ public class EmailServiceImpl implements EmailService {
         task.setNextAttemptAt(task.getCreatedAt());
         task.setUpdatedAt(task.getCreatedAt());
         outbox.save(task);
+        events.publishEvent(new com.giulia.dndacademy.background.QueueChanged(com.giulia.dndacademy.background.QueueWakeups.Kind.EMAIL));
     }
 }

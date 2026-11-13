@@ -47,7 +47,7 @@ L'autenticazione usa gli account dell'app e JWT; non viene creato l'utente in me
 
 Le risposte API sono preparate dai servizi entro transazioni esplicite, con Open Session in View disabilitato. Il registro del combattimento e l'ordine dei turni non dipendono da collezioni Hibernate da caricare durante la risposta. Dettagli in [Sessioni database e transazioni](dndacademyBE/docs/PERSISTENCE_BOUNDARIES.md).
 
-Il GET pubblico `/actuator/health/readiness` verifica app e database per il futuro deploy Railway e restituisce solo lo stato. Gli altri endpoint di gestione sono bloccati. La [procedura healthcheck](dndacademyBE/docs/HEALTHCHECK.md) distingue la prova locale dall'impostazione cloud ancora da effettuare.
+I GET pubblici `/actuator/health/liveness` e `/actuator/health/readiness` restituiscono solo lo stato. Render usa liveness senza query DB; readiness verifica app e database per la diagnosi. Gli altri endpoint di gestione sono bloccati. La [procedura healthcheck](dndacademyBE/docs/HEALTHCHECK.md) distingue la prova locale dall'impostazione cloud ancora da effettuare.
 
 L'origine del frontend è validata e condivisa da CORS e link di recupero password. In produzione è consentita solo l'origine HTTPS configurata; localhost è previsto nei profili locali, senza wildcard per i progetti Vercel. Le richieste usano JWT Bearer, senza cookie cross-origin. Procedura e verifiche in [CORS per ambiente](dndacademyBE/docs/CORS.md).
 
@@ -96,7 +96,7 @@ Aprire [l'app locale](http://localhost:3000). L'API ascolta normalmente sulla po
 
 Nel solo profilo `dev` il backend crea o aggiorna le tabelle tramite Hibernate; database e schema devono già esistere e l'utente configurato deve avere i permessi necessari. Se in sviluppo si elimina anche `public`, ricreare lo schema prima dell'avvio. Nei profili `preprod` e `prod` Flyway applica le migrazioni e Hibernate valida lo schema. Una build non svuota né ricrea automaticamente il database. Dopo un reset con riutilizzo degli ID cambiare anche `JWT_SECRET` per invalidare i token dei vecchi account.
 
-Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. Le migrazioni V1/V2 sono applicate al database locale di preproduzione; V3 aggiunge la coda email ed è verificata nei test isolati; il rilascio Railway richiede ancora il collaudo cloud descritto nella documentazione.
+Su database vuoto vengono inizializzati i badge di sistema; account, campagne, lezioni, personaggi e incontri devono essere predisposti per il collaudo. V1–V4 sono verificate su database isolati; l’utente ha confermato il proprio database fino a V3. Il rilascio Render/Neon richiede ancora il collaudo cloud descritto nella documentazione.
 
 ## Verifiche
 
@@ -129,19 +129,23 @@ Il collaudo con PostgreSQL e servizi reali resta separato: verificare l'intero p
 
 Il progetto ha finalità educative e di portfolio.
 
-## Preparazione Railway e Vercel
+## Preparazione Render, Neon e Vercel
 
 Il backend dispone di un [Dockerfile con build e test Java 17](dndacademyBE/docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Il codice corrente include le quattro migrazioni e la cancellazione account. Le precedenti prove Docker/Gmail sono descritte nella guida; l’immagine locale dell’utente va ricostruita per includere V4. Il frontend viene compilato da Vercel. Il collaudo cloud e OAuth definitivo sono ancora da completare.
 
-[Verifica del main per Railway e Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
+[Verifica del main per Render, Neon e Vercel](dndacademyfe/docs/preproduzione-render-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
 
 Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella guida frontend `docs/privacy-rilascio.md`; nessun commit, merge o deploy è stato eseguito.
 
 ## Documentazione corrente
 
-- [Preparazione Railway/Vercel](dndacademyfe/docs/preproduzione-railway-vercel.md): stato dei servizi e ordine di rilascio.
+- [Preparazione Render/Neon/Vercel](dndacademyfe/docs/preproduzione-render-vercel.md): stato dei servizi e ordine di rilascio.
 - [Revisione finale](dndacademyfe/docs/revisione-finale-premerge.md): pulizia, verifiche e limiti del controllo.
 - [Primo Master](dndacademyBE/docs/FIRST_MASTER.md) e [cancellazione account](dndacademyBE/docs/ACCOUNT_DELETION.md).
 - [Privacy e rilascio](dndacademyfe/docs/privacy-rilascio.md): pagina pubblica e verifiche operative ancora necessarie.
 
-I resoconti di ottobre sono conservati come storico e non sostituiscono queste istruzioni. La suite corrente comprende 218 test backend, 31 test di configurazione frontend e 126 test browser con API simulate; gli esiti della revisione finale sono registrati nel relativo documento.
+I resoconti di ottobre sono conservati come storico e non sostituiscono queste istruzioni. La suite corrente comprende 232 test backend, 31 test di configurazione frontend e 129 test browser con API simulate; gli esiti della revisione finale sono registrati nel relativo documento.
+
+## Destinazione del deploy
+
+Backend Docker su Render, PostgreSQL su Neon e frontend su Vercel. La [guida operativa](dndacademyfe/docs/deploy-render-neon.md) descrive profilo render, memoria, connessioni, proxy, sonde e code durante l’inattività. Il precedente piano di hosting non è più la destinazione del rilascio.

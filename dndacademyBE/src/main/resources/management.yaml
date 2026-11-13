@@ -18,5 +18,7 @@ management:
       probes:
         enabled: true
       group:
+        liveness:
+          include: livenessState,readinessState
         readiness:
           include: readinessState,db

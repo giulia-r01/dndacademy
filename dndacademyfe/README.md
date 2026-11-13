@@ -204,7 +204,7 @@ Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSE
 
 ## Collaudo preproduzione e sviluppi previsti
 
-La [verifica del main per Railway e Vercel](docs/preproduzione-railway-vercel.md) documenta la pulizia del repository, gli interventi ancora necessari, la scelta del database iniziale e l'ordine del rilascio. La configurazione cloud descritta è una procedura da completare: non indica che l'ambiente sia già pubblicato o approvato per la produzione. Per le variabili pubbliche frontend è disponibile [.env.example](.env.example), privo di segreti.
+La [verifica del main per Render, Neon e Vercel](docs/preproduzione-render-vercel.md) documenta la pulizia del repository, gli interventi ancora necessari, la scelta del database iniziale e l'ordine del rilascio. La configurazione cloud descritta è una procedura da completare: non indica che l'ambiente sia già pubblicato o approvato per la produzione. Per le variabili pubbliche frontend è disponibile [.env.example](.env.example), privo di segreti.
 
 Per inserire contenuti reali dalle schermate Master e provarli come Player è disponibile [Il faro di Pietraluce](docs/campaigns/il-faro-di-pietraluce.md): cinque capitoli, cinque lezioni su D&D 5e 2014, venti domande sulle lezioni, tre incontri e cinque ricompense. Le [otto schede dei personaggi](docs/campaigns/personaggi-pietraluce.md) conservano nomi, razze, classi e riferimenti visivi forniti dall'utente. Le tabelle sono proposte ridotte per l'arena, non schede ufficiali complete. Le [istruzioni di inserimento e collaudo](docs/campaigns/collaudo-pietraluce.md) sono separate dalla didattica e documentano le differenze tra le regole insegnate e la simulazione attuale. I documenti non importano dati.
 
@@ -216,6 +216,10 @@ Il tour di primo avvio è implementato interamente nel frontend. Flyway gestisce
 
 Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.
 
-La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Suite corrente: 126 test browser con API simulate, 31 test di configurazione e 218 test backend; gli esiti aggiornati sono nella [revisione finale](docs/revisione-finale-premerge.md). Nessun deploy eseguito.
+La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Suite corrente: 129 test browser con API simulate, 31 test di configurazione e 232 test backend; gli esiti aggiornati sono nella [revisione finale](docs/revisione-finale-premerge.md). Nessun deploy eseguito.
 
 La pagina profilo include la cancellazione autonoma con password e conferma esplicita. I contenuti Master richiedono un successore; account, copie personali e progressi sono rimossi senza cancellare modelli o dati di altri Player. [Contratto e migrazione V4](../dndacademyBE/docs/ACCOUNT_DELETION.md).
+
+## Collegamento al server
+
+Dopo tre secondi di attesa una richiesta API mostra un avviso accessibile. Timeout a 120 secondi, messaggi italiani per errori di rete/proxy, nessun reinvio automatico delle operazioni e nessuna sonda periodica dal browser. [Configurazione Render/Neon](docs/deploy-render-neon.md).

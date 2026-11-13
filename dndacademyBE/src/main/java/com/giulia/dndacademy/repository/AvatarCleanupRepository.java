@@ -9,6 +9,10 @@ import java.time.Instant;
 import java.util.*;
 
 public interface AvatarCleanupRepository extends JpaRepository<AvatarCleanup, String> {
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Query("select min(task.nextAttemptAt) from AvatarCleanup task")
+    Instant nextAttempt();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from AvatarCleanup a where a.nextAttemptAt <= :now order by a.nextAttemptAt, a.id")
     List<AvatarCleanup> findReady(@Param("now") Instant now, Pageable page);

@@ -14,7 +14,7 @@ La pagina è statica e non richiede API, account o database. Verificati accesso 
 
 Completare la scelta di regioni di hosting, conservazione di backup e log e accordi applicabili ai fornitori, verificando anche l'idoneità contrattuale dell'account Gmail personale per i dati del servizio. L'informativa va allineata alle impostazioni effettive: la presenza della pagina non conclude queste verifiche. Predisporre una procedura concreta per rispondere alle richieste di accesso e cancellazione.
 
-L'ordine concordato è: completamento della preparazione e dei test, commit e merge eseguiti dall'utente, deploy di collaudo Railway/Vercel, configurazione Google con homepage e privacy realmente raggiungibili, autorizzazione OAuth definitiva e collaudo email cloud. Restano inoltre i prerequisiti elencati nella [verifica di preproduzione](preproduzione-railway-vercel.md), compresi esecuzione della procedura del primo Master, configurazione frontend e ripristino dei backup. Nessun commit, merge o deploy è eseguito automaticamente.
+L'ordine concordato è: completamento della preparazione e dei test, commit e merge eseguiti dall'utente, deploy di collaudo Render/Neon/Vercel, configurazione Google con homepage e privacy realmente raggiungibili, autorizzazione OAuth definitiva e collaudo email cloud. Restano inoltre i prerequisiti elencati nella [verifica di preproduzione](preproduzione-render-vercel.md), compresi esecuzione della procedura del primo Master, configurazione frontend e ripristino dei backup. Nessun commit, merge o deploy è eseguito automaticamente.
 
 Per il Branding Google usare l'URL reale della homepage e quello di `/privacy`. La proprietà del dominio o sottodominio deve rispettare i requisiti Google: non assumere che un URL condiviso Vercel sia automaticamente sufficiente. Il consenso attualmente in Testing e il relativo refresh token non rappresentano la configurazione definitiva.
 
@@ -23,6 +23,8 @@ Per il Branding Google usare l'URL reale della homepage e quello di `/privacy`. 
 - [GDPR, in particolare articoli 6, 13 e 15–22](https://eur-lex.europa.eu/eli/reg/2016/679/oj/?locale=it).
 - [Garante: cookie e altri strumenti di tracciamento](https://www.garanteprivacy.it/faq/cookie).
 - [Google: Branding](https://support.google.com/cloud/answer/15549049?hl=it), [verifica e proprietà](https://support.google.com/cloud/answer/13464321?hl=it), [durata delle autorizzazioni OAuth](https://developers.google.com/identity/protocols/oauth2).
-- [Vercel DPA](https://vercel.com/legal/dpa), [Railway DPA](https://railway.com/legal/dpa), [Cloudinary](https://cloudinary.com/msa), [Google API User Data Policy](https://developers.google.com/terms/api-services-user-data-policy).
+- [Vercel DPA](https://vercel.com/legal/dpa), [Render DPA](https://render.com/dpa), [Neon](https://neon.com/security), [Cloudinary](https://cloudinary.com/msa), [Google API User Data Policy](https://developers.google.com/terms/api-services-user-data-policy).
 
 La pagina profilo consente ora la cancellazione autonoma con password e conferma esplicita, trasferendo i contenuti Master a un altro Master. L’informativa è aggiornata per questa funzione e per la coda tecnica di rimozione avatar; restano da finalizzare conservazione di log e backup e gestione delle richieste relative a dati inseriti nei contenuti condivisi.
+
+Il backend previsto è Render e il database è Neon; l’informativa pubblica riporta entrambi. Verificare gli accordi applicabili ai servizi effettivamente configurati, senza considerare il testo della pagina una certificazione automatica.

@@ -2,7 +2,7 @@
 
 `APP_FRONTEND_BASE_URL` indica l'origine principale del frontend: schema, host ed eventuale porta, senza percorsi applicativi. È usata da `FrontendOrigin` sia per la lista CORS sia per costruire il link di recupero password. Non serve una seconda variabile con lo stesso URL.
 
-Esempi: `http://localhost:3000` per il collaudo locale, `https://nome-progetto.vercel.app` per il futuro frontend di produzione. L'URL effettivo Vercel verrà impostato su Railway dopo la creazione del progetto; non inserirne uno inventato nei file del repository.
+Esempi: `http://localhost:3000` per il collaudo locale, `https://nome-progetto.vercel.app` per il futuro frontend di produzione. L'URL effettivo Vercel verrà impostato su Render dopo la creazione del progetto; non inserirne uno inventato nei file del repository.
 
 ## Regole per profilo
 
@@ -26,7 +26,7 @@ CORS viene gestito dalla catena Spring Security prima della validazione JWT. Le 
 
 Il frontend autentica con `Authorization: Bearer ...`, senza cookie cross-origin. `allowCredentials` è disabilitato e la risposta non include `Access-Control-Allow-Credentials`. Non è necessaria una modifica al client attuale. Le risposte di errore JWT includono l'origine consentita, così il browser può leggerle e gestire la sessione.
 
-CORS controlla le richieste dei browser, non sostituisce autenticazione e ruoli. Le API protette richiedono sempre un JWT valido, anche dall'origine consentita. Le richieste senza header Origin, come la sonda Railway, continuano a funzionare con le regole di autenticazione previste per ciascun endpoint.
+CORS controlla le richieste dei browser, non sostituisce autenticazione e ruoli. Le API protette richiedono sempre un JWT valido, anche dall'origine consentita. Le richieste senza header Origin, come le sonde Render, continuano a funzionare con le regole di autenticazione previste per ciascun endpoint.
 
 ## Prova locale a piccoli passi
 
@@ -50,7 +50,7 @@ CORS controlla le richieste dei browser, non sostituisce autenticazione e ruoli.
 
    Sono attesi `200` e `http://localhost:3000`. Non viene effettuato un login e non vengono creati utenti.
 
-3. Il collaudo completo con frontend reale, upload e URL Railway/Vercel sarà effettuato dopo la configurazione dei servizi. La simulazione di un preflight non sostituisce questa verifica.
+3. Il collaudo completo con frontend reale, upload e URL Render/Neon/Vercel sarà effettuato dopo la configurazione dei servizi. La simulazione di un preflight non sostituisce questa verifica.
 
 Non occorre modificare il vecchio `DB_URL`, svuotare i database o cambiare V1. Le impostazioni Cloudinary e SMTP non sono modificate da questo intervento.
 
@@ -58,6 +58,6 @@ Non occorre modificare il vecchio `DB_URL`, svuotare i database o cambiare V1. L
 
 `FrontendOriginTest` verifica normalizzazione, elenco esatto delle origini, rifiuto di configurazioni non valide e avvio della configurazione Spring con profilo `prod`. `CorsIntegrationTest` verifica preflight locali, origini rifiutate, metodi/header non consentiti, risposte di errore leggibili, login reale e richiesta JWT, upload multipart avatar con storage simulato e sonda senza Origin. I test usano H2; non interrogano PostgreSQL o servizi cloud.
 
-Al deploy impostare su Railway `SPRING_PROFILES_ACTIVE=prod` e `APP_FRONTEND_BASE_URL` con l'origine HTTPS stabile di produzione Vercel. Su Vercel impostare `NEXT_PUBLIC_API_URL` con l'origine HTTPS del backend Railway, senza `/api`. Le preview devono usare un ambiente di collaudo dedicato; non abilitare `*.vercel.app` sul backend di produzione.
+Al deploy impostare su Render `SPRING_PROFILES_ACTIVE=render` (include prod) e `APP_FRONTEND_BASE_URL` con l'origine HTTPS stabile di produzione Vercel. Su Vercel impostare `NEXT_PUBLIC_API_URL` con l'origine HTTPS del backend Render, senza `/api`. Le preview devono usare un ambiente di collaudo dedicato; non abilitare `*.vercel.app` sul backend di produzione.
 
 Riferimenti: [Spring Framework 6.2: CORS](https://docs.spring.io/spring-framework/reference/6.2/web/webmvc-cors.html), [Spring Security 6.5: CORS prima dell'autenticazione](https://docs.spring.io/spring-security/reference/6.5/servlet/integrations/cors.html).

@@ -46,9 +46,9 @@ export default function PrivacyPage() {
 
           <section aria-labelledby="fornitori">
             <h2 id="fornitori">4. Fornitori e trasferimenti</h2>
-            <p>Per l&apos;erogazione online sono utilizzati Vercel per il frontend, Railway per backend e database, Cloudinary per le immagini e Google per le email Gmail. I fornitori ricevono i dati necessari alle rispettive funzioni; il Master può accedere ai dati previsti dalle funzioni di gestione delle campagne e degli utenti.</p>
+            <p>Per l&apos;erogazione online sono utilizzati Vercel per il frontend, Render per il backend, Neon per il database PostgreSQL, Cloudinary per le immagini e Google per le email Gmail. I fornitori ricevono i dati necessari alle rispettive funzioni; il Master può accedere ai dati previsti dalle funzioni di gestione delle campagne e degli utenti.</p>
             <p>I servizi possono operare anche fuori dallo Spazio economico europeo. I trasferimenti sono soggetti alle garanzie previste dal GDPR, comprese decisioni di adeguatezza e clausole contrattuali standard applicabili ai fornitori. Per informazioni o copia delle garanzie relative al servizio puoi contattare il titolare.</p>
-            <p>Ulteriori informazioni: <a href="https://vercel.com/legal/dpa">Vercel</a>, <a href="https://railway.com/legal/dpa">Railway</a>, <a href="https://cloudinary.com/privacy">Cloudinary</a> e <a href="https://policies.google.com/privacy?hl=it">Google</a>.</p>
+            <p>Ulteriori informazioni: <a href="https://vercel.com/legal/dpa">Vercel</a>, <a href="https://render.com/dpa">Render</a>, <a href="https://neon.com/security">Neon</a>, <a href="https://cloudinary.com/privacy">Cloudinary</a> e <a href="https://policies.google.com/privacy?hl=it">Google</a>.</p>
           </section>
 
           <section aria-labelledby="gmail">

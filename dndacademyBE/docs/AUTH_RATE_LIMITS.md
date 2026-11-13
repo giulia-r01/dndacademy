@@ -17,20 +17,19 @@ Il rifiuto è HTTP **429**, con JSON `message` in italiano, secondi di attesa e 
 
 ## Persistenza e concorrenza
 
-Flyway **V2__auth_rate_limits.sql** aggiunge `auth_rate_limit_buckets` e l'indice di scadenza. V1 resta invariata. Sul database locale `preprod` già inizializzato basta riavviare: Flyway applica soltanto V2, senza cancellare account o contenuti. Il nuovo database Railway riceverà V1 e V2 in sequenza.
+Flyway **V2__auth_rate_limits.sql** aggiunge `auth_rate_limit_buckets` e l'indice di scadenza. V1 resta invariata. Sul database locale `preprod` già inizializzato basta riavviare: Flyway applica soltanto V2, senza cancellare account o contenuti. Il nuovo database Neon riceve V1–V4 in sequenza.
 
 Ogni quota è aggiornata in una transazione autonoma breve con lock sulla riga: il fallimento o rollback del login non annulla il tentativo. La creazione usa INSERT, non merge su chiave assegnata; una collisione viene riprovata in una nuova transazione. Questo evita che due istanze sovrascrivano il contatore iniziale. Le richieste bloccate non incrementano ulteriormente il numero né spostano la scadenza. Non serve Redis per questo volume iniziale; il database già condiviso garantisce coerenza tra istanze. In caso di indisponibilità dei contatori il filtro risponde 503, senza consentire accessi illimitati.
 
 Le chiavi sono HMAC-SHA256 con separazione per operazione, usando il segreto JWT del backend. Non vengono salvati IP, username o email in chiaro nella tabella; i digest restano identificatori pseudonimi. Ruotare il segreto invalida i JWT e rende irraggiungibili le quote precedenti. Un task orario elimina le righe scadute da oltre 24 ore, anche senza traffico. Il volume di nuove righe resta proporzionale alle identità e agli indirizzi distinti accettati dal filtro; monitorare dimensione, connessioni e carico insieme al traffico reale.
 
-## Origine dell'indirizzo e Railway
+## Origine dell'indirizzo e Render
 
-- `dev`, `preprod` e test usano `app.client-ip-source=remote` per default: solo l'indirizzo della connessione. `X-Real-IP`, `X-Forwarded-For` e `Forwarded` inviati dal client vengono ignorati.
-- In `prod`, **APP_CLIENT_IP_SOURCE è obbligatoria**. Nel deploy previsto impostare `APP_CLIENT_IP_SOURCE=railway`: viene accettato un solo `X-Real-IP`, contenente un indirizzo numerico valido, senza liste, hostname o zone IPv6. Un header mancante/ambiguo/non valido produce 400. Gli IPv6 vengono raggruppati per /64 per evitare l'aggiramento tramite rotazione della parte host.
-- Questa modalità è valida esclusivamente quando il backend pubblico è raggiunto attraverso l'HTTP ingress Railway, che costituisce il confine di fiducia. Non esporre il backend anche con TCP proxy o accesso pubblico diretto, né aggiungere proxy personalizzati senza riesaminare la catena di fiducia. I servizi privati autorizzati nell'ambiente Railway sono parte di tale confine: l'header da solo non prova l'identità del proxy.
-- `server.forward-headers-strategy=none` evita riscritture implicite dell'indirizzo da header generici. Il limiter non usa il primo elemento di `X-Forwarded-For` e non considera la presenza di un header Railway una prova autonoma di autenticità.
+In locale usare remote: gli header inoltrati sono ignorati. Nel profilo render impostare APP_CLIENT_IP_SOURCE=render: viene accettato un solo CF-Connecting-IP numerico, sovrascritto dal proxy dell’ingresso pubblico secondo la documentazione Render. La catena X-Forwarded-For non viene usata per assegnare quote. Header mancante, ripetuto o non valido produce 400; IPv6 raggruppati per /64.
 
-Prima dell'apertura pubblica, verificare sull'URL Railway che richieste con header contraffatti continuino a consumare la stessa quota del client e che due client distinti abbiano quote distinte. L'esito locale non verifica il confine del proxy cloud.
+La modalità è valida soltanto per il servizio web pubblico attraverso il proxy Render. Non esporre un accesso diretto alternativo o usarla in reti private prive del medesimo proxy. La modalità railway con X-Real-IP resta supportata per compatibilità, ma non è il deploy previsto. server.forward-headers-strategy=none evita riscritture implicite.
+
+Prima dell’apertura verificare con due client che gli IP siano distinti e che header contraffatti non cambino la quota del chiamante. [Configurazione e fonti](../../dndacademyfe/docs/deploy-render-neon.md).
 
 ## Prova locale a piccoli passi
 
@@ -39,6 +38,6 @@ Prima dell'apertura pubblica, verificare sull'URL Railway che richieste con head
 3. Solo sul backend locale, inviare 21 login con un username inesistente: i primi 20 restituiscono 401 e il successivo 429 con `Retry-After`. Il test non crea account o email e la quota scade automaticamente.
 4. Al prossimo riavvio V1/V2 devono risultare valide e nessuna migrazione deve essere riapplicata. Il limite attivo deve restare tale fino alla scadenza.
 
-I test automatici verificano scadenza con orologio controllato, persistenza tra istanze, rollback, race di prima creazione, incrementi concorrenti, pulizia, normalizzazione indirizzi, header contraffatti locali, quote per indirizzo e identità, JSON/Retry-After/CORS e indipendenza di OPTIONS/readiness. H2 non sostituisce la verifica PostgreSQL e Railway.
+I test automatici verificano scadenza con orologio controllato, persistenza tra istanze, rollback, race di prima creazione, incrementi concorrenti, pulizia, normalizzazione indirizzi, header contraffatti locali, quote per indirizzo e identità, JSON/Retry-After/CORS e indipendenza di OPTIONS/readiness. H2 non sostituisce la verifica del database e del proxy cloud reali.
 
 Riferimenti: [Railway: header dell'ingress HTTP](https://docs.railway.com/networking/public-networking/specs-and-limits), [Spring Boot: forwarded headers e proxy fidati](https://docs.spring.io/spring-boot/3.5/how-to/webserver.html).

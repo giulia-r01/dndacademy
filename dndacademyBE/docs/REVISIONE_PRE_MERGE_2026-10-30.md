@@ -1,6 +1,6 @@
 # Revisione prima del merge - 30 ottobre 2026
 
-> Documento storico di ottobre 2026. Conserva il contesto di quel collaudo; stato Git, limiti e istruzioni non descrivono la versione corrente. Per il rilascio usare la [guida aggiornata](../../dndacademyfe/docs/preproduzione-railway-vercel.md) e la [revisione finale](../../dndacademyfe/docs/revisione-finale-premerge.md).
+> Documento storico di ottobre 2026. Conserva il contesto di quel collaudo; stato Git, limiti e istruzioni non descrivono la versione corrente. Per il rilascio usare la [guida aggiornata](../../dndacademyfe/docs/preproduzione-render-vercel.md) e la [revisione finale](../../dndacademyfe/docs/revisione-finale-premerge.md).
 
 **Esito aggiornato: i rilievi R1-R10 sono corretti e le regressioni passano. La branch e pronta per il merge tecnico nel perimetro verificato.** Questo non equivale al completamento delle pagine mancanti o alla certificazione per la produzione.
 

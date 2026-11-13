@@ -10,19 +10,19 @@ import java.util.Collections;
 
 @Component
 public class ClientAddressResolver {
-    private final boolean railway;
+    private final String source;
 
     public ClientAddressResolver(@Value("${app.client-ip-source:remote}") String source) {
-        if (!source.equals("remote") && !source.equals("railway")) {
-            throw new IllegalArgumentException("app.client-ip-source must be remote or railway");
+        if (!java.util.Set.of("remote", "railway", "render").contains(source)) {
+            throw new IllegalArgumentException("app.client-ip-source deve essere remote, railway o render");
         }
-        railway = source.equals("railway");
+        this.source = source;
     }
 
     public String resolve(HttpServletRequest request) {
         String value = request.getRemoteAddr();
-        if (railway) {
-            var headers = Collections.list(request.getHeaders("X-Real-IP"));
+        if (!source.equals("remote")) {
+            var headers = Collections.list(request.getHeaders(source.equals("render") ? "CF-Connecting-IP" : "X-Real-IP"));
             if (headers.size() != 1) throw invalidAddress();
             value = headers.get(0);
         }

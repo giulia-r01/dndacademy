@@ -2,13 +2,13 @@
 
 ## Scelta per il rilascio
 
-Il mittente resta `dnd.academy.team@gmail.com`. Il backend usa Gmail API via HTTPS in produzione, perché Railway Free/Trial/Hobby non permettono SMTP. Non viene introdotto il login Google per Player o Master: soltanto il proprietario del mittente autorizza l'integrazione una volta, e il server rinnova l'access token con il refresh token.
+Il mittente resta `dnd.academy.team@gmail.com`. Il backend usa Gmail API via HTTPS in produzione, per mantenere il trasporto della posta indipendente dalle restrizioni SMTP dell’hosting. Non viene introdotto il login Google per Player o Master: soltanto il proprietario del mittente autorizza l'integrazione una volta, e il server rinnova l'access token con il refresh token.
 
 Gmail API è chiamata tramite REST con il client Spring già disponibile: non serve una nuova dipendenza SDK per i due endpoint utilizzati. Il client è dedicato all'invio, con redirect HTTP disabilitati, timeout di connessione 5 secondi e richiesta 10 secondi. Le destinazioni sono fisse: `oauth2.googleapis.com/token` e `gmail.googleapis.com/gmail/v1/users/me/messages/send`. Il MIME è codificato base64url senza padding. Il token è riutilizzato in memoria fino al margine di rinnovo di 60 secondi, con refresh sincronizzato. Dopo un 401 si prova un solo rinnovo e reinvio; gli altri tentativi sono gestiti dalla coda.
 
 Il permesso necessario è **`https://www.googleapis.com/auth/gmail.send`**. Non richiedere lettura, cancellazione, accesso completo alla casella o delega Google Workspace. Il `From` deve corrispondere al mittente autorizzato, oppure a un alias già abilitato in Gmail; per questo progetto usare lo stesso account del consenso. `/users/me` invia dalla casella effettivamente autorizzata dal token.
 
-L'uso standard dell'API non ha costi aggiuntivi secondo la documentazione Google consultata; valgono quote API, limiti della casella e controlli antiabuso. Non si promettono invii illimitati, consegna garantita o gratuità futura. I limiti Gmail non vanno aggirati cambiando protocollo. Nessun servizio a pagamento viene attivato dal codice.
+Valgono quote API, limiti della casella e controlli antiabuso. Non si promettono invii illimitati o consegna garantita. I limiti Gmail non vanno aggirati cambiando protocollo.
 
 ## Variabili per ambiente
 
@@ -78,9 +78,9 @@ Verifiche eseguite il 13 novembre 2026: **211 test** nella suite completa, tutti
 
 Collaudo reale successivo confermato dall'utente: nuova immagine Docker avviata su PostgreSQL locale con applicazione della sola V3, readiness UP sulla porta 8081, registrazione HTTP 201 e benvenuto ricevuto. Frontend locale collegato alla porta 8081; richiesta recupero, ricezione dell'email, apertura del link, modifica password e login con la nuova password tutti riusciti. Il primo invio verifica anche lo scambio reale refresh-token→access-token, poiché il backend non riceve un access token preimpostato.
 
-Restano da verificare configurazione OAuth definitiva (attualmente Testing), rinnovo dopo la naturale scadenza dell'access token, comportamento con altri destinatari/provider, riavvio con task in attesa e percorso su Railway. La prova sul proprio alias Gmail non garantisce la consegna presso tutti i provider né l'assenza di spam. Non usare test automatici o richieste ripetute per consumare la quota del mittente. Chiedere esplicitamente l'invio di prova o eseguirlo dall'app con account di collaudo controllati.
+Restano da verificare configurazione OAuth definitiva (attualmente Testing), rinnovo dopo la naturale scadenza dell'access token, comportamento con altri destinatari/provider, riavvio con task in attesa e percorso su Render. La prova sul proprio alias Gmail non garantisce la consegna presso tutti i provider né l'assenza di spam. Non usare test automatici o richieste ripetute per consumare la quota del mittente. Chiedere esplicitamente l'invio di prova o eseguirlo dall'app con account di collaudo controllati.
 
-Per il test Docker corrente, ricostruire l'immagine, aggiungere le cinque variabili API a `.env.docker.local`, mantenere il profilo `preprod` e lo stesso DB separato. Sul database locale già a V3 Flyway deve applicare la sola V4 per la pulizia avatar e riconoscere versione 4 ai riavvii successivi. Su un database nuovo applica V1–V4. Non svuotare il database. In produzione fornire le variabili dal pannello Railway; la password SMTP non è necessaria.
+Per il test Docker corrente, ricostruire l'immagine, aggiungere le cinque variabili API a `.env.docker.local`, mantenere il profilo `preprod` e lo stesso DB separato. Sul database locale già a V3 Flyway deve applicare la sola V4 per la pulizia avatar e riconoscere versione 4 ai riavvii successivi. Su un database nuovo applica V1–V4. Non svuotare il database. In produzione fornire le variabili dal pannello Render; la password SMTP non è necessaria.
 
 ## Verifiche precedenti, revisione e privacy
 
@@ -94,4 +94,8 @@ La pagina frontend `/privacy` è pubblica e collegata alla homepage e alla regis
 - [Gmail: costruzione MIME e invio](https://developers.google.com/workspace/gmail/api/guides/sending), [endpoint send](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/send), [scope](https://developers.google.com/workspace/gmail/api/auth/scopes).
 - [Google: OAuth server-side e rinnovo](https://developers.google.com/identity/protocols/oauth2/web-server), [scadenza dei refresh token](https://developers.google.com/identity/protocols/oauth2), [scope sensibili e verifica](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification).
 - [OAuth Playground](https://developers.google.com/oauthplayground/): usare le proprie credenziali.
-- [Quote e costi Gmail API](https://developers.google.com/workspace/gmail/api/reference/quota), [limiti della casella personale](https://support.google.com/mail/answer/22839?hl=it).
+- [Quote Gmail API](https://developers.google.com/workspace/gmail/api/reference/quota), [limiti della casella personale](https://support.google.com/mail/answer/22839?hl=it).
+
+## Riattivazione della coda
+
+I nuovi lavori notificano il worker dopo il commit. La prossima scadenza viene letta dopo il ciclo; una coda senza lavori attesi è ricontrollata ogni 15 minuti, con verifica immediata all’avvio. Ritenti e lease restano persistenti. Durante la sospensione del contenitore non vengono inviate email: la riattivazione riprende i lavori ancora validi. [Dettagli Render/Neon](../../dndacademyfe/docs/deploy-render-neon.md).

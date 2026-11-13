@@ -10,6 +10,10 @@ import java.time.Instant;
 import java.util.*;
 
 public interface EmailOutboxRepository extends JpaRepository<EmailOutbox, String> {
+    @Transactional(readOnly = true)
+    @Query("select min(task.nextAttemptAt) from EmailOutbox task where task.status in :statuses")
+    Instant nextAttempt(@Param("statuses") Collection<EmailOutbox.Status> statuses);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select task from EmailOutbox task where task.status in :statuses and task.nextAttemptAt <= :now order by task.createdAt, task.id")
     List<EmailOutbox> findReady(@Param("now") Instant now, @Param("statuses") Collection<EmailOutbox.Status> statuses, Pageable pageable);

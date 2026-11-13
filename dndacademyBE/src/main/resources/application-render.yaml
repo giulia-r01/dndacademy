@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 0
+      idle-timeout: 60000
+      keepalive-time: 0
+      max-lifetime: 600000
+      connection-timeout: 15000
+      validation-timeout: 3000
+      data-source-properties:
+        connectTimeout: 10
+        socketTimeout: 30
+  flyway:
+    url: ${DB_MIGRATION_URL}
+    user: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+server:
+  tomcat:
+    threads:
+      max: 32
+      min-spare: 2
+    max-connections: 128
+    accept-count: 32

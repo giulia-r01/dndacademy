@@ -21,7 +21,7 @@ La nuova esclusione nella radice copre `/.idea/` e `/target/` senza dipendere da
 
 ## Documentazione
 
-Aggiornati i README generale, backend e frontend, le guide a migrazioni, Docker, autenticazione, email, errori, navigazione, profilo, privacy e tour. I documenti che descrivevano un prototipo o una configurazione precedente indicano ora il comportamento corrente. La guida Railway/Vercel riporta stato attuale e passaggi residui, senza ripetere tutta la cronologia dei terminali.
+Aggiornati i README generale, backend e frontend, le guide a migrazioni, Docker, autenticazione, email, errori, navigazione, profilo, privacy e tour. I documenti che descrivevano un prototipo o una configurazione precedente indicano ora il comportamento corrente. La guida Render/Neon/Vercel riporta stato attuale e passaggi residui, senza ripetere tutta la cronologia dei terminali.
 
 I resoconti del 29 e 30 ottobre restano consultabili, contrassegnati come storici con rimando alle istruzioni correnti. La documentazione della campagna Pietraluce resta materiale didattico utile all'inserimento e ai test, non un seed o codice morto. Verificati i collegamenti relativi nei documenti del repository.
 
@@ -47,6 +47,10 @@ La build di verifica usa il tag locale separato `dndacademy-backend:premerge-che
 
 Le prove PostgreSQL 17 temporanee della cancellazione account e della coda email, svolte nelle revisioni precedenti, restano documentate nelle rispettive guide. Questa pulizia non cambia SQL, mapping o regole: la verifica backend corrente è stata ripetuta integralmente dentro Docker con H2 isolato.
 
+## Stato successivo della configurazione
+
+Il piano di deploy è ora Render/Neon/Vercel. Questo documento conserva l’esito della pulizia precedente; le impostazioni aggiornate e le nuove verifiche sono nella [guida Render/Neon](deploy-render-neon.md).
+
 ## Dopo il commit e il merge dell'utente
 
-Il codice è pronto per avviare il [deploy di collaudo Railway/Vercel](preproduzione-railway-vercel.md). Prima dell'apertura pubblica restano configurazione dei servizi reali, applicazione V4 al Docker locale se si vuole provarlo lì, primo Master, OAuth definitivo, collaudo applicativo cloud e backup con ripristino. Il superamento dei test locali non conclude questi passaggi.
+Il codice è pronto per avviare il [deploy di collaudo Render/Neon/Vercel](preproduzione-render-vercel.md). Prima dell'apertura pubblica restano configurazione dei servizi reali, applicazione V4 al Docker locale se si vuole provarlo lì, primo Master, OAuth definitivo, collaudo applicativo cloud e backup con ripristino. Il superamento dei test locali non conclude questi passaggi.

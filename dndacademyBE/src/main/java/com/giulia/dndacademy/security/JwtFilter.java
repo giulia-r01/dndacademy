@@ -59,6 +59,6 @@ public class JwtFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return request.getServletPath().startsWith("/auth/")
                 || ("GET".equals(request.getMethod())
-                    && "/actuator/health/readiness".equals(request.getServletPath()));
+                    && java.util.Set.of("/actuator/health/readiness", "/actuator/health/liveness").contains(request.getServletPath()));
     }
 }

@@ -80,7 +80,7 @@ class ReadinessHealthcheckTest {
     @WithMockUser(roles = "MASTER")
     void otherManagementPathsAreDeniedEvenToMasterAccounts() throws Exception {
         assertStatusOnly(probe(), 200, "UP");
-        for (String path : new String[] {"/actuator", "/actuator/health", "/actuator/health/liveness",
+        for (String path : new String[] {"/actuator", "/actuator/health", "/actuator/health/liveness/db",
                 PATH + "/db", "/actuator/env", "/actuator/configprops", "/actuator/beans", "/actuator/metrics"}) {
             mvc.perform(get(path).servletPath(path)).andExpect(status().isForbidden());
         }
@@ -91,6 +91,26 @@ class ReadinessHealthcheckTest {
         mvc.perform(post(PATH).servletPath(PATH)).andExpect(status().is4xxClientError());
         mvc.perform(put(PATH).servletPath(PATH)).andExpect(status().is4xxClientError());
         mvc.perform(get("/api/users/me")).andExpect(status().is4xxClientError());
+        mvc.perform(post("/actuator/health/liveness").servletPath("/actuator/health/liveness")).andExpect(status().is4xxClientError());
+    }
+
+    @Test void livenessDoesNotQueryTheDatabaseAndIgnoresAnInvalidBearer() throws Exception {
+        HealthContributor database = contributors.unregisterContributor("db");
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        try {
+            contributors.registerContributor("db", (HealthIndicator) () -> { calls.incrementAndGet(); return Health.down().build(); });
+            assertStatusOnly(get("/actuator/health/liveness").servletPath("/actuator/health/liveness")
+                    .header("Authorization","Bearer invalid-token"),200,"UP");
+            assertEquals(0,calls.get());
+            assertStatusOnly(probe(),503,"DOWN");
+            assertEquals(1,calls.get());
+        } finally { contributors.unregisterContributor("db"); contributors.registerContributor("db",database); }
+    }
+
+    @Test void livenessDoesNotAdvertiseAnApplicationThatRefusesTraffic() throws Exception {
+        AvailabilityChangeEvent.publish(context, ReadinessState.REFUSING_TRAFFIC);
+        try { assertStatusOnly(get("/actuator/health/liveness").servletPath("/actuator/health/liveness"),503,"OUT_OF_SERVICE"); }
+        finally { AvailabilityChangeEvent.publish(context, ReadinessState.ACCEPTING_TRAFFIC); }
     }
 
     private MockHttpServletRequestBuilder probe() {

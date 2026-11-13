@@ -23,15 +23,15 @@ Java 17 come versione target, Spring Boot 3.5.11, Spring Security, JWT, BCrypt, 
 | NPC e incontri | Nemici e aiutanti riutilizzabili, immagini e quantità per incontro |
 | Combattimento | Iniziativa, azioni singole, HP, critici, sconfitta e registro persistente |
 
-Gli endpoint richiedono autenticazione salvo `/auth/**` e il GET pubblico `/actuator/health/readiness`. Il backend verifica ruoli, appartenenza e proprietà nelle operazioni previste. La registrazione pubblica crea PLAYER; il backoffice richiede un account MASTER già predisposto.
+Gli endpoint richiedono autenticazione salvo `/auth/**` e i GET pubblici `/actuator/health/readiness` e `/actuator/health/liveness`. Il backend verifica ruoli, appartenenza e proprietà nelle operazioni previste. La registrazione pubblica crea PLAYER; il backoffice richiede un account MASTER già predisposto.
 
-Le richieste pubbliche di autenticazione hanno quote per indirizzo e identità con contatori condivisi nel database e migrazione V2. Il rifiuto temporaneo restituisce 429 con `Retry-After`. Configurazione Railway, motivazioni e prova locale: [Limiti autenticazione](docs/AUTH_RATE_LIMITS.md).
+Le richieste pubbliche di autenticazione hanno quote per indirizzo e identità con contatori condivisi nel database e migrazione V2. Il rifiuto temporaneo restituisce 429 con `Retry-After`. Configurazione Render, motivazioni e prova locale: [Limiti autenticazione](docs/AUTH_RATE_LIMITS.md).
 
 Il login usa gli account persistiti e BCrypt; le richieste protette usano JWT Bearer. È esclusa la sola autoconfigurazione dell'utente predefinito in memoria e sono disabilitati esplicitamente HTTP Basic e form login. La protezione degli endpoint resta attiva. Motivazione e verifica in [Autenticazione JWT](docs/AUTHENTICATION.md).
 
 Open Session in View è disabilitato: i servizi caricano le relazioni e costruiscono i DTO all'interno di transazioni esplicite. Registro eventi e ordine dei turni del combattimento sono copiati in liste normali prima della risposta JSON. Scelte e prove senza una transazione di test esterna in [Sessioni database e transazioni](docs/PERSISTENCE_BOUNDARIES.md).
 
-Il readiness endpoint Actuator verifica disponibilità dell'app e del database: restituisce solo `status`, con HTTP 200 se pronto e 503 negli stati non pronti. Gli altri percorsi di gestione sono bloccati. Configurazione condivisa con i test in `src/main/resources/management.yaml`; prova locale e percorso da impostare su Railway in [Healthcheck](docs/HEALTHCHECK.md).
+Il readiness endpoint Actuator verifica disponibilità dell'app e del database: restituisce solo `status`, con HTTP 200 se pronto e 503 negli stati non pronti. È disponibile anche liveness, usato da Render senza interrogare il database. Gli altri percorsi di gestione sono bloccati. Configurazione condivisa con i test in `src/main/resources/management.yaml`; liveness senza query DB e percorso da impostare su Render in [Healthcheck](docs/HEALTHCHECK.md).
 
 CORS consente origini esatte: in `dev`/`preprod` anche localhost e 127.0.0.1 sulla porta 3000, in `prod` solo l'origine HTTPS configurata. Configurazioni errate o eccezioni locali in produzione impediscono l'avvio. La stessa origine normalizzata è usata per le email di recupero password. Regole, prova preflight e test in [CORS per ambiente](docs/CORS.md).
 
@@ -158,7 +158,7 @@ Gli errori applicativi previsti usano stati espliciti e messaggi controllati; i 
 .\mvnw.cmd "-Dtest=NpcHealerTest,CampaignUnlockSyncTest,CharacterHpUpdateTest,CombatHistoryTest,CombatPreviewTest,CampaignChapterRequirementsTest,CampaignProgressServiceImplTest,CombatServiceImplTest,NpcImageTest,GlobalExceptionHandlerTest" test
 ```
 
-La suite completa comprende 218 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1–V4, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; migrazioni e cancellazione sono verificate anche su PostgreSQL 17 temporaneo; resta il collaudo dei servizi cloud reali.
+La suite completa comprende 232 test: unitari e integrazione di sicurezza, repository, transazioni, concorrenza e vincoli. `QuizPrerequisiteIntegrationTest` copre lettura obbligatoria, autore Master, isolamento dei progressi, risposte duplicate e quiz vuoti; `PreMergeIntegrationTest` verifica anche copie personali concorrenti dello stesso modello, protezione degli snapshot, HP pieni nei nuovi tentativi e ripresa senza reset. InitialSchemaMigrationTest e InitialSchemaApplicationTest verificano V1–V4, la validazione delle entita, il riavvio senza perdita di dati e le protezioni Flyway. Il profilo di test usa H2 in memoria; migrazioni e cancellazione sono verificate anche su PostgreSQL 17 temporaneo; resta il collaudo dei servizi cloud reali.
 
 Il frontend include test browser Playwright con API simulate per i flussi Player/Master, combattimenti, immagini, profilo, navigazione, tour ed editor (vedere il relativo README). Non sostituiscono i test di integrazione o la prova completa con i servizi reali.
 
@@ -212,11 +212,11 @@ Surefire carica src/test/resources/application-test.properties, con H2 in modali
 
 TEST_DATABASE_PASSWORD puo essere passato allo stesso modo quando necessario. I vincoli nuovi sono stati verificati su schema pulito H2 e PostgreSQL; su database preesistenti controllare eventuali duplicati prima di aggiornare lo schema, senza cancellare automaticamente dati storici. Nessun reset del database dell'utente e incluso in queste modifiche. Dettagli e limiti: [revisione pre merge](docs/REVISIONE_PRE_MERGE_2026-10-30.md).
 
-## Preparazione Railway e Vercel
+## Preparazione Render, Neon e Vercel
 
 Il backend dispone di un [Dockerfile con build e test Java 17](docs/DOCKER.md), immagine finale JRE con utente senza privilegi e credenziali escluse dal contesto. Il codice corrente include V4 e la cancellazione account; le precedenti prove Docker e Gmail locali non certificano la versione cloud. Ricostruire l’immagine locale per applicare V4 senza svuotare il database. Vedere la guida Docker per variabili e avvio aggiornati.
 
-[Verifica del main per Railway e Vercel](../dndacademyfe/docs/preproduzione-railway-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
+[Verifica del main per Render, Neon e Vercel](../dndacademyfe/docs/preproduzione-render-vercel.md): esito del controllo, pulizia del repository, interventi necessari e sequenza di rilascio. Il documento distingue i test locali dal collaudo dei servizi reali; la pubblicazione non e ancora approvata.
 
 Informativa pubblica `/privacy` predisposta con dati del titolare confermati. Prima dell’apertura completare le verifiche operative descritte nella [guida privacy frontend](../dndacademyfe/docs/privacy-rilascio.md); nessun commit, merge o deploy è stato eseguito.
 
@@ -227,3 +227,7 @@ La [procedura del primo Master](docs/FIRST_MASTER.md) promuove manualmente un ac
 ## Cancellazione del proprio account
 
 Dal profilo è possibile eliminare il proprio account con password e conferma esplicita. La [procedura applicativa](docs/ACCOUNT_DELETION.md) documenta rimozione dei dati personali, trasferimento dei contenuti Master, revoca degli accessi e pulizia persistente dell’avatar con V4. Non sono introdotte funzioni amministrative di eliminazione o disabilitazione di altri utenti.
+
+## Profilo Render e Neon
+
+`SPRING_PROFILES_ACTIVE=render` include il profilo prod. Il runtime usa `DB_URL`, Flyway richiede `DB_MIGRATION_URL` diretto, e il pool rilascia le connessioni inattive. Sonde Render su liveness, senza query al database. I worker riattivano le code dopo il commit e rispettano le scadenze persistenti, con recupero periodico. [Variabili e collaudo](../dndacademyfe/docs/deploy-render-neon.md).

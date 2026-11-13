@@ -16,9 +16,10 @@ Non eseguire V1 manualmente in pgAdmin. Non modificarla dopo che è stata applic
 | --- | --- | --- | --- |
 | `dev` (default) | Import opzionale del file esterno `./src/main/resources/env.properties`, relativo alla directory di avvio | Hibernate `update`, Flyway disabilitato | Solo database di sviluppo preesistente |
 | `preprod` | Stesso import esterno per riusare credenziali e servizi locali; URL obbligatorio distinto `PREPROD_DB_URL` | Flyway e Hibernate `validate` | Database locale nuovo per provare la prima installazione |
-| `prod` | Nessun import di file locali; tutte le proprietà tramite ambiente | Flyway e Hibernate `validate` | Nuovo PostgreSQL Railway |
+| `render` | Nessun import di file locali; include prod e configura pool e Flyway separato | Flyway e Hibernate `validate` | PostgreSQL Neon |
+| `prod` | Nessun import di file locali; tutte le proprietà tramite ambiente | Flyway e Hibernate `validate` | PostgreSQL del rilascio |
 
-Usare un solo profilo alla volta. Su Railway impostare esplicitamente `SPRING_PROFILES_ACTIVE=prod`: il default `dev` è mantenuto esclusivamente per non applicare migrazioni ai vecchi dati locali. Una build del JAR non attiva automaticamente il profilo di produzione.
+Selezionare il profilo di destinazione. Su Render impostare esplicitamente `SPRING_PROFILES_ACTIVE=render`, che include prod: il default `dev` è mantenuto esclusivamente per non applicare migrazioni ai vecchi dati locali. Una build del JAR non attiva automaticamente il profilo di produzione.
 
 I profili `preprod` e `prod` condividono V1–V4 e lo stesso ciclo di vita dello schema; il primo riusa soltanto la configurazione dei servizi locali. Il file con le credenziali rimane escluso da Git ed è escluso dalle risorse Maven. Il backend usa `${PORT:8080}` e non stampa le query SQL per default. Open Session in View è disabilitato, il [readiness endpoint](HEALTHCHECK.md) verifica app e database e [CORS](CORS.md) distingue origini locali e di produzione. La prova locale dei limiti di accesso, Docker, email e collaudo cloud richiedono ancora i passaggi della verifica di preproduzione.
 
@@ -58,7 +59,7 @@ Questi comandi sono istruzioni per una prova esplicita: la preparazione del codi
 
 V1 è destinata a una nuova installazione. Per adottare Flyway su un database preesistente occorrono backup, confronto dello schema e baseline esplicita dopo la verifica: non è parte di questa procedura. Il profilo `dev` conserva temporaneamente il comportamento precedente solo per lo sviluppo locale.
 
-Lo script manuale [2026-11-10-character-templates.sql](migrations/2026-11-10-character-templates.sql) converte solo i personaggi dei vecchi database: non sostituisce V1, non viene importato da Flyway e non serve al nuovo database Railway.
+Lo script manuale [2026-11-10-character-templates.sql](migrations/2026-11-10-character-templates.sql) converte solo i personaggi dei vecchi database: non sostituisce V1, non viene importato da Flyway e non serve al nuovo database Neon.
 
 ## Verifiche automatiche e limiti
 
@@ -68,10 +69,14 @@ L'aggiornamento V1→V3 e V2→V3 è verificato su H2 conservando utenti e conta
 - `InitialSchemaApplicationTest`: avvio Spring Boot con Flyway attivo e Hibernate in `validate`, con inizializzazione successiva dei badge di sistema.
 - La suite applicativa esistente conserva H2 e `create-drop`, con Flyway disabilitato esplicitamente per l'isolamento delle sue fixture. I test delle migrazioni sono separati: non sono una copia SQL dello schema H2, usano gli stessi script V1–V4/V4 destinati a PostgreSQL.
 - Il packaging deve includere V1–V4/V4 e i profili ed escludere `env.properties`, anche nelle build locali. Eseguire una build pulita per eliminare eventuali vecchie copie rimaste in `target`.
-- H2 non sostituisce PostgreSQL 17: il via libera a questa fase richiede la prova locale sopra. Deploy Railway, servizi email/immagini e ripristino backup restano da verificare.
+- H2 non sostituisce PostgreSQL 17: il via libera a questa fase richiede la prova locale sopra. Deploy Render/Neon, servizi email/immagini e ripristino backup restano da verificare.
 
 Riferimenti: [Spring Boot 3.5 e Flyway](https://docs.spring.io/spring-boot/3.5/how-to/data-initialization.html), [rischi del baseline automatico](https://documentation.red-gate.com/fd/flyway-baseline-on-migrate-setting-277578974.html).
 
 ## V4: pulizia avatar dopo cancellazione account
 
 V4 aggiunge solo la coda `avatar_cleanup`, senza modificare le migrazioni applicate né azzerare dati. Il lavoro conserva l’ID necessario alla cancellazione Cloudinary anche dopo la rimozione dell’utente; non ha una FK verso `users`. [Cancellazione e conservazione dei dati](ACCOUNT_DELETION.md). Il nuovo backend richiede questa tabella: aggiornare immagine/container locale e verificare il passaggio V3→V4 e gli avvii successivi sul medesimo database.
+
+## Connessioni nel profilo render
+
+Il profilo render include prod. `DB_URL` indica il pooler Neon per le operazioni applicative; `DB_MIGRATION_URL` è obbligatorio e deve indicare l’endpoint diretto dello stesso database. Flyway non usa il pooler. Non sono aggiunte migrazioni da questa configurazione. [Procedura](../../dndacademyfe/docs/deploy-render-neon.md).

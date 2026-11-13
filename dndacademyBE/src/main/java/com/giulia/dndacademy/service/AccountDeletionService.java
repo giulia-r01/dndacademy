@@ -20,6 +20,7 @@ public class AccountDeletionService {
     private final PasswordEncoder passwords;
     private final AvatarCleanupRepository avatarTasks;
     private final EntityManager entityManager;
+    private final org.springframework.context.ApplicationEventPublisher events;
 
     public record Successor(Long id, String username) {}
     public record DeletionPlan(long campaigns, long npcs, List<Successor> successors) {}
@@ -76,6 +77,7 @@ public class AccountDeletionService {
         }
         execute("delete from users where id = :id", userId);
         entityManager.clear();
+        events.publishEvent(new com.giulia.dndacademy.background.QueueChanged(com.giulia.dndacademy.background.QueueWakeups.Kind.AVATAR));
     }
 
     private boolean hasContents(Long userId) {

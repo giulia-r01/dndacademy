@@ -3,6 +3,8 @@ spring:
     import: classpath:management.yaml
   profiles:
     default: dev
+    group:
+      render: prod
 
   flyway:
     enabled: true

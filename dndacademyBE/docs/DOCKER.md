@@ -1,6 +1,6 @@
 # Docker del backend: build e collaudo
 
-Il backend Spring Boot viene distribuito con `dndacademyBE/Dockerfile`. Il frontend continua a essere compilato da Vercel come progetto Next.js; non richiede un container per il deploy previsto. PostgreSQL rimane un servizio separato: il database di produzione sarà su Railway, senza dati persistenti nel filesystem del backend.
+Il backend Spring Boot viene distribuito con `dndacademyBE/Dockerfile`. Il frontend continua a essere compilato da Vercel come progetto Next.js; non richiede un container per il deploy previsto. PostgreSQL rimane un servizio separato: il database di produzione sarà su Neon, senza dati persistenti nel filesystem del backend.
 
 ## Scelte
 
@@ -25,7 +25,7 @@ Il digest della manifest list locale è `sha256:9740e4dd7c245a69d43982bb3a4b80de
 
 Successivamente l'utente ha avviato il container con profilo `preprod`, variabili da `.env.docker.local` e collegamento al PostgreSQL Windows tramite `host.docker.internal:5432/dndacademy_preprod`. Il log del 13 novembre alle 10:13 UTC conferma Java 17.0.21, esecuzione come utente `app`, V1/V2 valide, versione schema 2 senza migrazioni da applicare e avvio di Tomcat. Il readiness sulla porta pubblicata `8081` restituisce `UP`.
 
-L'utente ha poi arrestato e ricreato il container con lo stesso comando. Il secondo log, alle 10:18 UTC, conferma lo stesso database e schema 2 aggiornato senza nuove migrazioni; il readiness torna `UP`. Avvio, connessione, ricreazione del container e raggiungibilità HTTP sono verificati localmente. Restano la prova di conservazione di contenuti/account/quote specifici, i percorsi autenticati, email, upload e collaudo Railway/Vercel. Non è stato ancora collaudato il container con profilo `prod` sui servizi cloud.
+L'utente ha poi arrestato e ricreato il container con lo stesso comando. Il secondo log, alle 10:18 UTC, conferma lo stesso database e schema 2 aggiornato senza nuove migrazioni; il readiness torna `UP`. Avvio, connessione, ricreazione del container e raggiungibilità HTTP sono verificati localmente. Restano la prova di conservazione di contenuti/account/quote specifici, i percorsi autenticati, email, upload e collaudo Render/Neon/Vercel. Non è stato ancora collaudato il container con profilo `prod` sui servizi cloud.
 
 ## Collaudo storico Gmail API e V3
 
@@ -33,11 +33,11 @@ La successiva build con Gmail API e coda email è riuscita con **211 test Java 1
 
 La nuova immagine contiene V3 per la coda. Per attivare Gmail API nel collaudo aggiungere `MAIL_PROVIDER=gmail-api`, `MAIL_FROM`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` al file locale, dopo aver completato il consenso del mittente. In `prod` Gmail API è imposta e SMTP non è accettato. La password SMTP non è necessaria al trasporto API. In `preprod`, senza la selezione esplicita, resta disponibile SMTP per il collaudo locale esistente. Variabili, procedura Google e limiti in [Gmail API](GMAIL_API.md).
 
-Gli avvii PostgreSQL descritti nella prima sezione riguardano la versione V2 precedente. Successivamente l'utente ha ricreato il container con Gmail API: V3 applicata sul database locale, avvio e readiness UP sulla porta 8081 confermati. Sono riusciti registrazione con benvenuto ricevuto e percorso completo di recupero password dal frontend collegato alla porta 8081, fino al login con nuova password. La build non ha inviato email: queste prove reali sono state eseguite dall'utente. Restano configurazione OAuth finale (attualmente Testing) e collaudo Railway/Vercel. Nessun reset del database è stato necessario.
+Gli avvii PostgreSQL descritti nella prima sezione riguardano la versione V2 precedente. Successivamente l'utente ha ricreato il container con Gmail API: V3 applicata sul database locale, avvio e readiness UP sulla porta 8081 confermati. Sono riusciti registrazione con benvenuto ricevuto e percorso completo di recupero password dal frontend collegato alla porta 8081, fino al login con nuova password. La build non ha inviato email: queste prove reali sono state eseguite dall'utente. Restano configurazione OAuth finale (attualmente Testing) e collaudo Render/Neon/Vercel. Nessun reset del database è stato necessario.
 
 ## Versione corrente: V4 e cancellazione account
 
-Il codice corrente comprende V1–V4 e 218 test backend. Il Docker locale collaudato dall’utente fino a V3 va ricostruito e ricreato per includere la cancellazione account e la coda di pulizia avatar. Flyway applica solo V4 su quel database, senza reset. Le prove con 187/211 test riportate sopra sono storiche; per i risultati dell’ultima revisione usare la [verifica finale](../../dndacademyfe/docs/revisione-finale-premerge.md).
+Il codice corrente comprende V1–V4 e 232 test backend. Il Docker locale collaudato dall’utente fino a V3 va ricostruito e ricreato per includere la cancellazione account e la coda di pulizia avatar. Flyway applica solo V4 su quel database, senza reset. Le prove con 187/211 test riportate sopra sono storiche; per i risultati dell’ultima revisione usare la [verifica finale](../../dndacademyfe/docs/revisione-finale-premerge.md).
 
 ## Primo passo: costruzione locale
 
@@ -89,12 +89,10 @@ Invoke-RestMethod 'http://localhost:8081/actuator/health/readiness'
 
 Deve risultare `UP`. Con l’immagine corrente verificare Flyway a versione 4, nessuna migrazione riapplicata, arresto/riavvio senza perdita di dati e login. Il browser frontend deve essere compilato/avviato con l'URL backend appropriato prima del collaudo da interfaccia. Il solo readiness non prova email, upload o l'intero percorso didattico.
 
-## Railway
+## Render e Neon
 
-Nel servizio backend impostare **Root Directory `/dndacademyBE`**: Railway troverà il Dockerfile nella radice del servizio. Lasciare il comando di avvio del Dockerfile, senza override Maven o `spring-boot:run`. Configurare **Healthcheck Path `/actuator/health/readiness`**, usando la porta `PORT` gestita dal servizio. La sonda viene effettuata da Railway: non viene aggiunto un secondo healthcheck Docker con dipendenze curl nella JRE.
+Nel servizio Render usare Root Directory dndacademyBE e il Dockerfile senza override dell’ENTRYPOINT. Impostare SPRING_PROFILES_ACTIVE=render, APP_CLIENT_IP_SOURCE=render, le due connessioni Neon e la configurazione JVM per il contenitore da 512 MB. Health Check Path: /actuator/health/liveness, che non interroga il database. Readiness resta diagnostico. Tutte le variabili e i passaggi sono nella [guida Render/Neon](../../dndacademyfe/docs/deploy-render-neon.md).
 
-Tutte le variabili dei servizi vanno nel pannello Railway a runtime, mai nel Dockerfile o nella build. Impostare esplicitamente `SPRING_PROFILES_ACTIVE=prod`, `APP_CLIENT_IP_SOURCE=railway`, origine frontend HTTPS e connessione JDBC privata al PostgreSQL Railway tramite `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`. In produzione **non** usare `PREPROD_DB_URL` né `host.docker.internal`. Verificare anche i requisiti in [CORS](CORS.md), [limiti autenticazione](AUTH_RATE_LIMITS.md), [schema](DATABASE_MIGRATIONS.md) e [healthcheck](HEALTHCHECK.md).
-
-Il container non conclude la preparazione al rilascio: email, primo Master, variabili frontend, backup e percorso applicativo sui servizi reali restano da collaudare. Nessun deploy è eseguito da questa procedura.
+Le precedenti prove Docker restano storiche; il nuovo collaudo render usa un’immagine separata e database temporaneo, senza sostituire il container locale dell’utente.
 
 Riferimenti: [Docker: build in più fasi](https://docs.docker.com/build/building/multi-stage/), [contesto e dockerignore](https://docs.docker.com/build/concepts/context/), [Railway: Dockerfile](https://docs.railway.com/builds/dockerfiles), [monorepo](https://docs.railway.com/deployments/monorepo).

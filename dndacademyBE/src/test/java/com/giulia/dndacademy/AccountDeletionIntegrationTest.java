@@ -188,7 +188,7 @@ class AccountDeletionIntegrationTest {
         store.finish(first,true,now); assertEquals(1,cleanup.count());
         store.finish(recovered,false,now); assertEquals(1,cleanup.count());
         assertNull(store.claim(now.plusSeconds(1)));
-        var worker=new AvatarCleanupWorker(store,images);
+        var worker=new AvatarCleanupWorker(store,images,cleanup,new com.giulia.dndacademy.background.QueueWakeups(java.time.Duration.ofMinutes(15)));
         doThrow(new IllegalStateException("errore simulato")).when(images).deleteUserImage(account.getId());
         assertTrue(worker.runOne(now.plusSeconds(3600))); assertEquals(1,cleanup.count());
         doNothing().when(images).deleteUserImage(account.getId());

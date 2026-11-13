@@ -14,12 +14,18 @@ public class AvatarCleanupWorker {
     private static final Logger log = LoggerFactory.getLogger(AvatarCleanupWorker.class);
     private final AvatarCleanupStore store;
     private final ImageUploadService images;
+    private final com.giulia.dndacademy.repository.AvatarCleanupRepository tasks;
+    private final com.giulia.dndacademy.background.QueueWakeups wakeups;
 
     @Scheduled(fixedDelay = 15000, initialDelay = 15000)
     public void drain() {
+        var scan = wakeups.begin(com.giulia.dndacademy.background.QueueWakeups.Kind.AVATAR, Instant.now());
+        if (scan == null) return;
         try {
             for (int i = 0; i < 5; i++) if (!runOne(Instant.now())) break;
+            wakeups.finish(scan, tasks.nextAttempt(), Instant.now());
         } catch (RuntimeException ex) {
+            wakeups.failed(scan, Instant.now());
             log.warn("Pulizia avatar temporaneamente non disponibile; il lavoro resta persistito.");
         }
     }
