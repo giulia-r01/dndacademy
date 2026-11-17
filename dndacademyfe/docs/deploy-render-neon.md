@@ -55,7 +55,9 @@ La memoria locale delle scadenze è un'ottimizzazione, non la fonte dei dati: le
 
 Vercel richiede `NEXT_PUBLIC_API_URL=https://<backend>.onrender.com` prima della build, senza `/api` o slash finale. Nessun segreto va nelle variabili pubbliche. Un cambio dell'URL richiede una nuova build.
 
-Una richiesta API ancora in corso dopo tre secondi mostra un avviso accessibile, anche su mobile. L'avviso scompare quando finiscono tutte le richieste lente. La scadenza è di 120 secondi e rispetta anche l'annullamento richiesto dal chiamante. Errori di connessione e pagine HTML del proxy producono un messaggio italiano; non vengono mostrati come password errata. Solo un 401 autenticato relativo alla sessione corrente la termina.
+L'ingresso nell'app ancora in corso dopo tre secondi mostra un avviso accessibile, anche su mobile. L'avviso copre login e caricamento del profilo, oppure il ripristino iniziale di una sessione già presente; scompare al termine del tentativo. Dopo l'ingresso riuscito, navigazione, aggiornamenti del profilo e altre operazioni usano i propri stati di caricamento senza riattivare l'avviso globale. Un nuovo login o una riapertura della pagina può mostrarlo nuovamente. Non viene salvata una preferenza permanente nel browser.
+
+La scadenza delle richieste API resta di 120 secondi e rispetta anche l'annullamento richiesto dal chiamante. Errori di connessione e pagine HTML del proxy producono un messaggio italiano; non vengono mostrati come password errata. Solo un 401 autenticato relativo alla sessione corrente la termina.
 
 Non sono introdotti reinvii automatici di POST, PATCH, PUT, DELETE o altre azioni: dopo un'interruzione resta necessario controllare l'esito prima di ripetere un'operazione. Non sono introdotte sonde periodiche dal browser quando non ci sono richieste.
 

@@ -26,7 +26,7 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
     if (!coach) return
     const previousSpace = document.documentElement.style.getPropertyValue("--tour-coach-height")
     const inert = new Map<HTMLElement, boolean>()
-    let stopped = false, frame = 0, described: string | null = null
+    let stopped = false, frame = 0, described: string | null = null, alignTarget = true
     function restoreInert() { for (const [element, value] of inert) element.inert = value; inert.clear() }
     function isolate(container: HTMLElement, target: HTMLElement | null) {
       for (const child of Array.from(container.children)) {
@@ -38,6 +38,13 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
     function measure() {
       frame = 0
       if (stopped) return
+      const viewport = window.visualViewport
+      const viewportTop = viewport?.offsetTop ?? 0
+      const viewportLeft = viewport?.offsetLeft ?? 0
+      const viewportHeight = viewport?.height ?? innerHeight
+      const viewportWidth = viewport?.width ?? innerWidth
+      const viewportBottom = viewportTop + viewportHeight
+      coach!.style.maxHeight = innerWidth < 768 ? `${viewportHeight * 0.52}px` : ""
       const height = coach!.offsetHeight, width = coach!.offsetWidth
       document.documentElement.style.setProperty("--tour-coach-height", `${height}px`)
       const target = Array.from(document.querySelectorAll<HTMLElement>(step.target)).find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden") ?? null
@@ -48,6 +55,7 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
           else targetRef.current.setAttribute("aria-describedby", described)
         }
         targetRef.current = target
+        alignTarget = true
         if (target) {
           described = target.getAttribute("aria-describedby")
           target.setAttribute("aria-describedby", [described, `${id}-text`].filter(Boolean).join(" "))
@@ -59,13 +67,30 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
         if (target && review) { inert.set(target, target.inert); target.inert = true }
       }
       if (!target) { isolate(document.body, null); setGeometry(null); return }
-      const rect = target.getBoundingClientRect()
+      let rect = target.getBoundingClientRect()
       let coachTop: number, coachLeft: number, docked = false
-      if (innerWidth < 768) { coachTop = innerHeight - height - 12; coachLeft = (innerWidth - width) / 2; docked = true }
+      if (innerWidth < 768) { coachTop = viewportBottom - height - 12; coachLeft = viewportLeft + (viewportWidth - width) / 2; docked = true }
       else if (rect.bottom + height + 24 < innerHeight) { coachTop = rect.bottom + 16; coachLeft = Math.min(innerWidth - width - 12, Math.max(12, rect.left)) }
       else if (rect.top - height - 16 > 12) { coachTop = rect.top - height - 16; coachLeft = Math.min(innerWidth - width - 12, Math.max(12, rect.left)) }
       else if (rect.right + width + 24 < innerWidth) { coachLeft = rect.right + 16; coachTop = Math.max(12, Math.min(rect.top, innerHeight - height - 12)) }
       else { coachTop = innerHeight - height - 12; coachLeft = innerWidth - width - 12; docked = true }
+      if (docked) {
+        const safeTop = viewportTop + 16
+        const safeBottom = coachTop - 18
+        const available = safeBottom - safeTop
+        const active = document.activeElement
+        const focused = active instanceof HTMLElement && target.contains(active) ? active : null
+        const anchor = rect.height > available && focused ? focused.getBoundingClientRect() : rect
+        let delta = 0
+        if (anchor.height <= available && (rect.height <= available || alignTarget)) {
+          if (alignTarget || anchor.top < safeTop || anchor.bottom > safeBottom) {
+            delta = anchor.top + anchor.height / 2 - (safeTop + available / 2)
+          }
+        } else if (alignTarget) delta = rect.top - safeTop
+        if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: "instant" })
+        rect = target.getBoundingClientRect()
+      }
+      alignTarget = false
       const top = Math.max(4, rect.top - 6), left = Math.max(4, rect.left - 6)
       const right = Math.min(innerWidth - 4, rect.right + 6)
       const bottom = Math.max(top, Math.min(rect.bottom + 6, docked ? coachTop - 10 : innerHeight - 4))
@@ -75,6 +100,7 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       })
     }
     function schedule() { if (!frame) frame = requestAnimationFrame(measure) }
+    function resized() { alignTarget = true; schedule() }
     function allowed(node: EventTarget | null) { return node instanceof Node && (coach!.contains(node) || (!review && !!targetRef.current?.contains(node))) }
     function block(event: Event) { if (!allowed(event.target)) { event.preventDefault(); event.stopImmediatePropagation() } }
     function keyboard(event: KeyboardEvent) {
@@ -88,21 +114,27 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       items[(current + (event.shiftKey ? -1 : 1) + items.length) % items.length]?.focus()
     }
     function containFocus(event: FocusEvent) {
-      if (allowed(event.target)) return
+      if (allowed(event.target)) {
+        if (event.target instanceof Node && targetRef.current?.contains(event.target)) alignTarget = true
+        schedule(); return
+      }
       const target = review ? null : targetRef.current
       const first = target?.matches(focusable) ? target : target?.querySelector<HTMLElement>(focusable)
       ;(first ?? (coach!.style.visibility !== "hidden" ? coach!.querySelector<HTMLElement>("button") : null))?.focus({ preventScroll: true })
     }
     const observer = new MutationObserver(schedule)
     observer.observe(document.body, { childList: true, subtree: true })
-    const resize = new ResizeObserver(schedule)
+    const resize = new ResizeObserver(resized)
     resize.observe(coach)
+    resize.observe(document.body)
     document.addEventListener("click", block, true)
     document.addEventListener("pointerdown", block, true)
     document.addEventListener("keydown", keyboard, true)
     document.addEventListener("focusin", containFocus, true)
-    window.addEventListener("resize", schedule)
+    window.addEventListener("resize", resized)
     window.addEventListener("scroll", schedule, true)
+    window.visualViewport?.addEventListener("resize", resized)
+    window.visualViewport?.addEventListener("scroll", schedule)
     const timeout = window.setTimeout(() => { if (!targetRef.current) setMissing(true) }, 2500)
     measure()
     return () => {
@@ -110,7 +142,9 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       cancelAnimationFrame(frame); clearTimeout(timeout); observer.disconnect(); resize.disconnect()
       document.removeEventListener("click", block, true); document.removeEventListener("pointerdown", block, true)
       document.removeEventListener("keydown", keyboard, true); document.removeEventListener("focusin", containFocus, true)
-      window.removeEventListener("resize", schedule); window.removeEventListener("scroll", schedule, true)
+      window.removeEventListener("resize", resized); window.removeEventListener("scroll", schedule, true)
+      window.visualViewport?.removeEventListener("resize", resized)
+      window.visualViewport?.removeEventListener("scroll", schedule)
       restoreInert()
       if (targetRef.current) {
         if (described === null) targetRef.current.removeAttribute("aria-describedby")

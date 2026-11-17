@@ -29,8 +29,8 @@ export default function BackendConnectionNotice() {
       <div>
         <p className="font-bold">Collegamento a D&D Academy in corso</p>
         <p className="mt-1 text-sm text-[var(--text-soft)]">
-          Dopo una pausa il primo accesso può richiedere più tempo. Attendi: la
-          richiesta è ancora in corso.
+          Stiamo preparando il tuo accesso. Attendi qualche istante: il
+          collegamento è ancora in corso.
         </p>
       </div>
     </div>

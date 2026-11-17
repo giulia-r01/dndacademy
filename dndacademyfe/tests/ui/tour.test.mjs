@@ -8,7 +8,7 @@ let browser
 before(async () => { browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_PATH ? { executablePath: process.env.UI_BROWSER_PATH } : {}) }) })
 after(async () => { await browser?.close() })
 async function setup({ master = false, mobile = false, login = false } = {}) {
-  const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 667 } : { width: 1440, height: 1000 } })
+  const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 667 } : { width: 1440, height: 1000 }, isMobile: mobile, hasTouch: mobile })
   if (!login) await context.addInitScript(() => localStorage.setItem("token", "tour-fixture"))
   const page = await context.newPage(), writes = [], errors = []
   let profile = { id: 1, username: "tester", email: "test@example.test", role: master ? "MASTER" : "PLAYER", learningLevel: "BEGINNER", avatarUrl: null }
@@ -30,12 +30,55 @@ async function step(page, id) {
   await page.locator(`[data-tour-step="${id}"]`).waitFor()
   await page.waitForFunction(() => !!document.querySelector("[data-tour-shade]"))
 }
-async function click(page, action) { await page.locator(`[data-tour-action="${action}"]`).click() }
+async function click(page, action) {
+  if ((page.viewportSize()?.width ?? 0) < 768) {
+    await page.waitForFunction(action => {
+      const target = document.querySelector(`[data-tour-action="${action}"]`)
+      const coach = document.querySelector('[data-tour-step]')
+      if (!target || !coach) return false
+      const rect = target.getBoundingClientRect(), box = coach.getBoundingClientRect()
+      return rect.top >= 10 && rect.bottom <= box.top - 10 && box.bottom <= innerHeight
+    }, action)
+  }
+  await page.locator(`[data-tour-action="${action}"]`).click()
+}
 async function screenshot(page, name) {
   if (!process.env.UI_SCREENSHOT_DIR) return
   await mkdir(process.env.UI_SCREENSHOT_DIR, { recursive: true })
   await page.screenshot({ path: `${process.env.UI_SCREENSHOT_DIR}/${name}.png` })
 }
+
+test("Master mobile: comando libero dopo ridimensionamento, focus del modulo e scorrimento fino al salvataggio", async () => {
+  const { context, page, errors } = await setup({ master: true, mobile: true })
+  try {
+    await page.goto(`${baseURL}/admin`)
+    await step(page, "start")
+    await page.setViewportSize({ width: 667, height: 390 })
+    await click(page, "manage-campaigns")
+    await step(page, "new-campaign")
+    await page.setViewportSize({ width: 390, height: 667 })
+    await click(page, "new-campaign")
+    await step(page, "campaign")
+    await page.getByLabel("Nome campagna", { exact: true }).focus()
+    await page.setViewportSize({ width: 390, height: 480 })
+    await page.waitForFunction(() => {
+      const field = document.activeElement?.getBoundingClientRect()
+      const guide = document.querySelector('[data-tour-step]')?.getBoundingClientRect()
+      return field && guide && field.top >= 10 && field.bottom < guide.top - 10 && guide.bottom <= innerHeight
+    })
+    await page.getByLabel("Nome campagna", { exact: true }).fill("Campagna mobile")
+    await page.getByRole("button", { name: "Salva esempio", exact: true }).focus()
+    await page.waitForFunction(() => {
+      const button = document.activeElement?.getBoundingClientRect()
+      const guide = document.querySelector('[data-tour-step]')?.getBoundingClientRect()
+      return button && guide && button.top >= 10 && button.bottom < guide.top - 10
+    })
+    await page.keyboard.press("Enter")
+    await step(page, "character")
+    assert.deepEqual(errors, [])
+    await screenshot(page, "tour-master-mobile-resized")
+  } finally { await context.close() }
+})
 async function accountFlow(page) {
   await step(page, "account")
   await click(page, "account-menu")

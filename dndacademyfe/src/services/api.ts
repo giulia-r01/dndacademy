@@ -1,5 +1,3 @@
-import { trackBackendRequest } from "@/lib/backend-activity"
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 type ApiFetchOptions = RequestInit & {
@@ -29,7 +27,6 @@ export async function apiFetch<T>(
   if (options.signal?.aborted) abort()
   else options.signal?.addEventListener("abort", abort, { once: true })
   const timeout = setTimeout(() => controller.abort(), 120000)
-  const finish = trackBackendRequest()
   try {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
@@ -88,6 +85,5 @@ export async function apiFetch<T>(
   } finally {
     clearTimeout(timeout)
     options.signal?.removeEventListener("abort", abort)
-    finish()
   }
 }

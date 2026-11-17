@@ -28,6 +28,8 @@ Ho capito è disponibile solo per leggere badge e registro; Termina tour solo do
 
 Su desktop il box si posiziona accanto al comando e arriva a 440 px di larghezza, con descrizione a 16 px e titolo a 22 px. Su mobile rimane in basso e si adatta alla larghezza disponibile; il contenuto scorre separatamente, mantenendo visibili uscita e pulsanti di navigazione. Lo spazio finale della pagina permette di scorrere i moduli fino al salvataggio senza nasconderlo sotto la guida. L'oscuramento è al 42% per conservare il contesto nell'interfaccia scura. La scrollbar personalizzata già presente è mantenuta.
 
+Il posizionamento mobile usa l'area visibile del browser (`visualViewport`): il comando viene portato automaticamente nello spazio libero sopra il box, anziché al centro dell'intero schermo. Ridimensionamento, orientamento, dimensioni della guida e comparsa della tastiera aggiornano la posizione. Nei moduli più lunghi dell'area disponibile si mantiene lo scorrimento manuale; il campo che riceve il focus viene riportato nell'area libera. Non vengono introdotti ritardi fissi per attendere il layout.
+
 ## Isolamento e ritorno
 
 I contenuti di esempio restano in memoria e non producono modifiche al database, ruoli reali, upload o cambi password. Il normale controllo della sessione può leggere il profilo reale durante le navigazioni.
@@ -45,6 +47,10 @@ La preferenza è per browser, origine, account e ruolo; non è sincronizzata dal
 ## Verifiche e limiti della prova
 
 I test attraversano i due percorsi completi su desktop e mobile, verificano blocco delle azioni esterne, mancato avanzamento per errori, salvataggi obbligatori, bersaglio, cambio ruolo con conferma, apertura del menu account, nessuna scrittura API, chiusura, replay pulito, URL originale, ricaricamento, navigazione del browser, primo login e scadenza della sessione.
+
+Le verifiche mobile misurano la posizione dei comandi prima del clic, per evitare che lo scorrimento automatico del test nasconda una sovrapposizione con la guida. Sono coperti anche orientamento orizzontale, riduzione dell'altezza disponibile, focus nei campi e accesso al salvataggio dei moduli. L'emulazione browser non sostituisce il collaudo della tastiera e delle barre del browser su telefoni reali.
+
+Collaudo del 17 novembre 2026: build di produzione e lint superati; 56 test browser pertinenti superati tra tour, avviso di ingresso, sessione e navigazione. Ripetuti con emulazione touch i percorsi mobile Player/Master, revisione dei passi e transizioni. Le API sono simulate: nessuna modifica ai dati reali e nessun deploy durante questo intervento.
 
 Le altre suite usano `tests/ui/helpers/tour.mjs` per rappresentare account che hanno già chiuso la guida.
 

@@ -222,4 +222,4 @@ La pagina profilo include la cancellazione autonoma con password e conferma espl
 
 ## Collegamento al server
 
-Dopo tre secondi di attesa una richiesta API mostra un avviso accessibile. Timeout a 120 secondi, messaggi italiani per errori di rete/proxy, nessun reinvio automatico delle operazioni e nessuna sonda periodica dal browser. [Configurazione Render/Neon](docs/deploy-render-neon.md).
+Dopo tre secondi di attesa durante login o ripristino iniziale della sessione compare un avviso accessibile. Una volta entrati, le normali richieste non mostrano questo avviso globale. Timeout a 120 secondi, messaggi italiani per errori di rete/proxy, nessun reinvio automatico delle operazioni e nessuna sonda periodica dal browser. [Configurazione Render/Neon](docs/deploy-render-neon.md).

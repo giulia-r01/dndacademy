@@ -14,7 +14,7 @@ export function subscribeToBackendRequests(listener: () => void) {
   }
 }
 
-export function trackBackendRequest() {
+export function trackBackendEntry() {
   if (typeof window === "undefined") return () => {}
   let announced = false
   const timer = setTimeout(() => {

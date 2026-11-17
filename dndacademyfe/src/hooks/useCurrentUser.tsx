@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { userService } from "@/services/user.service"
 import { authService } from "@/services/auth.service"
 import { ApiError } from "@/services/api"
+import { trackBackendEntry } from "@/lib/backend-activity"
 import type { LoginRequest } from "@/types/auth"
 import type { UserProfile } from "@/types/user"
 
@@ -27,10 +28,12 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("")
   const [loginHref, setLoginHref] = useState("/login")
   const generation = useRef(0)
+  const entryComplete = useRef(false)
   const pending = useRef<{ token: string; promise: Promise<UserProfile> } | null>(null)
 
   const logout = useCallback((reason?: "passwordChanged" | "accountDeleted") => {
     generation.current++
+    entryComplete.current = false
     localStorage.removeItem("token")
     setUser(null)
     setError("")
@@ -42,6 +45,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(() => {
     const requestGeneration = ++generation.current
     const token = localStorage.getItem("token")
+    const finishEntry = token && !entryComplete.current ? trackBackendEntry() : () => {}
     let profileRequest: Promise<UserProfile | null> = Promise.resolve(null)
     if (token) {
       if (!pending.current || pending.current.token !== token) {
@@ -55,6 +59,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
     return profileRequest.then((profile) => {
       if (requestGeneration === generation.current) {
         setUser(profile)
+        if (profile) entryComplete.current = true
         setError("")
         if (profile) setLoginHref("/login")
       }
@@ -63,6 +68,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
       if (err instanceof ApiError && err.status === 401) logout()
       else setError(err instanceof Error ? err.message : "Impossibile caricare il profilo.")
     }).finally(() => {
+      finishEntry()
       if (requestGeneration === generation.current) setIsLoading(false)
     })
   }, [logout])
@@ -93,6 +99,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (credentials: LoginRequest) => {
+    const finishEntry = trackBackendEntry()
     const attempt = ++generation.current
     pending.current = null
     setIsLoading(true)
@@ -105,6 +112,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
       const profile = await userService.getMe()
       if (attempt !== generation.current) throw new Error("Accesso interrotto. Riprova.")
       setUser(profile)
+      entryComplete.current = true
       setLoginHref("/login")
       return profile
     } catch (err) {
@@ -113,6 +121,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
       }
       throw err
     } finally {
+      finishEntry()
       if (attempt === generation.current) setIsLoading(false)
     }
   }, [])

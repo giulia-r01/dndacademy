@@ -8,13 +8,17 @@ let browser
 before(async()=>{browser=await chromium.launch({headless:true,...(process.env.UI_BROWSER_PATH?{executablePath:process.env.UI_BROWSER_PATH}:{})})})
 after(async()=>{await browser?.close()})
 
-async function fixture() {
+async function fixture({restore=false, slowProfile=false}={}) {
   const context=await browser.newContext({viewport:{width:390,height:844}})
   await skipAutomaticTour(context)
+  if(restore)await context.addInitScript(()=>localStorage.setItem('token','restored-session'))
   const page=await context.newPage()
   let count=0, release, fail=false, started
   const gate=new Promise(resolve=>{release=resolve})
   const requestStarted=new Promise(resolve=>{started=resolve})
+  let releaseProfile, profileStarted
+  const profileGate=new Promise(resolve=>{releaseProfile=resolve})
+  const profileRequested=new Promise(resolve=>{profileStarted=resolve})
   await page.route('**/auth/login',async route=>{
     if(route.request().method()==='OPTIONS')return route.fulfill({status:204})
     count++;started()
@@ -22,16 +26,53 @@ async function fixture() {
     if(fail)return route.fulfill({status:503,contentType:'text/html',body:'<html>upstream starting</html>'})
     return route.fulfill({contentType:'application/json',body:JSON.stringify({token:'connection-test-token'})})
   })
-  await page.route('**/api/**',route=>{
+  await page.route('**/api/**',async route=>{
     if(route.request().method()==='OPTIONS')return route.fulfill({status:204})
-    const body=new URL(route.request().url()).pathname==='/api/users/me'?{id:1,username:'alice',email:'alice@example.test',role:'PLAYER',learningLevel:'BEGINNER',avatarUrl:null}:[]
+    const isProfile=new URL(route.request().url()).pathname==='/api/users/me'
+    if(isProfile&&slowProfile){profileStarted();await profileGate}
+    const body=isProfile?{id:1,username:'alice',email:'alice@example.test',role:'PLAYER',learningLevel:'BEGINNER',avatarUrl:null}:[]
     return route.fulfill({contentType:'application/json',body:JSON.stringify(body)})
   })
-  await page.goto(`${baseURL}/login`)
-  await page.getByRole('textbox',{name:'Username',exact:true}).fill('alice')
-  await page.getByLabel('Password',{exact:true}).fill('Original1!')
-  return{context,page,release,requestStarted,count:()=>count,fail:()=>{fail=true}}
+  await page.goto(`${baseURL}/${restore?'dashboard':'login'}`)
+  if(!restore){
+    await page.getByRole('textbox',{name:'Username',exact:true}).fill('alice')
+    await page.getByLabel('Password',{exact:true}).fill('Original1!')
+  }
+  return{context,page,release,requestStarted,releaseProfile,profileRequested,count:()=>count,fail:()=>{fail=true}}
 }
+
+for(const restore of [false,true])test(`avviso durante il caricamento iniziale del profilo, sessione ripristinata=${restore}`,async()=>{
+  const f=await fixture({restore,slowProfile:true})
+  try{
+    if(!restore){f.release();await f.page.getByRole('button',{name:'Accedi',exact:true}).click()}
+    await f.profileRequested
+    await f.page.getByRole('status').filter({hasText:'Collegamento a D&D Academy in corso'}).waitFor()
+    f.releaseProfile()
+    await f.page.getByRole('heading',{name:'Ciao, alice',exact:true}).waitFor()
+    await f.page.getByRole('status').filter({hasText:'Collegamento a D&D Academy in corso'}).waitFor({state:'detached'})
+  }finally{f.release();f.releaseProfile();await f.context.close()}
+})
+
+test('navigazione dopo ingresso: il profilo lento non mostra avvisi globali',async()=>{
+  const f=await fixture()
+  let release,started
+  const gate=new Promise(resolve=>{release=resolve})
+  const requested=new Promise(resolve=>{started=resolve})
+  try{
+    f.release()
+    await f.page.getByRole('button',{name:'Accedi',exact:true}).click()
+    await f.page.getByRole('heading',{name:'Ciao, alice',exact:true}).waitFor()
+    await f.page.route('**/api/users/me',async route=>{
+      if(route.request().method()==='OPTIONS')return route.fulfill({status:204})
+      started();await gate
+      return route.fulfill({contentType:'application/json',body:JSON.stringify({id:1,username:'alice',role:'PLAYER',learningLevel:'BEGINNER'})})
+    })
+    await f.page.getByRole('link',{name:'Tutte le campagne',exact:true}).click()
+    await requested
+    await f.page.waitForTimeout(3500)
+    assert.equal(await f.page.getByRole('status').filter({hasText:'Collegamento a D&D Academy in corso'}).count(),0)
+  }finally{release();await f.context.close()}
+})
 
 test('risposta lenta: avviso mobile, login in attesa e nessun reinvio della richiesta',async()=>{
   const f=await fixture()
