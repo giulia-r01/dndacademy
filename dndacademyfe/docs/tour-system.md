@@ -67,7 +67,7 @@ Le verifiche misurano i comandi prima del clic per evitare che lo scorrimento au
 
 Il precedente collaudo del 17 novembre 2026 aveva superato 56 test pertinenti con il focus anche su mobile. È uno storico: la nuova modalità mobile ha una suite dedicata. Le API sono simulate e non modificano dati reali.
 
-Revisione della modalità semplificata: 140 test browser superati nella suite completa, lint superato e compilazione/TypeScript completati. Il comando di build segnala però una vulnerabilità nota nella dipendenza Next.js 16.4.3: l'aggiornamento di sicurezza viene preparato separatamente, senza mescolarlo ai cambiamenti del tour. Il collaudo su dispositivi reali resta necessario prima del rilascio.
+Verifica integrata del 17 novembre 2026, dopo il merge dell'aggiornamento di sicurezza nella branch del tour e `npm ci`: build di produzione e TypeScript completati con Next.js 16.4.6, lint superato, 31 test di configurazione e tutti i 140 test browser superati. La build non presenta più il blocco di sicurezza della versione 16.4.3 e l'installazione riporta zero vulnerabilità. Il collaudo su dispositivi reali resta necessario prima del rilascio.
 
 Le altre suite usano `tests/ui/helpers/tour.mjs` per rappresentare account che hanno già chiuso la guida.
 
