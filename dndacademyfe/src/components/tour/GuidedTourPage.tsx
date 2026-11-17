@@ -12,7 +12,7 @@ export default function GuidedTourPage({ audience, screen }: { audience: TourAud
   const { session, startTour, exitTour, setDemo, navigate, act, notify } = useTour()
   const { user } = useCurrentUser()
   const allowed = audience !== "master" || user?.role === "MASTER"
-  const current = session ? tourSteps(session.audience)[session.index] : null
+  const current = session?.mode === "guided" ? tourSteps(session.audience)[session.index] : null
   return <AppShell activeHref={tourActiveHref(audience, screen)} breadcrumbs={[{ label: "Tour dimostrativo" }, { label: audience === "master" ? "Area Master" : "Area Player" }, { label: tourPageTitle(screen) }]}>
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-gold)]/50 bg-[var(--surface)] px-4 py-3 text-sm">
       <p><strong>Modalità dimostrativa</strong> · Nessuna modifica ai dati reali</p>

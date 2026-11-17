@@ -128,11 +128,11 @@ La pagina Badge mostra ottenuti e bloccati, data di sblocco, ricerca, filtri e r
 
 ## Tour di primo avvio
 
-Il primo accesso autenticato apre automaticamente un tour distinto per Player e Master. Il tour guidato attraversa pagine dimostrative interne all'app: 22 passi per il Player e 19 per il Master. Un box vicino al comando spiega cosa fare, il comando è evidenziato e il resto della pagina è inerte. L'avanzamento segue l'azione richiesta o un salvataggio riuscito; **Ho capito** compare soltanto nei passi informativi. **Esci dal tour** ed Escape permettono di interrompere sempre la prova. Dal menu dell'avatar **Ripeti il tour** riapre il percorso dell'area corrente; un passo dedicato prima della conclusione ricorda questa possibilità. Il Master può aprire anche il tour dell'altra area.
+Il primo accesso autenticato apre automaticamente un tour distinto per Player e Master. Su mobile una sola modale presenta esempi e indicazioni brevi, con **Indietro/Avanti**: 9 passi Player e 8 Master, senza focus esterni o cambi di pagina. Su desktop e tablet il percorso guidato attraversa pagine dimostrative: 22 passi Player e 19 Master. Il box si aggancia a lato oppure riserva spazio in alto, evitando di coprire i contenitori; il comando è evidenziato e il resto è inerte. Qui l'avanzamento segue l'azione richiesta o un salvataggio riuscito. **Esci dal tour** ed Escape interrompono entrambe le modalità. Dal menu avatar **Ripeti il tour** riapre il percorso dell'area corrente; il Master può aprire anche quello dell'altra area.
 
 **Indietro** permette di rivedere i passaggi completati senza annullare i progressi; durante la revisione **Avanti** riporta fino al punto raggiunto. I vecchi passaggi sono in sola lettura e le nuove azioni restano obbligatorie. Il box ha testo più grande e comandi sempre visibili; l'oscuramento leggero mantiene leggibile il contesto della pagina.
 
-Le rotte `/tour/[audience]/[screen]` usano la struttura di navigazione dell'app e contenuti di esempio condivisi solo in memoria. Le azioni dimostrative non chiamano API, non caricano immagini e non modificano dati reali. Chiudere o terminare riporta all'URL di partenza, inclusi query e frammento; i moduli non salvati della pagina lasciata seguono il normale ciclo di navigazione e non sono conservati dal tour. Chiudere o ricaricare elimina le prove; su una rotta dimostrativa senza prova attiva viene offerta la ripartenza dall'inizio.
+Su desktop/tablet le rotte `/tour/[audience]/[screen]` usano la struttura dell'app e contenuti di esempio in memoria. Le azioni non chiamano API, non caricano immagini e non modificano dati reali. Chiudere riporta all'URL di partenza, inclusi query e frammento; i moduli non salvati della pagina lasciata non sono conservati. Su mobile la pagina rimane montata sotto la modale e conserva anche le bozze. Chiudere o ricaricare elimina le prove; su una rotta dimostrativa senza prova attiva viene offerta la ripartenza.
 
 La chiusura o il completamento sono ricordati nel `localStorage` del browser per account, ruolo, percorso e versione del tour. Su un altro browser, dopo la cancellazione dello storage o con un altro account/ruolo, il primo avvio viene riproposto. Non è una preferenza sincronizzata dal backend. Dettagli tecnici e collaudo: [Tour frontend](docs/tour-system.md).
 
@@ -198,7 +198,8 @@ Il comando comprende tutti i file della suite:
 | `tests/ui/rich-text.test.mjs` | Editor visuale Master, salvataggio e riapertura, resa Player, limiti, testo vuoto, compatibilità, HTML non eseguibile e font mobile |
 | `tests/ui/login-session.test.mjs` | Primo login, accesso dopo cambio password e profilo non disponibile |
 | `tests/ui/navigation-flow.test.mjs` | Percorsi Player/Master, contesto, vecchie rotte, ripresa, menu account e livelli |
-| `tests/ui/tour.test.mjs` | Percorsi guidati Player/Master, azioni obbligatorie, validazione, nessuna scrittura API, replay, focus, mobile e ritorno all'URL iniziale |
+| `tests/ui/tour.test.mjs` | Percorsi guidati Player/Master su desktop e tablet, validazione, nessuna scrittura API, replay, box agganciato e ritorno all'URL iniziale |
+| `tests/ui/mobile-tour.test.mjs` | Modale Player/Master, Indietro/Avanti, URL e bozze conservati, focus confinato, rotazione, schermo piccolo e scadenza sessione |
 
 Variabili opzionali: `UI_BASE_URL` (default `http://localhost:3000`), `UI_BROWSER_PATH` (eseguibile Chromium, Chrome o Edge) e `UI_SCREENSHOT_DIR` (cartella per gli screenshot). Le API e i servizi esterni sono simulati: questi test non modificano il database applicativo o Cloudinary. Non sostituiscono il collaudo con backend, PostgreSQL, Gmail API e Cloudinary reali.
 
@@ -216,7 +217,7 @@ Il tour di primo avvio è implementato interamente nel frontend. Flyway gestisce
 
 Le revisioni precedenti sono conservate come documenti datati: [revisione pre merge del 30 ottobre 2026](../dndacademyBE/docs/REVISIONE_PRE_MERGE_2026-10-30.md) e [collaudo storico](../dndacademyBE/docs/COLLAUDO.md). Per lo stato corrente dei flussi frontend usare questo README e i documenti in `docs/`.
 
-La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Suite corrente: 129 test browser con API simulate, 31 test di configurazione e 232 test backend; gli esiti aggiornati sono nella [revisione finale](docs/revisione-finale-premerge.md). Nessun deploy eseguito.
+La pagina pubblica `/privacy` riporta il titolare e il contatto confermati; è collegata alla homepage, alle schermate di accesso e all’area autenticata. La [guida privacy e rilascio](docs/privacy-rilascio.md) distingue quanto implementato dalle verifiche operative prima dell’apertura. Suite corrente: 140 test browser con API simulate, 31 test di configurazione e 232 test backend. Gli esiti del tour sono nella [documentazione dedicata](docs/tour-system.md); le revisioni precedenti restano nello [storico](docs/revisione-finale-premerge.md). L'aggiornamento di sicurezza segnalato per Next.js viene preparato separatamente. Nessun deploy eseguito durante questi controlli.
 
 La pagina profilo include la cancellazione autonoma con password e conferma esplicita. I contenuti Master richiedono un successore; account, copie personali e progressi sono rimossi senza cancellare modelli o dati di altri Player. [Contratto e migrazione V4](../dndacademyBE/docs/ACCOUNT_DELETION.md).
 

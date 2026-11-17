@@ -4,12 +4,14 @@ import { createContext, useContext, useEffect, useReducer, useRef, type Dispatch
 import { usePathname, useRouter } from "next/navigation"
 import { useCurrentUser } from "@/hooks/useCurrentUser"
 import TourSpotlight from "@/components/tour/TourSpotlight"
+import MobileTour from "@/components/tour/MobileTour"
+import { isMobileTourViewport, mobileTourSteps } from "@/lib/mobile-tour"
 import { createTourDemo, type TourDemo } from "@/lib/tour-demo"
 import { hasSeenTour, isAppPath, saveTourResult, tourHref, tourSteps, tourStorageKey, type TourAudience, type TourScreen } from "@/lib/tour"
 import type { UserProfile } from "@/types/user"
 
-type Session = { audience: TourAudience; index: number; furthest: number; snapshots: TourDemo[]; demo: TourDemo; origin: string; serial: number; error?: string }
-type Action = { type: "start"; session: Session } | { type: "close" } | { type: "back" } | { type: "forward" } | { type: "data"; update: SetStateAction<TourDemo> } | { type: "event"; name: string } | { type: "navigate"; screen: TourScreen } | { type: "info" } | { type: "feedback"; stepId: string; message: string }
+type Session = { mode: "mobile" | "guided"; audience: TourAudience; index: number; furthest: number; snapshots: TourDemo[]; demo: TourDemo; origin: string; serial: number; error?: string }
+type Action = { type: "start"; session: Session } | { type: "close" } | { type: "back" } | { type: "forward" } | { type: "mobile-next" } | { type: "data"; update: SetStateAction<TourDemo> } | { type: "event"; name: string } | { type: "navigate"; screen: TourScreen } | { type: "info" } | { type: "feedback"; stepId: string; message: string }
 function advance(session: Session, demo = session.demo): Session {
   const snapshots = [...session.snapshots]
   snapshots[session.index] = session.demo
@@ -21,6 +23,11 @@ function reducer(session: Session | null, action: Action): Session | null {
   if (action.type === "close") return null
   if (!session) return null
   if (action.type === "back") return { ...session, index: Math.max(0, session.index - 1), error: undefined }
+  if (session.mode === "mobile") {
+    if (action.type !== "mobile-next") return session
+    const index = Math.min(mobileTourSteps(session.audience).length - 1, session.index + 1)
+    return { ...session, index, furthest: Math.max(index, session.furthest) }
+  }
   if (action.type === "forward") return { ...session, index: Math.min(session.furthest, session.index + 1), error: undefined }
   if (session.index < session.furthest) return session
   const step = tourSteps(session.audience)[session.index]
@@ -32,7 +39,7 @@ function reducer(session: Session | null, action: Action): Session | null {
     snapshots[session.index] = demo
     return { ...session, demo, snapshots, error: undefined }
   }
-  const allowed = action.type === "event" ? step.event === action.name : action.type === "navigate" ? step.navigate === action.screen : step.info
+  const allowed = action.type === "event" ? step.event === action.name : action.type === "navigate" ? step.navigate === action.screen : action.type === "info" && step.info
   return allowed && session.index < tourSteps(session.audience).length - 1 ? advance(session) : session
 }
 type TourContextValue = {
@@ -63,14 +70,16 @@ function TourSessionProvider({ children, user, ready }: { children: ReactNode; u
     originFocus.current = opener ?? null
     const origin = pathname.startsWith("/tour/") ? user.role === "MASTER" ? "/admin" : "/dashboard" : window.location.pathname + window.location.search + window.location.hash
     const demo = createTourDemo(audience)
-    dispatch({ type: "start", session: { audience, index: 0, furthest: 0, snapshots: [demo], demo, origin, serial: ++serial.current } })
-    router.push(tourHref(audience, tourSteps(audience)[0].screen))
+    const mode = isMobileTourViewport() ? "mobile" : "guided"
+    dispatch({ type: "start", session: { mode, audience, index: 0, furthest: 0, snapshots: [demo], demo, origin, serial: ++serial.current } })
+    if (mode === "guided") router.push(tourHref(audience, tourSteps(audience)[0].screen))
+    else if (pathname.startsWith("/tour/")) router.replace(origin)
   }
   function exitTour(status: "dismissed" | "completed" = "dismissed") {
     if (!session) return
     if (user) { try { saveTourResult(localStorage, tourStorageKey(user, session.audience), status) } catch {   } }
     dispatch({ type: "close" })
-    router.replace(session.origin)
+    if (session.mode === "guided") router.replace(session.origin)
     requestAnimationFrame(() => (originFocus.current?.isConnected ? originFocus.current : document.querySelector<HTMLElement>('[aria-label="Apri menu account"]'))?.focus({ preventScroll: true }))
   }
   useEffect(() => {
@@ -81,13 +90,14 @@ function TourSessionProvider({ children, user, ready }: { children: ReactNode; u
       attempted.current = true
       const origin = window.location.pathname + window.location.search + window.location.hash
       const demo = createTourDemo(audience)
-      dispatch({ type: "start", session: { audience, index: 0, furthest: 0, snapshots: [demo], demo, origin, serial: ++serial.current } })
-      router.push(tourHref(audience, tourSteps(audience)[0].screen))
+      const mode = isMobileTourViewport() ? "mobile" : "guided"
+      dispatch({ type: "start", session: { mode, audience, index: 0, furthest: 0, snapshots: [demo], demo, origin, serial: ++serial.current } })
+      if (mode === "guided") router.push(tourHref(audience, tourSteps(audience)[0].screen))
     })
     return () => cancelAnimationFrame(frame)
   }, [pathname, user, ready, router])
   useEffect(() => {
-    if (!session) return
+    if (!session || session.mode !== "guided") return
     const expected = tourHref(session.audience, tourSteps(session.audience)[session.index].screen)
     if (pathname.startsWith("/tour/") && pathname !== expected) router.replace(expected)
   }, [session, pathname, router])
@@ -100,9 +110,10 @@ function TourSessionProvider({ children, user, ready }: { children: ReactNode; u
     window.addEventListener("popstate", onBack)
     return () => window.removeEventListener("popstate", onBack)
   }, [session, user])
-  const step = session ? tourSteps(session.audience)[session.index] : null
+  const step = session?.mode === "guided" ? tourSteps(session.audience)[session.index] : null
   return <TourContext.Provider value={{ session, startTour, exitTour, setDemo: update => dispatch({ type: "data", update }), navigate: screen => dispatch({ type: "navigate", screen }), act: name => dispatch({ type: "event", name }), notify: (message, error) => { if (error && step) dispatch({ type: "feedback", stepId: step.id, message }) } }}>
     {children}
+    {session?.mode === "mobile" && ready && <MobileTour audience={session.audience} index={session.index} onBack={() => dispatch({ type: "back" })} onNext={() => session.index === mobileTourSteps(session.audience).length - 1 ? exitTour("completed") : dispatch({ type: "mobile-next" })} onExit={() => exitTour()} />}
     {session && ready && step && pathname === tourHref(session.audience, step.screen) && <TourSpotlight key={`${session.serial}:${step.id}`} step={step} error={session.error} index={session.index} review={session.index < session.furthest} total={tourSteps(session.audience).length} onBack={() => dispatch({ type: "back" })} onForward={() => dispatch({ type: "forward" })} onExit={() => exitTour()} onContinue={() => step.id === "finish" ? exitTour("completed") : dispatch({ type: "info" })} onRetry={() => router.refresh()} />}
   </TourContext.Provider>
 }

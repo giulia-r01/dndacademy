@@ -1,4 +1,4 @@
-﻿import { test, before, after } from "node:test"
+import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { chromium } from "playwright"
 import { mkdir } from "node:fs/promises"
@@ -7,8 +7,8 @@ const baseURL = process.env.UI_BASE_URL ?? "http://localhost:3000"
 let browser
 before(async () => { browser = await chromium.launch({ headless: true, ...(process.env.UI_BROWSER_PATH ? { executablePath: process.env.UI_BROWSER_PATH } : {}) }) })
 after(async () => { await browser?.close() })
-async function setup({ master = false, mobile = false, login = false } = {}) {
-  const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 667 } : { width: 1440, height: 1000 }, isMobile: mobile, hasTouch: mobile })
+async function setup({ master = false, tablet = false, login = false } = {}) {
+  const context = await browser.newContext({ viewport: tablet ? { width: 820, height: 1180 } : { width: 1440, height: 1000 }, isMobile: tablet, hasTouch: tablet })
   if (!login) await context.addInitScript(() => localStorage.setItem("token", "tour-fixture"))
   const page = await context.newPage(), writes = [], errors = []
   let profile = { id: 1, username: "tester", email: "test@example.test", role: master ? "MASTER" : "PLAYER", learningLevel: "BEGINNER", avatarUrl: null }
@@ -31,15 +31,14 @@ async function step(page, id) {
   await page.waitForFunction(() => !!document.querySelector("[data-tour-shade]"))
 }
 async function click(page, action) {
-  if ((page.viewportSize()?.width ?? 0) < 768) {
-    await page.waitForFunction(action => {
+  await page.waitForFunction(action => {
       const target = document.querySelector(`[data-tour-action="${action}"]`)
       const coach = document.querySelector('[data-tour-step]')
       if (!target || !coach) return false
       const rect = target.getBoundingClientRect(), box = coach.getBoundingClientRect()
-      return rect.top >= 10 && rect.bottom <= box.top - 10 && box.bottom <= innerHeight
+      const overlaps = rect.left < box.right && rect.right > box.left && rect.top < box.bottom && rect.bottom > box.top
+      return rect.top >= 10 && rect.bottom <= innerHeight - 10 && box.top >= 10 && box.bottom <= innerHeight && !overlaps
     }, action)
-  }
   await page.locator(`[data-tour-action="${action}"]`).click()
 }
 async function screenshot(page, name) {
@@ -48,35 +47,40 @@ async function screenshot(page, name) {
   await page.screenshot({ path: `${process.env.UI_SCREENSHOT_DIR}/${name}.png` })
 }
 
-test("Master mobile: comando libero dopo ridimensionamento, focus del modulo e scorrimento fino al salvataggio", async () => {
-  const { context, page, errors } = await setup({ master: true, mobile: true })
+test("Master tablet: comando libero dopo ridimensionamento, focus del modulo e scorrimento fino al salvataggio", async () => {
+  const { context, page, errors } = await setup({ master: true, tablet: true })
   try {
     await page.goto(`${baseURL}/admin`)
     await step(page, "start")
     await page.setViewportSize({ width: 667, height: 390 })
     await click(page, "manage-campaigns")
     await step(page, "new-campaign")
-    await page.setViewportSize({ width: 390, height: 667 })
+    await page.setViewportSize({ width: 820, height: 1180 })
     await click(page, "new-campaign")
     await step(page, "campaign")
+    await page.waitForFunction(() => {
+      const form = document.querySelector('[data-tour-screen="campaign-form"] form')?.getBoundingClientRect()
+      const guide = document.querySelector('[data-tour-step]')?.getBoundingClientRect()
+      return form && guide && form.top >= guide.bottom + 10 && form.top <= guide.bottom + 40
+    })
     await page.getByLabel("Nome campagna", { exact: true }).focus()
-    await page.setViewportSize({ width: 390, height: 480 })
+    await page.setViewportSize({ width: 820, height: 600 })
     await page.waitForFunction(() => {
       const field = document.activeElement?.getBoundingClientRect()
       const guide = document.querySelector('[data-tour-step]')?.getBoundingClientRect()
-      return field && guide && field.top >= 10 && field.bottom < guide.top - 10 && guide.bottom <= innerHeight
+      return field && guide && field.top >= guide.bottom + 10 && field.bottom <= innerHeight - 10 && guide.bottom <= innerHeight
     })
-    await page.getByLabel("Nome campagna", { exact: true }).fill("Campagna mobile")
+    await page.getByLabel("Nome campagna", { exact: true }).fill("Campagna tablet")
     await page.getByRole("button", { name: "Salva esempio", exact: true }).focus()
     await page.waitForFunction(() => {
       const button = document.activeElement?.getBoundingClientRect()
       const guide = document.querySelector('[data-tour-step]')?.getBoundingClientRect()
-      return button && guide && button.top >= 10 && button.bottom < guide.top - 10
+      return button && guide && button.top >= guide.bottom + 10 && button.bottom <= innerHeight - 10
     })
     await page.keyboard.press("Enter")
     await step(page, "character")
     assert.deepEqual(errors, [])
-    await screenshot(page, "tour-master-mobile-resized")
+    await screenshot(page, "tour-master-tablet-resized")
   } finally { await context.close() }
 })
 async function accountFlow(page) {
@@ -106,11 +110,11 @@ async function accountFlow(page) {
   await coach(page).getByRole("button", { name: "Termina tour" }).click()
   await coach(page).waitFor({ state: "detached" })
 }
-async function playerFlow(page, mobile) {
+async function playerFlow(page, tablet) {
   await step(page, "start")
   assert.equal(await page.getByRole("button", { name: "Avanti", exact: true }).count(), 0)
   assert.equal(await page.locator('a[href="/campaigns"]').first().evaluate(el => !!el.closest("[inert]")), true)
-  await screenshot(page, mobile ? "guided-player-mobile-start" : "guided-player-start")
+  await screenshot(page, tablet ? "guided-player-tablet-start" : "guided-player-start")
   await click(page, "choose-campaign")
   await step(page, "join")
   assert.equal(new URL(page.url()).pathname, "/tour/player/campaigns")
@@ -139,7 +143,7 @@ async function playerFlow(page, mobile) {
   await page.getByLabel("Bersaglio", { exact: true }).selectOption("goblin")
   await page.getByRole("button", { name: "Attacca", exact: true }).click()
   await step(page, "return")
-  await screenshot(page, mobile ? "guided-player-mobile-victory" : "guided-player-victory")
+  await screenshot(page, tablet ? "guided-player-tablet-victory" : "guided-player-victory")
   await click(page, "return-chapter")
   await step(page, "complete-chapter")
   await click(page, "complete-chapter")
@@ -154,11 +158,11 @@ async function playerFlow(page, mobile) {
   await coach(page).getByRole("button", { name: "Ho capito" }).click()
   await accountFlow(page)
 }
-for (const mobile of [false, true]) test(`Player guidato: azioni obbligatorie, pagine, quiz errato e completamento, mobile=${mobile}`, async () => {
-  const { context, page, writes, errors } = await setup({ mobile })
+for (const tablet of [false, true]) test(`Player guidato: azioni obbligatorie, pagine, quiz errato e completamento, tablet=${tablet}`, async () => {
+  const { context, page, writes, errors } = await setup({ tablet })
   try {
     await page.goto(`${baseURL}/dashboard`)
-    await playerFlow(page, mobile)
+    await playerFlow(page, tablet)
     await page.waitForURL(`${baseURL}/dashboard`)
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("dndacademy:tour:v2:1:PLAYER:player"))), { version: 2, status: "completed" })
     assert.equal(await page.evaluate(() => document.querySelectorAll("[inert]").length), 0)
@@ -166,12 +170,12 @@ for (const mobile of [false, true]) test(`Player guidato: azioni obbligatorie, p
     assert.deepEqual(errors, [])
   } finally { await context.close() }
 })
-for (const mobile of [false, true]) test(`Master guidato: gestione campagne, moduli validati e conferma ruolo, mobile=${mobile}`, async () => {
-  const { context, page, writes, errors } = await setup({ master: true, mobile })
+for (const tablet of [false, true]) test(`Master guidato: gestione campagne, moduli validati e conferma ruolo, tablet=${tablet}`, async () => {
+  const { context, page, writes, errors } = await setup({ master: true, tablet })
   try {
     await page.goto(`${baseURL}/admin`)
     await step(page, "start")
-    await screenshot(page, mobile ? "guided-master-mobile-start" : "guided-master-start")
+    await screenshot(page, tablet ? "guided-master-tablet-start" : "guided-master-start")
     await click(page, "manage-campaigns")
     await step(page, "new-campaign")
     await click(page, "new-campaign")
@@ -180,7 +184,7 @@ for (const mobile of [false, true]) test(`Master guidato: gestione campagne, mod
     await page.getByRole("button", { name: "Salva esempio", exact: true }).click()
     assert.equal(await coach(page).getAttribute("data-tour-step"), "campaign")
     await page.getByLabel("Nome campagna", { exact: true }).fill("La prova del Master")
-    await screenshot(page, mobile ? "guided-master-mobile-form" : "guided-master-form")
+    await screenshot(page, tablet ? "guided-master-tablet-form" : "guided-master-form")
     for (const id of ["campaign", "character", "lesson", "quiz", "npc", "badge", "chapter", "encounter"]) {
       await step(page, id)
       if (id === "character") await page.getByText("Campagna: La prova del Master", { exact: true }).waitFor()
@@ -272,8 +276,8 @@ test("Un Player non avvia il percorso Master da un collegamento diretto", async 
   } finally { await context.close() }
 })
 
-for (const mobile of [false, true]) test(`Indietro rivede le azioni senza annullarle e Avanti si ferma al passo da completare, mobile=${mobile}`, async () => {
-  const { context, page, writes, errors } = await setup({ mobile })
+for (const tablet of [false, true]) test(`Indietro rivede le azioni senza annullarle e Avanti si ferma al passo da completare, tablet=${tablet}`, async () => {
+  const { context, page, writes, errors } = await setup({ tablet })
   try {
     await page.goto(`${baseURL}/dashboard`)
     await step(page, "start")
@@ -300,12 +304,12 @@ for (const mobile of [false, true]) test(`Indietro rivede le azioni senza annull
     assert.equal(await coach(page).locator("p[id]").evaluate(element => getComputedStyle(element).fontSize), "16px")
     assert.deepEqual(writes, [])
     assert.deepEqual(errors, [])
-    await screenshot(page, mobile ? "review-mobile" : "review-desktop")
+    await screenshot(page, tablet ? "review-tablet" : "review-desktop")
   } finally { await context.close() }
 })
 
-for (const mobile of [false, true]) test(`Transizioni senza box visibile in posizione provvisoria, mobile=${mobile}`, async () => {
-  const { context, page, errors } = await setup({ mobile })
+for (const tablet of [false, true]) test(`Transizioni senza box visibile in posizione provvisoria, tablet=${tablet}`, async () => {
+  const { context, page, errors } = await setup({ tablet })
   await context.addInitScript(() => {
     window.tourPositionFlashes = []
     function sample() {

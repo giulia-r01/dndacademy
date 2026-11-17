@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:config": "node --test tests/config/api-origin.test.mjs",
-    "test:ui": "node --test tests/ui/admin-users.test.mjs tests/ui/combat-and-npcs.test.mjs tests/ui/profile-and-badges.test.mjs tests/ui/login-session.test.mjs tests/ui/navigation-flow.test.mjs tests/ui/tour.test.mjs tests/ui/character-images.test.mjs tests/ui/rich-text.test.mjs tests/ui/account-deletion.test.mjs tests/ui/backend-connection.test.mjs"
+    "test:ui": "node --test tests/ui/admin-users.test.mjs tests/ui/combat-and-npcs.test.mjs tests/ui/profile-and-badges.test.mjs tests/ui/login-session.test.mjs tests/ui/navigation-flow.test.mjs tests/ui/tour.test.mjs tests/ui/mobile-tour.test.mjs tests/ui/character-images.test.mjs tests/ui/rich-text.test.mjs tests/ui/account-deletion.test.mjs tests/ui/backend-connection.test.mjs"
   },
   "dependencies": {
     "@tiptap/core": "^3.33.0",

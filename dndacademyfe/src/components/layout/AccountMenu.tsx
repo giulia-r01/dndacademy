@@ -18,7 +18,8 @@ export default function AccountMenu({ user, onLogout }: { user: UserProfile | nu
   const initialFocus = useRef<"first" | "last">("first")
   const id = useId()
   const { area, rememberArea } = useNavigation()
-  const { startTour, session, navigate: tourNavigate, act: tourAct } = useTour()
+  const { startTour, session: activeTour, navigate: tourNavigate, act: tourAct } = useTour()
+  const session = activeTour?.mode === "guided" ? activeTour : null
   const open = menuOpen || !!(session && session.index < session.furthest && tourSteps(session.audience)[session.index].id === "open-profile")
   const username = user?.username ?? "Avventuriero"
   const level = learningLevelLabels[user?.learningLevel ?? "BEGINNER"]

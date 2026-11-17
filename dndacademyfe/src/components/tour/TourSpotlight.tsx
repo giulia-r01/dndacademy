@@ -6,7 +6,7 @@ import { FiX } from "react-icons/fi"
 import type { GuidedStep } from "@/lib/tour"
 import styles from "./spotlight.module.css"
 
-type Geometry = { top: number; left: number; right: number; bottom: number; width: number; height: number; coachTop: number; coachLeft: number; docked: boolean }
+type Geometry = { top: number; left: number; right: number; bottom: number; width: number; height: number; coachTop: number; coachLeft: number; placement: "left" | "right" | "top"; arrow: number }
 const focusable = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export default function TourSpotlight({ step, index, total, error, review, onBack, onForward, onExit, onContinue, onRetry }: { step: GuidedStep; index: number; total: number; error?: string; review: boolean; onBack: () => void; onForward: () => void; onExit: () => void; onContinue: () => void; onRetry: () => void }) {
@@ -25,6 +25,7 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
     const coach = coachRef.current
     if (!coach) return
     const previousSpace = document.documentElement.style.getPropertyValue("--tour-coach-height")
+    const previousTopSpace = document.documentElement.style.getPropertyValue("--tour-coach-top-space")
     const inert = new Map<HTMLElement, boolean>()
     let stopped = false, frame = 0, described: string | null = null, alignTarget = true
     function restoreInert() { for (const [element, value] of inert) element.inert = value; inert.clear() }
@@ -44,11 +45,9 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       const viewportHeight = viewport?.height ?? innerHeight
       const viewportWidth = viewport?.width ?? innerWidth
       const viewportBottom = viewportTop + viewportHeight
-      coach!.style.maxHeight = innerWidth < 768 ? `${viewportHeight * 0.52}px` : ""
-      const height = coach!.offsetHeight, width = coach!.offsetWidth
-      document.documentElement.style.setProperty("--tour-coach-height", `${height}px`)
       const target = Array.from(document.querySelectorAll<HTMLElement>(step.target)).find(element => element.getClientRects().length && getComputedStyle(element).visibility !== "hidden") ?? null
-      if (target !== targetRef.current) {
+      const newTarget = target !== targetRef.current
+      if (newTarget) {
         restoreInert()
         if (targetRef.current) {
           if (described === null) targetRef.current.removeAttribute("aria-describedby")
@@ -68,34 +67,44 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       }
       if (!target) { isolate(document.body, null); setGeometry(null); return }
       let rect = target.getBoundingClientRect()
-      let coachTop: number, coachLeft: number, docked = false
-      if (innerWidth < 768) { coachTop = viewportBottom - height - 12; coachLeft = viewportLeft + (viewportWidth - width) / 2; docked = true }
-      else if (rect.bottom + height + 24 < innerHeight) { coachTop = rect.bottom + 16; coachLeft = Math.min(innerWidth - width - 12, Math.max(12, rect.left)) }
-      else if (rect.top - height - 16 > 12) { coachTop = rect.top - height - 16; coachLeft = Math.min(innerWidth - width - 12, Math.max(12, rect.left)) }
-      else if (rect.right + width + 24 < innerWidth) { coachLeft = rect.right + 16; coachTop = Math.max(12, Math.min(rect.top, innerHeight - height - 12)) }
-      else { coachTop = innerHeight - height - 12; coachLeft = innerWidth - width - 12; docked = true }
-      if (docked) {
-        const safeTop = viewportTop + 16
-        const safeBottom = coachTop - 18
-        const available = safeBottom - safeTop
-        const active = document.activeElement
-        const focused = active instanceof HTMLElement && target.contains(active) ? active : null
-        const anchor = rect.height > available && focused ? focused.getBoundingClientRect() : rect
-        let delta = 0
-        if (anchor.height <= available && (rect.height <= available || alignTarget)) {
-          if (alignTarget || anchor.top < safeTop || anchor.bottom > safeBottom) {
-            delta = anchor.top + anchor.height / 2 - (safeTop + available / 2)
-          }
-        } else if (alignTarget) delta = rect.top - safeTop
-        if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: "instant" })
-        rect = target.getBoundingClientRect()
+      const gap = 18
+      const rightSpace = viewportLeft + viewportWidth - rect.right - gap - 12
+      const leftSpace = rect.left - viewportLeft - gap - 12
+      const placement = rightSpace >= 260 ? "right" : leftSpace >= 260 ? "left" : "top"
+      const availableWidth = placement === "right" ? rightSpace : placement === "left" ? leftSpace : viewportWidth - 24
+      coach!.style.width = `${Math.min(440, availableWidth)}px`
+      coach!.style.maxHeight = `${placement === "top" ? Math.min(480, viewportHeight * 0.45) : viewportHeight - 24}px`
+      const height = coach!.offsetHeight, width = coach!.offsetWidth
+      document.documentElement.style.setProperty("--tour-coach-height", `${height}px`)
+      const reserved = placement === "top" ? height + 24 : 0
+      const topSpace = `${reserved}px`
+      if (document.documentElement.style.getPropertyValue("--tour-coach-top-space") !== topSpace) {
+        document.documentElement.style.setProperty("--tour-coach-top-space", topSpace)
+        alignTarget = true
       }
+      rect = target.getBoundingClientRect()
+      const safeTop = viewportTop + reserved + 16
+      const safeBottom = viewportBottom - 16
+      const available = safeBottom - safeTop
+      const active = document.activeElement
+      const focused = active instanceof HTMLElement && target.contains(active) ? active : null
+      const anchor = rect.height > available && focused ? focused.getBoundingClientRect() : rect
+      let delta = 0
+      if (newTarget && placement === "top") delta = rect.top - safeTop
+      else if (anchor.height <= available && (rect.height <= available || alignTarget)) {
+        if (anchor.top < safeTop || anchor.bottom > safeBottom) delta = anchor.top + anchor.height / 2 - (safeTop + available / 2)
+      } else if (newTarget) delta = rect.top - safeTop
+      if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: "instant" })
+      rect = target.getBoundingClientRect()
+      const coachTop = Math.max(viewportTop + 12, Math.min(placement === "top" ? rect.top - height - gap : rect.top, viewportBottom - height - 12))
+      const coachLeft = placement === "right" ? rect.right + gap : placement === "left" ? rect.left - width - gap : Math.max(viewportLeft + 12, Math.min(rect.left, viewportLeft + viewportWidth - width - 12))
+      const arrow = placement === "top" ? Math.max(20, Math.min(width - 20, rect.left + rect.width / 2 - coachLeft)) : Math.max(20, Math.min(height - 20, rect.top + Math.min(rect.height / 2, 40) - coachTop))
       alignTarget = false
-      const top = Math.max(4, rect.top - 6), left = Math.max(4, rect.left - 6)
-      const right = Math.min(innerWidth - 4, rect.right + 6)
-      const bottom = Math.max(top, Math.min(rect.bottom + 6, docked ? coachTop - 10 : innerHeight - 4))
+      const top = Math.max(viewportTop + reserved + 4, rect.top - 6), left = Math.max(viewportLeft + 4, rect.left - 6)
+      const right = Math.max(left, Math.min(viewportLeft + viewportWidth - 4, rect.right + 6))
+      const bottom = Math.max(top, Math.min(rect.bottom + 6, viewportBottom - 4))
       setGeometry(previous => {
-        const next = { top, left, right, bottom, width: right - left, height: bottom - top, coachTop, coachLeft, docked }
+        const next: Geometry = { top, left, right, bottom, width: right - left, height: bottom - top, coachTop, coachLeft, placement, arrow }
         return previous && JSON.stringify(previous) === JSON.stringify(next) ? previous : next
       })
     }
@@ -152,6 +161,7 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       }
       targetRef.current = null
       document.documentElement.style.setProperty("--tour-coach-height", previousSpace)
+      document.documentElement.style.setProperty("--tour-coach-top-space", previousTopSpace)
     }
   }, [step, id, review])
 
@@ -163,7 +173,7 @@ export default function TourSpotlight({ step, index, total, error, review, onBac
       <div style={{ left: 0, top: geometry.bottom, width: "100%", bottom: 0 }} />
       <span className={styles.outline} style={{ top: geometry.top, left: geometry.left, width: geometry.width, height: geometry.height }} />
     </div> : <div aria-hidden="true" className={styles.cover} />}
-    <section data-tour-step={step.id} ref={coachRef} className={`custom-scrollbar ${styles.coach}`} aria-label="Guida del tour" style={geometry ? { top: geometry.coachTop, left: geometry.coachLeft } : { bottom: 12, right: 12, visibility: missing ? "visible" : "hidden" }}>
+    <section data-tour-step={step.id} data-tour-placement={geometry?.placement} ref={coachRef} className={`custom-scrollbar ${styles.coach}`} aria-label="Guida del tour" style={geometry ? { top: geometry.coachTop, left: geometry.coachLeft, "--tour-arrow": `${geometry.arrow}px` } as React.CSSProperties : { top: 12, left: 12, visibility: missing ? "visible" : "hidden" }}>
       <div className={styles.heading}><p>Passo {index + 1} di {total}</p><button type="button" className={styles.exit} onClick={onExit}><FiX size={17} aria-hidden="true" />Esci dal tour</button></div>
       <div className={`custom-scrollbar ${styles.content}`}>
         <h2>{step.title}</h2><p id={`${id}-text`} className={styles.description}>{step.text}</p>

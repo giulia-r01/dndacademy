@@ -26,7 +26,7 @@ export default function AppShell({ children, breadcrumbs, activeHref }: AppShell
 
   const { user, isLoading, error, refresh, logout, loginHref } = useCurrentUser()
   const { session } = useTour()
-  const demoPage = pathname.startsWith("/tour/") && session !== null
+  const demoPage = pathname.startsWith("/tour/") && session?.mode === "guided"
 
   useEffect(() => {
     if (!isLoading && !user && !error) {
@@ -92,7 +92,7 @@ export default function AppShell({ children, breadcrumbs, activeHref }: AppShell
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar onMenuClick={openSidebar} user={demoPage ? { ...user, ...session.demo.profile, avatarUrl: null } : user} onLogout={handleLogout} />
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8" style={demoPage ? { paddingBottom: "calc(var(--tour-coach-height, 16rem) + 4rem)" } : undefined}><Breadcrumbs items={breadcrumbs ?? defaultBreadcrumbs(pathname)} />{children}<PublicFooter /></main>
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8" style={demoPage ? { paddingTop: "calc(1.5rem + var(--tour-coach-top-space, 0px))", paddingBottom: "calc(var(--tour-coach-height, 16rem) + 4rem)" } : undefined}><Breadcrumbs items={breadcrumbs ?? defaultBreadcrumbs(pathname)} />{children}<PublicFooter /></main>
         </div>
       </div>
     </div>
