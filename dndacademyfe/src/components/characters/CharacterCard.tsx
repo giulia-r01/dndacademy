@@ -42,7 +42,11 @@ export default function CharacterCard({
   const canClaim = mode === "available" && isAvailable && onClaim
 
   return (
-    <AppCard role="article" aria-label={`Scheda di ${character.name}`} className="transition hover:-translate-y-0.5 hover:border-[var(--border-gold)]">
+    <AppCard
+      role="article"
+      aria-label={`Scheda di ${character.name}`}
+      className="transition hover:-translate-y-0.5 hover:border-[var(--border-gold)]"
+    >
       <div className="flex flex-col gap-5 md:flex-row md:items-start">
         <EntityPortrait name={character.name} imageUrl={character.imageUrl} />
 
@@ -67,8 +71,11 @@ export default function CharacterCard({
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-              <CharacterInfo label="HP · Punti vita" explanation="Indicano quanto il personaggio può resistere ai danni. Il primo numero è il valore attuale, il secondo il massimo. Non sono una misura della capacità di evitare un colpo: quella dipende dalla Classe Armatura." />
+            <div className="rounded-xl bg-[var(--surface-muted)] px-3 py-3">
+              <CharacterInfo
+                label="HP · Punti vita"
+                explanation="Indicano quanto il personaggio può resistere ai danni. Il primo numero è il valore attuale, il secondo il massimo. Non sono una misura della capacità di evitare un colpo: quella dipende dalla Classe Armatura."
+              />
 
               <p className="mt-2 text-lg font-black text-[var(--text-main)]">
                 {character.currentHp} / {character.maxHp}
@@ -89,8 +96,11 @@ export default function CharacterCard({
               </div>
             </div>
 
-            <div className="rounded-xl bg-[var(--surface-muted)] px-4 py-3">
-              <CharacterInfo label="Classe Armatura" explanation="La CA è il numero che un tiro per colpire deve raggiungere o superare per colpire il personaggio. Una CA maggiore rende più difficile essere colpiti; non viene sottratta ai danni ricevuti." />
+            <div className="rounded-xl bg-[var(--surface-muted)] px-3 py-3">
+              <CharacterInfo
+                label="Classe Armatura"
+                explanation="La CA è il numero che un tiro per colpire deve raggiungere o superare per colpire il personaggio. Una CA maggiore rende più difficile essere colpiti; non viene sottratta ai danni ricevuti."
+              />
 
               <p className="mt-2 text-lg font-black text-[var(--text-main)]">
                 {character.armorClass}
@@ -99,8 +109,11 @@ export default function CharacterCard({
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            <div className="rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3">
-              <CharacterInfo label="Arma" explanation="Il dado indica il danno base dell’arma: d6 significa un dado a sei facce, non sei danni fissi. La caratteristica indicata è quella configurata per questo attacco. Il tiro per colpire e il tiro dei danni sono due tiri distinti." />
+            <div className="rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-3 py-3">
+              <CharacterInfo
+                label="Arma"
+                explanation="Il dado indica il danno base dell’arma: d6 significa un dado a sei facce, non sei danni fissi. La caratteristica indicata è quella configurata per questo attacco. Il tiro per colpire e il tiro dei danni sono due tiri distinti."
+              />
 
               <p className="mt-2 font-bold text-[var(--text-main)]">
                 {character.weaponName}
@@ -108,13 +121,17 @@ export default function CharacterCard({
 
               <p className="mt-1 text-sm text-[var(--text-muted)]">
                 Danno d{character.damageDie} ·{" "}
-                {abilityLabels[character.attackAbility] ?? "Caratteristica non disponibile"}
+                {abilityLabels[character.attackAbility] ??
+                  "Caratteristica non disponibile"}
               </p>
             </div>
 
             {character.spellcaster && (
-              <div className="rounded-xl border border-[var(--border-gold)]/40 bg-[rgba(245,158,11,0.12)] px-4 py-3">
-                <CharacterInfo label="Incantesimo" explanation="Questo è l’attacco magico disponibile nella scheda. Sono indicati il suo nome, il dado del danno base e la caratteristica usata per lanciarlo. Il dado del danno non è il tiro per colpire e questa voce non rappresenta tutti gli incantesimi di una scheda completa di D&D." />
+              <div className="rounded-xl border border-[var(--border-gold)]/40 bg-[rgba(245,158,11,0.12)] px-3 py-3">
+                <CharacterInfo
+                  label="Incantesimo"
+                  explanation="Questo è l’attacco magico disponibile nella scheda. Sono indicati il suo nome, il dado del danno base e la caratteristica usata per lanciarlo. Il dado del danno non è il tiro per colpire e questa voce non rappresenta tutti gli incantesimi di una scheda completa di D&D."
+                />
 
                 <p className="mt-2 font-bold text-[var(--text-main)]">
                   {character.spellName}
@@ -128,9 +145,18 @@ export default function CharacterCard({
                 </p>
               </div>
             )}
-            {!character.spellcaster && <div className="rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-4 py-3"><CharacterInfo label="Incantesimi" explanation="Questa scheda non dispone di un attacco con incantesimo configurato. Puoi confrontare arma, difesa e caratteristiche per capire come il personaggio può contribuire all’avventura." /><p className="mt-2 text-sm text-[var(--text-muted)]">Nessun attacco con incantesimo disponibile.</p></div>}
+            {!character.spellcaster && (
+              <div className="rounded-xl border border-[var(--border-teal-soft)] bg-[var(--surface-muted)] px-3 py-3">
+                <CharacterInfo
+                  label="Incantesimi"
+                  explanation="Questa scheda non dispone di un attacco con incantesimo configurato. Puoi confrontare arma, difesa e caratteristiche per capire come il personaggio può contribuire all’avventura."
+                />
+                <p className="mt-2 text-sm text-[var(--text-muted)]">
+                  Nessun attacco con incantesimo disponibile.
+                </p>
+              </div>
+            )}
           </div>
-
         </div>
       </div>
 
@@ -147,7 +173,11 @@ export default function CharacterCard({
             disabled={isClaiming || !!claimDisabledReason}
             onClick={() => onClaim(character.id)}
           >
-            {isClaiming ? "Scelta in corso..." : claimDisabledReason ? "Scelta non disponibile" : "Scegli personaggio"}
+            {isClaiming
+              ? "Scelta in corso..."
+              : claimDisabledReason
+                ? "Scelta non disponibile"
+                : "Scegli personaggio"}
           </AppButton>
         )}
       </div>

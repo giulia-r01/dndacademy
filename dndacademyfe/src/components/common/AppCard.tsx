@@ -12,7 +12,7 @@ export default function AppCard({
   return (
     <div
       className={[
-        "rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] p-6 shadow-sm",
+        "rounded-2xl border border-[var(--border-teal-soft)] bg-[var(--surface)] p-4 shadow-sm",
         className,
       ].join(" ")}
       {...props}
